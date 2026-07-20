@@ -1466,6 +1466,48 @@ abstract class AppLocalizations {
   /// **'Topics will be available after the AI assistant is connected.'**
   String get aiTopicsUnavailable;
 
+  /// No description provided for @assistantNewChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get assistantNewChat;
+
+  /// No description provided for @assistantTopicsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics'**
+  String get assistantTopicsTitle;
+
+  /// No description provided for @assistantTopicsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats yet. Tap “New chat” to start.'**
+  String get assistantTopicsEmpty;
+
+  /// No description provided for @assistantEmptyThread.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty chat'**
+  String get assistantEmptyThread;
+
+  /// No description provided for @assistantDeleteTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete topic'**
+  String get assistantDeleteTopic;
+
+  /// No description provided for @assistantThreadMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This chat was not found.'**
+  String get assistantThreadMissing;
+
+  /// No description provided for @assistantKeyMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'DeepSeek key is missing. Run with --dart-define=DEEPSEEK_API_KEY=…'**
+  String get assistantKeyMissing;
+
   /// No description provided for @journalLoading.
   ///
   /// In en, this message translates to:

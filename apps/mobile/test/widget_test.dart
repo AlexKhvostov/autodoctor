@@ -1,6 +1,7 @@
 import 'package:autodoctor/app/auto_doctor_app.dart';
 import 'package:autodoctor/app/locale_controller.dart';
 import 'package:autodoctor/app/router.dart';
+import 'package:autodoctor/features/assistant/assistant_store.dart';
 import 'package:autodoctor/features/guest_bootstrap/guest_bootstrap.dart';
 import 'package:autodoctor/features/guest_bootstrap/guest_bootstrap_controller.dart';
 import 'package:flutter/material.dart';
@@ -487,7 +488,7 @@ void main() {
     expect(find.textContaining('Предпросмотр следующего шага'), findsOneWidget);
   });
 
-  testWidgets('AI is a disabled no-car preview', (tester) async {
+  testWidgets('AI tab shows topics and new chat entry', (tester) async {
     await _pumpApp(tester);
     await tester.pumpAndSettle();
 
@@ -495,13 +496,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('AI-ассистент'), findsOneWidget);
-    expect(find.text('Пример'), findsOneWidget);
+    expect(find.byKey(const Key('assistant-new-chat')), findsOneWidget);
+    expect(find.byKey(const Key('assistant-topics-empty')), findsOneWidget);
+    expect(find.text('Пример'), findsNothing);
     expect(
       find.text('Отправка отключена: нет выбранного автомобиля.'),
-      findsOneWidget,
+      findsNothing,
     );
-    final input = tester.widget<TextField>(find.byType(TextField));
-    expect(input.enabled, isFalse);
   });
 
   testWidgets('preview CTA opens add vehicle route with persistent header', (
@@ -669,6 +670,9 @@ Future<void> _pumpApp(
         ),
         sessionTokenStoreProvider.overrideWithValue(effectiveStore),
         guestBootstrapRepositoryProvider.overrideWithValue(effectiveRepository),
+        assistantThreadStoreProvider.overrideWithValue(
+          InMemoryAssistantThreadStore(),
+        ),
       ],
       child: const AutoDoctorApp(),
     ),

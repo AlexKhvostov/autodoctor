@@ -765,6 +765,29 @@ class AppLocalizationsRu extends AppLocalizations {
       'Темы станут доступны после подключения AI-ассистента.';
 
   @override
+  String get assistantNewChat => 'Новый чат';
+
+  @override
+  String get assistantTopicsTitle => 'Темы';
+
+  @override
+  String get assistantTopicsEmpty =>
+      'Пока нет диалогов. Нажмите «Новый чат», чтобы начать.';
+
+  @override
+  String get assistantEmptyThread => 'Пустой диалог';
+
+  @override
+  String get assistantDeleteTopic => 'Удалить тему';
+
+  @override
+  String get assistantThreadMissing => 'Этот диалог не найден.';
+
+  @override
+  String get assistantKeyMissing =>
+      'Ключ DeepSeek не задан. Запустите приложение с --dart-define=DEEPSEEK_API_KEY=…';
+
+  @override
   String get journalLoading => 'Загружаем записи обслуживания…';
 
   @override

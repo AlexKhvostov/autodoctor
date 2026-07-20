@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/assistant/presentation/assistant_chat_screen.dart';
+import '../features/assistant/presentation/assistant_threads_screen.dart';
 import '../features/browse/presentation/browse_screens.dart';
 import '../features/browse/presentation/browse_shell.dart';
 import '../features/maintenance/presentation/maintenance_screens.dart';
@@ -40,6 +42,15 @@ GoRouter buildRouter() {
             path: '/analytics',
             pageBuilder: (context, state) =>
                 const MaterialPage<void>(child: AnalyticsScreen()),
+          ),
+          GoRoute(
+            // Keep outside `/assistant` prefix to avoid shell-branch match conflicts.
+            path: '/ai/chat/:threadId',
+            pageBuilder: (context, state) => MaterialPage<void>(
+              child: AssistantChatScreen(
+                threadId: state.pathParameters['threadId']!,
+              ),
+            ),
           ),
           GoRoute(
             path: '/garage/consumables',

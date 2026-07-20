@@ -755,6 +755,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Topics will be available after the AI assistant is connected.';
 
   @override
+  String get assistantNewChat => 'New chat';
+
+  @override
+  String get assistantTopicsTitle => 'Topics';
+
+  @override
+  String get assistantTopicsEmpty => 'No chats yet. Tap “New chat” to start.';
+
+  @override
+  String get assistantEmptyThread => 'Empty chat';
+
+  @override
+  String get assistantDeleteTopic => 'Delete topic';
+
+  @override
+  String get assistantThreadMissing => 'This chat was not found.';
+
+  @override
+  String get assistantKeyMissing =>
+      'DeepSeek key is missing. Run with --dart-define=DEEPSEEK_API_KEY=…';
+
+  @override
   String get journalLoading => 'Loading service records…';
 
   @override

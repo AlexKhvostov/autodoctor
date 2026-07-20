@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:autodoctor/app/locale_controller.dart';
 import 'package:autodoctor/app/router.dart';
+import 'package:autodoctor/features/assistant/assistant_store.dart';
 import 'package:autodoctor/features/maintenance/maintenance.dart';
 import 'package:autodoctor/features/maintenance/maintenance_controller.dart';
 import 'package:autodoctor/features/vehicle/vehicle.dart';
@@ -28,27 +29,26 @@ void main() {
     router.dispose();
   });
 
-  testWidgets('active AI and topics show honest unavailable state', (
-    tester,
-  ) async {
+  testWidgets('active AI shows topics list and opens new chat', (tester) async {
     final router = await _pumpActiveApp(tester);
     router.go('/assistant');
     await tester.pumpAndSettle();
 
     expect(find.text('Выбранный автомобиль · Volkswagen Golf'), findsOneWidget);
-    expect(find.text('AI-ассистент пока не подключён'), findsOneWidget);
-    expect(find.text('Будет доступно после подключения AI'), findsNWidgets(2));
-    expect(find.textContaining('Что проверить сначала'), findsNothing);
+    expect(find.byKey(const Key('assistant-new-chat')), findsOneWidget);
+    expect(find.byKey(const Key('assistant-topics-empty')), findsOneWidget);
+    expect(find.text('AI-ассистент пока не подключён'), findsNothing);
+    expect(find.text('Темы · пример'), findsNothing);
     _expectNoNoCarOrDemo();
 
-    await tester.tap(find.text('Темы'));
+    await tester.tap(find.byKey(const Key('assistant-new-chat')));
     await tester.pumpAndSettle();
-    expect(find.text('Темы'), findsWidgets);
+    expect(find.byKey(const Key('assistant-chat-input')), findsOneWidget);
+    expect(find.byKey(const Key('assistant-chat-send')), findsOneWidget);
     expect(
-      find.text('Темы станут доступны после подключения AI-ассистента.'),
-      findsOneWidget,
+      router.routeInformationProvider.value.uri.path,
+      startsWith('/ai/chat/'),
     );
-    expect(find.text('Темы · пример'), findsNothing);
     _expectNoNoCarOrDemo();
     router.dispose();
   });
@@ -174,6 +174,9 @@ Future<GoRouter> _pumpActiveApp(
       overrides: [
         activeLocaleProvider.overrideWithValue(const Locale('ru')),
         vehicleSetupControllerProvider.overrideWith(_SeedVehicleController.new),
+        assistantThreadStoreProvider.overrideWithValue(
+          InMemoryAssistantThreadStore(),
+        ),
         maintenanceRepositoryProvider.overrideWithValue(
           repository ?? _MaintenanceRepository(),
         ),
