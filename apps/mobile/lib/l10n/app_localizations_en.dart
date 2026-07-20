@@ -62,6 +62,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stateTitle => 'Condition';
 
   @override
+  String get stateSubtitle => 'Resource and wear scale. Open a card to update.';
+
+  @override
   String get stateNeedsData => 'Needs data';
 
   @override
@@ -73,6 +76,89 @@ class AppLocalizationsEn extends AppLocalizations {
   String stateWearRemaining(int wear, int remaining) {
     return 'Wear $wear% · remaining $remaining%';
   }
+
+  @override
+  String get stateWearCaption => 'wear';
+
+  @override
+  String get stateTriggerTime => 'time';
+
+  @override
+  String get stateTriggerMileage => 'mileage';
+
+  @override
+  String get stateScaleCaption => 'life';
+
+  @override
+  String stateLastServiceShort(String date) {
+    return 'serviced $date';
+  }
+
+  @override
+  String get stateLastServiceUnknownShort => 'service unknown';
+
+  @override
+  String get stateUpdateSection => 'Update data';
+
+  @override
+  String get stateNoteField => 'Note';
+
+  @override
+  String get stateNoteHint => 'Replacement, top-up, comment…';
+
+  @override
+  String get stateWearField => 'Wear, %';
+
+  @override
+  String get stateWearHint => '0 = new or no wear';
+
+  @override
+  String get stateLaborCost => 'Labor cost';
+
+  @override
+  String get statePartsCost => 'Parts cost';
+
+  @override
+  String get stateUpdateDate => 'Date';
+
+  @override
+  String get stateUpdateMileage => 'Mileage';
+
+  @override
+  String get stateUpdateSave => 'Save';
+
+  @override
+  String get stateUpdateSaveEdit => 'Save changes';
+
+  @override
+  String get stateCancelEdit => 'Cancel edit';
+
+  @override
+  String get stateEditRecord => 'Edit record';
+
+  @override
+  String get stateDeleteRecord => 'Delete record';
+
+  @override
+  String get stateDeleteConfirm => 'Delete this service record?';
+
+  @override
+  String get stateServiceHistory => 'Service dates';
+
+  @override
+  String get stateServiceHistoryEmpty => 'No records yet';
+
+  @override
+  String get stateUpdateError =>
+      'Could not save. Check the fields and try again.';
+
+  @override
+  String stateEditingBanner(String date) {
+    return 'Editing record from $date';
+  }
+
+  @override
+  String get stateCurrentFacts => 'Current facts';
 
   @override
   String get stateInspectionStatus => 'Inspection status';
@@ -87,7 +173,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planNearestWork => 'Next work';
 
   @override
-  String get planRoadLabel => 'Upcoming';
+  String get planRoadLabel => 'Service road';
+
+  @override
+  String get planTimelineLabel => 'Timeline';
 
   @override
   String get planRemainingList => 'Later';

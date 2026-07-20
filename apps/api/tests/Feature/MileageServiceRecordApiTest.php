@@ -276,6 +276,47 @@ class MileageServiceRecordApiTest extends TestCase
             ->assertJsonPath('items.0.presentation.title', 'Service: Engine oil');
     }
 
+    public function test_service_record_can_be_updated_and_deleted(): void
+    {
+        $headers = $this->sessionHeaders('en');
+        $vehicle = $this->createVehicle($headers, 1000);
+        $url = "/api/v1/vehicles/{$vehicle}/history";
+        $created = $this->withHeaders($headers)->postJson($url, [
+            'service_date' => '2026-07-15',
+            'work_codes' => ['engine_oil'],
+            'mileage' => ['value' => 1050, 'unit' => 'km'],
+            'note' => 'First',
+        ])->assertCreated();
+        $id = $created->json('service_record.id');
+
+        $this->withHeaders($headers)->patchJson("{$url}/{$id}", [
+            'service_date' => '2026-07-16',
+            'mileage' => ['value' => 1100, 'unit' => 'km'],
+            'note' => 'Corrected',
+        ])->assertOk()
+            ->assertJsonPath('service_record.service_date', '2026-07-16')
+            ->assertJsonPath('service_record.mileage.value', 1100)
+            ->assertJsonPath('service_record.note', 'Corrected');
+
+        $this->assertDatabaseHas('history_answers', [
+            'vehicle_id' => $vehicle,
+            'answer' => 'done_known',
+            'performed_date' => '2026-07-16 00:00:00',
+            'performed_mileage_km' => 1100,
+        ]);
+
+        $this->withHeaders($headers)->deleteJson("{$url}/{$id}")
+            ->assertOk()
+            ->assertJsonPath('deleted', true);
+        $this->assertDatabaseCount('service_records', 0);
+        $this->assertDatabaseHas('history_answers', [
+            'vehicle_id' => $vehicle,
+            'answer' => 'unknown',
+            'performed_date' => null,
+            'performed_mileage_km' => null,
+        ]);
+    }
+
     private function sessionHeaders(string $locale = 'en'): array
     {
         $response = $this->withHeader('Idempotency-Key', (string) Str::uuid())

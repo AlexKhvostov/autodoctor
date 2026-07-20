@@ -248,6 +248,36 @@ class _MaintenanceRepository implements MaintenanceRepository {
   }) async => _records.items.single;
 
   @override
+  Future<ServiceRecord> updateServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+    required ServiceRecordWrite record,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> deleteServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<ConditionObservation> updateConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+    required ConditionObservationWrite observation,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> deleteConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+  }) => throw UnimplementedError();
+
+  @override
   Future<ConsumableList> getConsumables(
     String vehicleId, {
     required String locale,

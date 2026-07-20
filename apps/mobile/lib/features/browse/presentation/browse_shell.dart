@@ -436,17 +436,17 @@ class _ShellNavigation extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final items = [
       (Icons.route_outlined, Icons.route, context.l10n.navPlan),
-      (Icons.menu_book_outlined, Icons.menu_book, context.l10n.navJournal),
-      (
-        Icons.auto_awesome_outlined,
-        Icons.auto_awesome,
-        context.l10n.navAssistant,
-      ),
       (
         Icons.monitor_heart_outlined,
         Icons.monitor_heart,
         context.l10n.navState,
       ),
+      (
+        Icons.auto_awesome_outlined,
+        Icons.auto_awesome,
+        context.l10n.navAssistant,
+      ),
+      (Icons.menu_book_outlined, Icons.menu_book, context.l10n.navJournal),
       (Icons.more_horiz, Icons.more_horiz, context.l10n.navMore),
     ];
     return Material(

@@ -84,6 +84,39 @@ class PlanV3ApiTest extends TestCase
             ->assertJsonPath('error.code', 'VEHICLE_NOT_FOUND');
     }
 
+    public function test_condition_observation_can_be_updated_and_deleted(): void
+    {
+        $headers = $this->headers('en');
+        $vehicle = $this->vehicle($headers, 50000);
+        $url = "/api/v1/vehicles/{$vehicle}/condition-observations";
+        $created = $this->withHeaders($headers)->postJson($url, [
+            'work_code' => 'tire_condition_inspection',
+            'wear_percent' => 60,
+            'observed_at' => '2026-07-19',
+            'mileage' => ['value' => 49000, 'unit' => 'km'],
+            'source' => 'self',
+        ])->assertCreated();
+        $id = $created->json('observation.id');
+
+        $this->withHeaders($headers)->patchJson("{$url}/{$id}", [
+            'wear_percent' => 0,
+            'note' => 'New tires',
+        ])->assertOk()
+            ->assertJsonPath('observation.wear_percent', 0)
+            ->assertJsonPath('observation.remaining_percent', 100)
+            ->assertJsonPath('observation.note', 'New tires');
+
+        $projection = collect($this->withHeaders($headers)
+            ->getJson("/api/v1/vehicles/{$vehicle}/consumables")->json('items'))
+            ->firstWhere('work_code', 'tire_condition_inspection');
+        $this->assertSame(0, $projection['presentation']['latest_observation']['wear_percent']);
+
+        $this->withHeaders($headers)->deleteJson("{$url}/{$id}")
+            ->assertOk()
+            ->assertJsonPath('deleted', true);
+        $this->assertDatabaseCount('condition_observations', 0);
+    }
+
     public function test_all_condition_threshold_boundaries_and_no_fake_percent(): void
     {
         foreach ([

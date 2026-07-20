@@ -30,9 +30,9 @@ GoRouter buildRouter() {
             },
             branches: [
               _branch('/roadmap', const RoadmapScreen()),
-              _branch('/journal', const JournalScreen()),
-              _branch('/assistant', const AssistantScreen()),
               _branch('/state', const StateScreen()),
+              _branch('/assistant', const AssistantScreen()),
+              _branch('/journal', const JournalScreen()),
               _branch('/more', const MoreScreen()),
             ],
           ),

@@ -313,10 +313,106 @@ class MaintenanceController extends Notifier<MaintenanceState> {
     if (generation != _generation || !state.matches(vehicleId, locale)) {
       throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
     }
+    await _reloadCore(vehicleId, locale, generation);
+    return created;
+  }
+
+  Future<ServiceRecord> updateServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+    required ServiceRecordWrite record,
+  }) async {
+    if (!state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    final generation = ++_generation;
+    final updated = await _repository.updateServiceRecord(
+      vehicleId,
+      recordId,
+      locale: locale,
+      record: record,
+    );
+    if (generation != _generation || !state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    await _reloadCore(vehicleId, locale, generation);
+    return updated;
+  }
+
+  Future<void> deleteServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+  }) async {
+    if (!state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    final generation = ++_generation;
+    await _repository.deleteServiceRecord(
+      vehicleId,
+      recordId,
+      locale: locale,
+    );
+    if (generation != _generation || !state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    await _reloadCore(vehicleId, locale, generation);
+  }
+
+  Future<ConditionObservation> updateConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+    required ConditionObservationWrite observation,
+  }) async {
+    if (!state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    final generation = ++_generation;
+    final updated = await _repository.updateConditionObservation(
+      vehicleId,
+      observationId,
+      locale: locale,
+      observation: observation,
+    );
+    if (generation != _generation || !state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    await _reloadCore(vehicleId, locale, generation);
+    return updated;
+  }
+
+  Future<void> deleteConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+  }) async {
+    if (!state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    final generation = ++_generation;
+    await _repository.deleteConditionObservation(
+      vehicleId,
+      observationId,
+      locale: locale,
+    );
+    if (generation != _generation || !state.matches(vehicleId, locale)) {
+      throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
+    }
+    await _reloadCore(vehicleId, locale, generation);
+  }
+
+  Future<void> _reloadCore(
+    String vehicleId,
+    String locale,
+    int generation,
+  ) async {
     final results = await Future.wait<Object>([
       _repository.getPlan(vehicleId, locale: locale),
       _repository.getTimeline(vehicleId, locale: locale),
       _repository.getConsumables(vehicleId, locale: locale),
+      _repository.getServiceRecords(vehicleId, locale: locale),
       _repository.getConditionObservations(vehicleId, locale: locale),
     ]);
     if (generation != _generation || !state.matches(vehicleId, locale)) {
@@ -328,10 +424,10 @@ class MaintenanceController extends Notifier<MaintenanceState> {
       plan: results[0] as MaintenancePlan,
       timeline: results[1] as VehicleTimeline,
       consumables: results[2] as ConsumableList,
-      conditionObservations: results[3] as ConditionObservationList,
+      serviceRecords: results[3] as ServiceRecordList,
+      conditionObservations: results[4] as ConditionObservationList,
       clearFailure: true,
     );
-    return created;
   }
 }
 

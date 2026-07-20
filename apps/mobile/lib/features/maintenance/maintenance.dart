@@ -544,6 +544,15 @@ class ServiceRecordWrite {
     'evidence_source': 'self',
     if (note?.trim().isNotEmpty == true) 'note': note!.trim(),
   };
+
+  Map<String, Object?> toUpdateJson() => {
+    'service_date':
+        '${serviceDate.year.toString().padLeft(4, '0')}-'
+        '${serviceDate.month.toString().padLeft(2, '0')}-'
+        '${serviceDate.day.toString().padLeft(2, '0')}',
+    if (mileage != null) 'mileage': {'value': mileage, 'unit': mileageUnit},
+    'note': note?.trim().isNotEmpty == true ? note!.trim() : null,
+  };
 }
 
 class ServiceRecordList {
@@ -893,6 +902,19 @@ class ConditionObservationWrite {
         : 'self',
     if (note?.trim().isNotEmpty == true) 'note': note!.trim(),
   };
+
+  Map<String, Object?> toUpdateJson() => {
+    'wear_percent': wearPercent,
+    'observed_at':
+        '${observedAt.year.toString().padLeft(4, '0')}-'
+        '${observedAt.month.toString().padLeft(2, '0')}-'
+        '${observedAt.day.toString().padLeft(2, '0')}',
+    if (mileage != null) 'mileage': {'value': mileage, 'unit': mileageUnit},
+    'source': source == ConditionObservationSource.workshop
+        ? 'workshop'
+        : 'self',
+    'note': note?.trim().isNotEmpty == true ? note!.trim() : null,
+  };
 }
 
 class ConditionObservationList {
@@ -1109,6 +1131,17 @@ abstract interface class MaintenanceRepository {
     required String locale,
     required ServiceRecordWrite record,
   });
+  Future<ServiceRecord> updateServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+    required ServiceRecordWrite record,
+  });
+  Future<void> deleteServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+  });
   Future<void> submitHistoryAnswers(
     String vehicleId, {
     required String locale,
@@ -1126,6 +1159,17 @@ abstract interface class MaintenanceRepository {
     String vehicleId, {
     required String locale,
     required ConditionObservationWrite observation,
+  });
+  Future<ConditionObservation> updateConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+    required ConditionObservationWrite observation,
+  });
+  Future<void> deleteConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
   });
 }
 

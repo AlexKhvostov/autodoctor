@@ -84,6 +84,36 @@ class DioMaintenanceRepository implements MaintenanceRepository {
   );
 
   @override
+  Future<ConditionObservation> updateConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+    required ConditionObservationWrite observation,
+  }) => _write(
+    'PATCH',
+    '/vehicles/$vehicleId/condition-observations/$observationId',
+    locale,
+    observation.toUpdateJson(),
+    (json) => ConditionObservation.fromJson(json['observation']),
+  );
+
+  @override
+  Future<void> deleteConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+  }) async {
+    try {
+      await _dio.delete<Map<String, dynamic>>(
+        '/vehicles/$vehicleId/condition-observations/$observationId',
+        options: await _options(locale),
+      );
+    } on DioException catch (error) {
+      throw _failure(error);
+    }
+  }
+
+  @override
   Future<ServiceRecord> createServiceRecord(
     String vehicleId, {
     required String locale,
@@ -109,6 +139,36 @@ class DioMaintenanceRepository implements MaintenanceRepository {
       throw const MaintenanceFailure(code: 'UNEXPECTED_RESPONSE');
     } on TypeError {
       throw const MaintenanceFailure(code: 'UNEXPECTED_RESPONSE');
+    }
+  }
+
+  @override
+  Future<ServiceRecord> updateServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+    required ServiceRecordWrite record,
+  }) => _write(
+    'PATCH',
+    '/vehicles/$vehicleId/history/$recordId',
+    locale,
+    record.toUpdateJson(),
+    (json) => ServiceRecord.fromJson(json['service_record']),
+  );
+
+  @override
+  Future<void> deleteServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+  }) async {
+    try {
+      await _dio.delete<Map<String, dynamic>>(
+        '/vehicles/$vehicleId/history/$recordId',
+        options: await _options(locale),
+      );
+    } on DioException catch (error) {
+      throw _failure(error);
     }
   }
 

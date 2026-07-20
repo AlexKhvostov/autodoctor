@@ -200,6 +200,12 @@ abstract class AppLocalizations {
   /// **'Condition'**
   String get stateTitle;
 
+  /// No description provided for @stateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource and wear scale. Open a card to update.'**
+  String get stateSubtitle;
+
   /// No description provided for @stateNeedsData.
   ///
   /// In en, this message translates to:
@@ -217,6 +223,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wear {wear}% · remaining {remaining}%'**
   String stateWearRemaining(int wear, int remaining);
+
+  /// No description provided for @stateWearCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'wear'**
+  String get stateWearCaption;
+
+  /// No description provided for @stateTriggerTime.
+  ///
+  /// In en, this message translates to:
+  /// **'time'**
+  String get stateTriggerTime;
+
+  /// No description provided for @stateTriggerMileage.
+  ///
+  /// In en, this message translates to:
+  /// **'mileage'**
+  String get stateTriggerMileage;
+
+  /// No description provided for @stateScaleCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'life'**
+  String get stateScaleCaption;
+
+  /// No description provided for @stateLastServiceShort.
+  ///
+  /// In en, this message translates to:
+  /// **'serviced {date}'**
+  String stateLastServiceShort(String date);
+
+  /// No description provided for @stateLastServiceUnknownShort.
+  ///
+  /// In en, this message translates to:
+  /// **'service unknown'**
+  String get stateLastServiceUnknownShort;
+
+  /// No description provided for @stateUpdateSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Update data'**
+  String get stateUpdateSection;
+
+  /// No description provided for @stateNoteField.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get stateNoteField;
+
+  /// No description provided for @stateNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement, top-up, comment…'**
+  String get stateNoteHint;
+
+  /// No description provided for @stateWearField.
+  ///
+  /// In en, this message translates to:
+  /// **'Wear, %'**
+  String get stateWearField;
+
+  /// No description provided for @stateWearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0 = new or no wear'**
+  String get stateWearHint;
+
+  /// No description provided for @stateLaborCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Labor cost'**
+  String get stateLaborCost;
+
+  /// No description provided for @statePartsCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Parts cost'**
+  String get statePartsCost;
+
+  /// No description provided for @stateUpdateDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get stateUpdateDate;
+
+  /// No description provided for @stateUpdateMileage.
+  ///
+  /// In en, this message translates to:
+  /// **'Mileage'**
+  String get stateUpdateMileage;
+
+  /// No description provided for @stateUpdateSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get stateUpdateSave;
+
+  /// No description provided for @stateUpdateSaveEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get stateUpdateSaveEdit;
+
+  /// No description provided for @stateCancelEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel edit'**
+  String get stateCancelEdit;
+
+  /// No description provided for @stateEditRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit record'**
+  String get stateEditRecord;
+
+  /// No description provided for @stateDeleteRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete record'**
+  String get stateDeleteRecord;
+
+  /// No description provided for @stateDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this service record?'**
+  String get stateDeleteConfirm;
+
+  /// No description provided for @stateServiceHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Service dates'**
+  String get stateServiceHistory;
+
+  /// No description provided for @stateServiceHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet'**
+  String get stateServiceHistoryEmpty;
+
+  /// No description provided for @stateUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save. Check the fields and try again.'**
+  String get stateUpdateError;
+
+  /// No description provided for @stateEditingBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing record from {date}'**
+  String stateEditingBanner(String date);
+
+  /// No description provided for @stateCurrentFacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Current facts'**
+  String get stateCurrentFacts;
 
   /// No description provided for @stateInspectionStatus.
   ///
@@ -245,8 +407,14 @@ abstract class AppLocalizations {
   /// No description provided for @planRoadLabel.
   ///
   /// In en, this message translates to:
-  /// **'Upcoming'**
+  /// **'Service road'**
   String get planRoadLabel;
+
+  /// No description provided for @planTimelineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get planTimelineLabel;
 
   /// No description provided for @planRemainingList.
   ///

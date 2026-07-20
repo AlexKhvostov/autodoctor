@@ -826,6 +826,36 @@ class FakeMaintenanceRepository implements MaintenanceRepository {
   );
 
   @override
+  Future<ServiceRecord> updateServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+    required ServiceRecordWrite record,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> deleteServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<ConditionObservation> updateConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+    required ConditionObservationWrite observation,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> deleteConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+  }) => throw UnimplementedError();
+
+  @override
   Future<ServiceRecordList> getServiceRecords(
     String vehicleId, {
     required String locale,

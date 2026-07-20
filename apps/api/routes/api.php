@@ -31,8 +31,12 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/vehicles/{vehicle}/mileage-forecast', [MileageForecastController::class, 'show']);
         Route::get('/vehicles/{vehicle}/condition-observations', [ConditionObservationController::class, 'index']);
         Route::post('/vehicles/{vehicle}/condition-observations', [ConditionObservationController::class, 'store']);
+        Route::patch('/vehicles/{vehicle}/condition-observations/{observation}', [ConditionObservationController::class, 'update']);
+        Route::delete('/vehicles/{vehicle}/condition-observations/{observation}', [ConditionObservationController::class, 'destroy']);
         Route::get('/vehicles/{vehicle}/history', [ServiceRecordController::class, 'index']);
         Route::post('/vehicles/{vehicle}/history', [ServiceRecordController::class, 'store']);
+        Route::patch('/vehicles/{vehicle}/history/{record}', [ServiceRecordController::class, 'update']);
+        Route::delete('/vehicles/{vehicle}/history/{record}', [ServiceRecordController::class, 'destroy']);
         Route::get('/vehicles/{vehicle}/maintenance-plan', [MaintenanceController::class, 'show']);
         Route::get('/vehicles/{vehicle}/timeline', [MaintenanceController::class, 'timeline']);
         Route::get('/vehicles/{vehicle}/consumables', [MaintenanceController::class, 'consumables']);

@@ -62,6 +62,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stateTitle => 'Состояние';
 
   @override
+  String get stateSubtitle =>
+      'Шкала ресурса и износа. Откройте карточку, чтобы обновить.';
+
+  @override
   String get stateNeedsData => 'Нужны данные';
 
   @override
@@ -73,6 +77,89 @@ class AppLocalizationsRu extends AppLocalizations {
   String stateWearRemaining(int wear, int remaining) {
     return 'Износ $wear% · остаток $remaining%';
   }
+
+  @override
+  String get stateWearCaption => 'износ';
+
+  @override
+  String get stateTriggerTime => 'время';
+
+  @override
+  String get stateTriggerMileage => 'пробег';
+
+  @override
+  String get stateScaleCaption => 'ресурс';
+
+  @override
+  String stateLastServiceShort(String date) {
+    return 'обслуж. $date';
+  }
+
+  @override
+  String get stateLastServiceUnknownShort => 'обслуж. неизвестно';
+
+  @override
+  String get stateUpdateSection => 'Обновить данные';
+
+  @override
+  String get stateNoteField => 'Примечание';
+
+  @override
+  String get stateNoteHint => 'Замена, долив, комментарий…';
+
+  @override
+  String get stateWearField => 'Износ, %';
+
+  @override
+  String get stateWearHint => '0 — новые или без износа';
+
+  @override
+  String get stateLaborCost => 'Стоимость работ';
+
+  @override
+  String get statePartsCost => 'Стоимость запчастей';
+
+  @override
+  String get stateUpdateDate => 'Дата';
+
+  @override
+  String get stateUpdateMileage => 'Пробег';
+
+  @override
+  String get stateUpdateSave => 'Сохранить';
+
+  @override
+  String get stateUpdateSaveEdit => 'Сохранить изменения';
+
+  @override
+  String get stateCancelEdit => 'Отменить правку';
+
+  @override
+  String get stateEditRecord => 'Изменить запись';
+
+  @override
+  String get stateDeleteRecord => 'Удалить запись';
+
+  @override
+  String get stateDeleteConfirm => 'Удалить эту запись обслуживания?';
+
+  @override
+  String get stateServiceHistory => 'Даты обслуживания';
+
+  @override
+  String get stateServiceHistoryEmpty => 'Записей пока нет';
+
+  @override
+  String get stateUpdateError =>
+      'Не удалось сохранить. Проверьте поля и попробуйте снова.';
+
+  @override
+  String stateEditingBanner(String date) {
+    return 'Редактирование записи от $date';
+  }
+
+  @override
+  String get stateCurrentFacts => 'Текущие данные';
 
   @override
   String get stateInspectionStatus => 'Состояние проверки';
@@ -88,7 +175,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get planNearestWork => 'Ближайшая работа';
 
   @override
-  String get planRoadLabel => 'Далее';
+  String get planRoadLabel => 'Дорога обслуживания';
+
+  @override
+  String get planTimelineLabel => 'Таймлайн';
 
   @override
   String get planRemainingList => 'Позже';

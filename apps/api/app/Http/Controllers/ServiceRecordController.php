@@ -114,6 +114,97 @@ class ServiceRecordController extends Controller
         );
     }
 
+    public function update(Request $request, string $vehicle, string $record): JsonResponse
+    {
+        $session = $this->session($request);
+        $model = $this->vehicles->owned($session, $vehicle);
+        $existing = ServiceRecord::query()
+            ->with('items.workCatalogItem')
+            ->where('vehicle_id', $model->id)
+            ->where('id', $record)
+            ->firstOrFail();
+
+        $validator = Validator::make($request->all(), [
+            'service_date' => ['sometimes', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'mileage' => ['sometimes', 'nullable', 'array'],
+            'mileage.value' => ['required_with:mileage', 'integer', 'min:0'],
+            'mileage.unit' => ['required_with:mileage', Rule::in(['km', 'mi'])],
+            'note' => ['sometimes', 'nullable', 'string', 'max:4000'],
+        ]);
+        $validator->after(function ($validator) use ($request): void {
+            if (array_diff(array_keys($request->all()), [
+                'service_date', 'mileage', 'note',
+            ]) !== []) {
+                $validator->errors()->add('request', __('api.fields.unknown'));
+            }
+            if (is_array($request->input('mileage'))
+                && array_diff(array_keys($request->input('mileage')), ['value', 'unit']) !== []) {
+                $validator->errors()->add('mileage', __('api.fields.unknown'));
+            }
+        });
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+        $validated = $validator->validated();
+
+        return DB::transaction(function () use ($existing, $validated, $model, $request): JsonResponse {
+            if (array_key_exists('service_date', $validated)) {
+                $existing->service_date = $validated['service_date'];
+            }
+            if (array_key_exists('note', $validated)) {
+                $existing->note = $validated['note'];
+            }
+            if (array_key_exists('mileage', $validated)) {
+                $mileage = $validated['mileage'];
+                $existing->mileage_value = $mileage['value'] ?? null;
+                $existing->mileage_unit = $mileage['unit'] ?? null;
+            }
+            $existing->version = $existing->version + 1;
+            $existing->save();
+            $existing->load('items.workCatalogItem');
+
+            $catalog = $existing->items
+                ->map(fn ($item) => $item->workCatalogItem)
+                ->filter()
+                ->keyBy('code');
+            $this->synchronizeHistoryAnswers($model, $existing, $catalog);
+            $snapshot = $this->plans->calculate($model->fresh('configuration'));
+
+            return response()->json([
+                'service_record' => (new ServiceRecordResource($existing))->resolve($request),
+                'maintenance_plan_id' => $snapshot->id,
+            ]);
+        });
+    }
+
+    public function destroy(Request $request, string $vehicle, string $record): JsonResponse
+    {
+        $session = $this->session($request);
+        $model = $this->vehicles->owned($session, $vehicle);
+        $existing = ServiceRecord::query()
+            ->with('items.workCatalogItem')
+            ->where('vehicle_id', $model->id)
+            ->where('id', $record)
+            ->firstOrFail();
+
+        return DB::transaction(function () use ($existing, $model): JsonResponse {
+            $codes = $existing->items
+                ->map(fn ($item) => $item->workCatalogItem?->code)
+                ->filter()
+                ->values()
+                ->all();
+            $existing->items()->delete();
+            $existing->delete();
+            $this->resyncHistoryAnswers($model, $codes);
+            $snapshot = $this->plans->calculate($model->fresh('configuration'));
+
+            return response()->json([
+                'deleted' => true,
+                'maintenance_plan_id' => $snapshot->id,
+            ]);
+        });
+    }
+
     private function create(AnonymousSession $session, string $id, array $data): array
     {
         return DB::transaction(function () use ($session, $id, $data): array {
@@ -173,35 +264,65 @@ class ServiceRecordController extends Controller
     private function synchronizeHistoryAnswers(Vehicle $vehicle, ServiceRecord $record, $catalog): void
     {
         foreach ($catalog as $item) {
-            $latest = ServiceRecord::query()
-                ->where('vehicle_id', $vehicle->id)
-                ->whereHas('items', fn ($query) => $query->where('work_catalog_item_id', $item->id))
-                ->orderByDesc('service_date')
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->firstOrFail();
-            $answer = HistoryAnswer::query()
-                ->where('vehicle_id', $vehicle->id)
-                ->where('work_catalog_item_id', $item->id)
-                ->lockForUpdate()
-                ->first();
-            $values = [
-                'answer' => 'done_known',
-                'performed_date' => $latest->service_date,
-                'performed_mileage_km' => $latest->mileage_value === null
-                    ? null
-                    : (int) round($this->toKm($latest->mileage_value, $latest->mileage_unit)),
-            ];
-            if ($answer === null) {
-                HistoryAnswer::query()->create([
-                    'vehicle_id' => $vehicle->id,
-                    'work_catalog_item_id' => $item->id,
-                    ...$values,
-                    'version' => 1,
-                ]);
-            } else {
-                $answer->fill([...$values, 'version' => $answer->version + 1])->save();
+            $this->writeHistoryFromLatest($vehicle, $item->id);
+        }
+    }
+
+    private function resyncHistoryAnswers(Vehicle $vehicle, array $workCodes): void
+    {
+        foreach ($workCodes as $code) {
+            $item = WorkCatalogItem::query()->where('code', $code)->first();
+            if ($item === null) {
+                continue;
             }
+            $this->writeHistoryFromLatest($vehicle, $item->id);
+        }
+    }
+
+    private function writeHistoryFromLatest(Vehicle $vehicle, string $workCatalogItemId): void
+    {
+        $latest = ServiceRecord::query()
+            ->where('vehicle_id', $vehicle->id)
+            ->whereHas('items', fn ($query) => $query->where('work_catalog_item_id', $workCatalogItemId))
+            ->orderByDesc('service_date')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
+        $answer = HistoryAnswer::query()
+            ->where('vehicle_id', $vehicle->id)
+            ->where('work_catalog_item_id', $workCatalogItemId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($latest === null) {
+            if ($answer !== null) {
+                $answer->fill([
+                    'answer' => 'unknown',
+                    'performed_date' => null,
+                    'performed_mileage_km' => null,
+                    'version' => $answer->version + 1,
+                ])->save();
+            }
+
+            return;
+        }
+
+        $values = [
+            'answer' => 'done_known',
+            'performed_date' => $latest->service_date,
+            'performed_mileage_km' => $latest->mileage_value === null
+                ? null
+                : (int) round($this->toKm($latest->mileage_value, $latest->mileage_unit ?? 'km')),
+        ];
+        if ($answer === null) {
+            HistoryAnswer::query()->create([
+                'vehicle_id' => $vehicle->id,
+                'work_catalog_item_id' => $workCatalogItemId,
+                ...$values,
+                'version' => 1,
+            ]);
+        } else {
+            $answer->fill([...$values, 'version' => $answer->version + 1])->save();
         }
     }
 

@@ -162,17 +162,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const Key('state-detail-brake-system-inspection')), findsOneWidget);
     expect(find.text('Требуется осмотр'), findsWidgets);
     expect(
       find.descendant(
-        of: find.byKey(const Key('consumables-side-sheet')),
+        of: find.byKey(const Key('state-detail-brake-system-inspection')),
         matching: find.textContaining('%'),
       ),
       findsNothing,
     );
   });
 
-  testWidgets('consumables accordion keeps only one inline detail open', (
+  testWidgets('state detail sheet opens one card at a time', (
     tester,
   ) async {
     await _pumpState(tester, FakeMaintenanceRepository());
@@ -180,25 +181,43 @@ void main() {
     await _revealStateTile(tester, 'consumable-engine-oil');
     await tester.tap(find.byKey(const Key('consumable-engine-oil')));
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const Key('consumable-details-engine-oil')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('state-detail-engine-oil')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('state-detail-close')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('state-detail-engine-oil')), findsNothing);
 
-    await tester.tap(find.byKey(const Key('consumable-row-oil-filter')));
-    await tester.pump();
-    expect(
-      find.byKey(const Key('consumable-details-engine-oil')),
-      findsNothing,
-    );
-    expect(
-      find.byKey(const Key('consumable-details-oil-filter')),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('selected-consumable-bottom')), findsNothing);
+    await _revealStateTile(tester, 'consumable-oil-filter');
+    await tester.tap(find.byKey(const Key('consumable-oil-filter')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('state-detail-oil-filter')), findsOneWidget);
+    expect(find.byKey(const Key('state-detail-engine-oil')), findsNothing);
   });
 
-  testWidgets('consumable main row keeps fill and gains outline only', (
+  testWidgets('new wear-capable record defaults wear to 0 percent', (
+    tester,
+  ) async {
+    await _pumpState(tester, FakeMaintenanceRepository());
+    await tester.pumpAndSettle();
+    await _revealStateTile(tester, 'consumable-brake-pads');
+    await tester.tap(find.byKey(const Key('consumable-brake-pads')));
+    await tester.pumpAndSettle();
+    await _scrollUntilFound(
+      tester,
+      find.byKey(const Key('state-update-wear-brake_pads')),
+      find.byKey(const Key('state-detail-brake-pads')),
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const Key('state-update-wear-brake_pads')),
+          )
+          .controller!
+          .text,
+      '0',
+    );
+  });
+
+  testWidgets('state tiles show compact horizontal resource bar', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(360, 640);
@@ -208,47 +227,14 @@ void main() {
     await _pumpState(tester, FakeMaintenanceRepository());
     await tester.pumpAndSettle();
     await _revealStateTile(tester, 'consumable-engine-oil');
+    expect(find.byKey(const Key('state-tile-engine-oil')), findsOneWidget);
+    expect(find.byKey(const Key('state-bar-engine-oil')), findsOneWidget);
     await tester.tap(find.byKey(const Key('consumable-engine-oil')));
     await tester.pumpAndSettle();
-
-    final expandedCard = tester.widget<Card>(
-      find.byKey(const Key('consumable-main-engine-oil')),
-    );
-    final expandedSize = tester.getSize(
-      find.byKey(const Key('consumable-main-engine-oil')),
-    );
+    expect(find.byKey(const Key('state-detail-engine-oil')), findsOneWidget);
     expect(
-      find.byKey(const Key('consumable-border-expanded-engine-oil')),
+      find.byKey(const Key('lifecycle-track-detail-engine-oil')),
       findsOneWidget,
-    );
-    final detailsDecoration =
-        tester
-                .widget<DecoratedBox>(
-                  find.byKey(
-                    const Key('consumable-details-surface-engine-oil'),
-                  ),
-                )
-                .decoration
-            as BoxDecoration;
-    expect(detailsDecoration.color, isNot(expandedCard.color));
-
-    await tester.tap(find.byKey(const Key('consumable-row-engine-oil')));
-    await tester.pump();
-    final collapsedCard = tester.widget<Card>(
-      find.byKey(const Key('consumable-main-engine-oil')),
-    );
-    expect(collapsedCard.color, expandedCard.color);
-    expect(
-      tester.getSize(find.byKey(const Key('consumable-main-engine-oil'))),
-      expandedSize,
-    );
-    expect(
-      find.byKey(const Key('consumable-border-collapsed-engine-oil')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('consumable-details-surface-engine-oil')),
-      findsNothing,
     );
     expect(tester.takeException(), isNull);
   });
@@ -261,28 +247,32 @@ void main() {
     await _revealStateTile(tester, 'consumable-engine-oil');
     await tester.tap(find.byKey(const Key('consumable-engine-oil')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('lifecycle-known-engine-oil')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('consumable-row-oil-filter')));
-    await tester.pump();
     expect(
-      find.byKey(const Key('lifecycle-unknown-oil-filter')),
+      find.byKey(const Key('lifecycle-track-detail-engine-oil')),
       findsOneWidget,
     );
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('consumable-row-brake-system-inspection')),
-      180,
-      scrollable: find.descendant(
-        of: find.byKey(const Key('consumables-side-sheet')),
-        matching: find.byType(Scrollable),
-      ),
+    await tester.tap(find.byKey(const Key('state-detail-close')));
+    await tester.pumpAndSettle();
+
+    await _revealStateTile(tester, 'consumable-oil-filter');
+    await tester.tap(find.byKey(const Key('consumable-oil-filter')));
+    await tester.pumpAndSettle();
+    expect(find.text('Нужны данные'), findsWidgets);
+    expect(
+      find.byKey(const Key('lifecycle-track-detail-oil-filter')),
+      findsNothing,
     );
+    await tester.tap(find.byKey(const Key('state-detail-close')));
+    await tester.pumpAndSettle();
+
+    await _revealStateTile(tester, 'consumable-brake-system-inspection');
     await tester.tap(
-      find.byKey(const Key('consumable-row-brake-system-inspection')),
+      find.byKey(const Key('consumable-brake-system-inspection')),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(
       find.descendant(
-        of: find.byKey(const Key('consumable-details-brake-system-inspection')),
+        of: find.byKey(const Key('state-detail-brake-system-inspection')),
         matching: find.textContaining('%'),
       ),
       findsNothing,
@@ -328,13 +318,14 @@ void main() {
       find.byKey(const Key('history-completeness-banner')),
       findsOneWidget,
     );
-    expect(find.byKey(const Key('plan-nearest-card')), findsOneWidget);
+    expect(find.byKey(const Key('plan-road')), findsOneWidget);
+    expect(find.byKey(const Key('real-timeline')), findsOneWidget);
     expect(find.byKey(const Key('current-mileage-marker')), findsOneWidget);
-    await tester.drag(
+    await _scrollUntilFound(
+      tester,
+      find.byKey(const Key('plan-open-analytics')),
       find.byKey(const Key('real-timeline')),
-      const Offset(0, -800),
     );
-    await tester.pumpAndSettle();
     expect(find.byKey(const Key('plan-open-analytics')), findsOneWidget);
     expect(find.byKey(const Key('consumables-rail')), findsNothing);
   });
@@ -348,28 +339,28 @@ void main() {
     await _revealStateTile(tester, 'consumable-engine-oil');
     await tester.tap(find.byKey(const Key('consumable-engine-oil')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('add-service-engine-oil')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ServiceRecordScreen), findsOneWidget);
-    expect(
-      find.text(
-        '${DateTime.now().day.toString().padLeft(2, '0')}.'
-        '${DateTime.now().month.toString().padLeft(2, '0')}.'
-        '${DateTime.now().year}',
-      ),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('state-update-mileage')), findsOneWidget);
     expect(
       tester
-          .widget<TextFormField>(find.byKey(const Key('service-mileage')))
+          .widget<TextField>(find.byKey(const Key('state-update-mileage')))
           .controller!
           .text,
       '10000',
     );
-    await tester.tap(find.byKey(const Key('service-save')));
+    await _scrollUntilFound(
+      tester,
+      find.byKey(const Key('state-history-list')),
+      find.byKey(const Key('state-detail-engine-oil')),
+    );
+    expect(find.byKey(const Key('state-history-row-0')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('state-update-note')),
+      'Замена',
+    );
+    await tester.tap(find.byKey(const Key('state-update-save-engine_oil')));
     await tester.pumpAndSettle();
     expect(repository.submittedServiceRecords.single.workCode, 'engine_oil');
+    expect(repository.submittedServiceRecords.single.mileage, 10000);
     expect(repository.planCalls, greaterThan(1));
     expect(repository.timelineCalls, greaterThan(1));
     expect(repository.consumableCalls, greaterThan(1));
@@ -492,7 +483,7 @@ void main() {
     expect(repository.requestedLocales, containsAll(['ru', 'en']));
   });
 
-  testWidgets('360x640 long Russian side sheet has no overflow', (
+  testWidgets('360x640 long Russian state detail has no overflow', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(360, 640);
@@ -506,7 +497,7 @@ void main() {
     await _revealStateTile(tester, 'consumable-engine-oil');
     await tester.tap(find.byKey(const Key('consumable-engine-oil')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('consumables-side-sheet')), findsOneWidget);
+    expect(find.byKey(const Key('state-detail-engine-oil')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1071,9 +1062,36 @@ Future<void> _pumpState(
 );
 
 Future<void> _revealStateTile(WidgetTester tester, String key) async {
-  final target = find.byKey(Key(key));
-  final grid = find.byKey(const Key('state-tiles-grid'));
-  await tester.dragUntilVisible(target, grid, const Offset(0, -240));
+  await _scrollUntilFound(
+    tester,
+    find.byKey(Key(key)),
+    find.byKey(const Key('state-tiles-grid')),
+  );
+}
+
+/// Scrolls a lazy list until [target] is built and visible.
+Future<void> _scrollUntilFound(
+  WidgetTester tester,
+  Finder target,
+  Finder scrollableAncestor, {
+  Offset drag = const Offset(0, -240),
+  int maxDrags = 24,
+}) async {
+  Future<void> dragToward(Offset offset) async {
+    for (var i = 0; i < maxDrags && target.evaluate().isEmpty; i++) {
+      await tester.drag(scrollableAncestor, offset);
+      await tester.pumpAndSettle();
+    }
+  }
+
+  if (target.evaluate().isEmpty) {
+    await dragToward(drag);
+  }
+  if (target.evaluate().isEmpty) {
+    await dragToward(Offset(-drag.dx, -drag.dy));
+  }
+  expect(target, findsOneWidget);
+  await tester.ensureVisible(target);
   await tester.pumpAndSettle();
 }
 
@@ -1253,12 +1271,104 @@ class FakeMaintenanceRepository implements MaintenanceRepository {
   }
 
   @override
+  Future<ServiceRecord> updateServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+    required ServiceRecordWrite record,
+  }) async {
+    final index = int.tryParse(recordId.replaceFirst('service-', '')) ?? 0;
+    final target = index > 0 && index <= submittedServiceRecords.length
+        ? index - 1
+        : 0;
+    if (submittedServiceRecords.isNotEmpty) {
+      submittedServiceRecords[target] = record;
+    } else {
+      submittedServiceRecords.add(record);
+    }
+    return ServiceRecord(
+      id: recordId,
+      vehicleId: vehicleId,
+      serviceDate: record.serviceDate,
+      mileage: record.mileage,
+      mileageUnit: record.mileageUnit,
+      note: record.note,
+      items: [ServiceWork(workCode: record.workCode, title: record.workCode)],
+    );
+  }
+
+  @override
+  Future<void> deleteServiceRecord(
+    String vehicleId,
+    String recordId, {
+    required String locale,
+  }) async {
+    final index = int.tryParse(recordId.replaceFirst('service-', ''));
+    if (index != null && index > 0 && index <= submittedServiceRecords.length) {
+      submittedServiceRecords.removeAt(index - 1);
+    } else if (submittedServiceRecords.isNotEmpty) {
+      submittedServiceRecords.removeLast();
+    }
+  }
+
+  @override
+  Future<ConditionObservation> updateConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+    required ConditionObservationWrite observation,
+  }) async {
+    submittedObservations
+      ..clear()
+      ..add(observation);
+    return ConditionObservation(
+      id: observationId,
+      vehicleId: vehicleId,
+      workCode: observation.workCode,
+      wearPercent: observation.wearPercent,
+      remainingPercent: 100 - observation.wearPercent,
+      observedAt: observation.observedAt,
+      mileage: observation.mileage,
+      mileageUnit: observation.mileageUnit,
+      source: observation.source,
+      note: observation.note,
+    );
+  }
+
+  @override
+  Future<void> deleteConditionObservation(
+    String vehicleId,
+    String observationId, {
+    required String locale,
+  }) async {
+    submittedObservations.clear();
+  }
+
+  @override
   Future<ServiceRecordList> getServiceRecords(
     String vehicleId, {
     required String locale,
   }) async {
     serviceListCalls++;
-    return const ServiceRecordList(items: []);
+    return ServiceRecordList(
+      items: [
+        for (var index = 0; index < submittedServiceRecords.length; index++)
+          ServiceRecord(
+            id: 'service-${index + 1}',
+            vehicleId: vehicleId,
+            serviceDate: submittedServiceRecords[index].serviceDate,
+            mileage: submittedServiceRecords[index].mileage,
+            mileageUnit: submittedServiceRecords[index].mileageUnit,
+            note: submittedServiceRecords[index].note,
+            items: [
+              ServiceWork(
+                workCode: submittedServiceRecords[index].workCode,
+                title: submittedServiceRecords[index].workCode,
+              ),
+            ],
+          ),
+      ],
+    );
   }
 
   @override

@@ -114,6 +114,86 @@ class ConditionObservationController extends Controller
         );
     }
 
+    public function update(Request $request, string $vehicle, string $observation): JsonResponse
+    {
+        $model = $this->vehicles->owned($this->session($request), $vehicle);
+        $existing = ConditionObservation::query()
+            ->with('workCatalogItem')
+            ->where('vehicle_id', $model->id)
+            ->where('id', $observation)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'wear_percent' => ['sometimes', 'integer', 'between:0,100'],
+            'observed_at' => ['sometimes', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'mileage' => ['sometimes', 'nullable', 'array:value,unit'],
+            'mileage.value' => ['required_with:mileage', 'integer', 'min:0'],
+            'mileage.unit' => ['required_with:mileage', Rule::in(['km', 'mi'])],
+            'source' => ['sometimes', Rule::in(['self', 'workshop'])],
+            'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
+        ]);
+        if (array_diff(array_keys($request->all()), [
+            'wear_percent', 'observed_at', 'mileage', 'source', 'note',
+        ]) !== []) {
+            throw ValidationException::withMessages(['request' => [__('api.fields.unknown')]]);
+        }
+        if (isset($validated['mileage']) && $model->current_mileage !== null) {
+            $inputKm = $validated['mileage']['unit'] === 'mi'
+                ? (int) round($validated['mileage']['value'] * 1.609344)
+                : $validated['mileage']['value'];
+            $currentKm = $model->mileage_unit === 'mi'
+                ? (int) round($model->current_mileage * 1.609344)
+                : $model->current_mileage;
+            if ($inputKm > $currentKm) {
+                throw ValidationException::withMessages([
+                    'mileage.value' => [__('api.fields.condition_mileage_above_current')],
+                ]);
+            }
+        }
+
+        if (array_key_exists('wear_percent', $validated)) {
+            $existing->wear_percent = $validated['wear_percent'];
+        }
+        if (array_key_exists('observed_at', $validated)) {
+            $existing->observed_at = $validated['observed_at'];
+        }
+        if (array_key_exists('source', $validated)) {
+            $existing->source = $validated['source'];
+        }
+        if (array_key_exists('note', $validated)) {
+            $existing->note = $validated['note'];
+        }
+        if (array_key_exists('mileage', $validated)) {
+            $mileage = $validated['mileage'];
+            $existing->mileage_value = $mileage['value'] ?? null;
+            $existing->mileage_unit = $mileage['unit'] ?? null;
+        }
+        $existing->save();
+        $existing->load('workCatalogItem');
+        $snapshot = $this->plans->calculate($model);
+
+        return response()->json([
+            'observation' => (new ConditionObservationResource($existing))->resolve($request),
+            'maintenance_plan_id' => $snapshot->id,
+        ]);
+    }
+
+    public function destroy(Request $request, string $vehicle, string $observation): JsonResponse
+    {
+        $model = $this->vehicles->owned($this->session($request), $vehicle);
+        $existing = ConditionObservation::query()
+            ->where('vehicle_id', $model->id)
+            ->where('id', $observation)
+            ->firstOrFail();
+        $existing->delete();
+        $snapshot = $this->plans->calculate($model);
+
+        return response()->json([
+            'deleted' => true,
+            'maintenance_plan_id' => $snapshot->id,
+        ]);
+    }
+
     private function session(Request $request): AnonymousSession
     {
         return $request->attributes->get('anonymous_session');
