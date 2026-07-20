@@ -1,63 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(const ProviderScope(child: AutoDoctorApp()));
-}
+import 'app/auto_doctor_app.dart';
+import 'app/locale_controller.dart';
 
-class AutoDoctorApp extends StatelessWidget {
-  const AutoDoctorApp({super.key});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AutoDoctor',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1565C0),
-        ),
-        useMaterial3: true,
-      ),
-      home: const ProjectBootstrapScreen(),
-    );
-  }
-}
+  final container = ProviderContainer();
+  await container.read(localeControllerProvider.future);
 
-class ProjectBootstrapScreen extends StatelessWidget {
-  const ProjectBootstrapScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.car_repair,
-                  size: 72,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'AutoDoctor',
-                  style: Theme.of(context).textTheme.headlineLarge,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Основа приложения готова к разработке',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const AutoDoctorApp(),
+    ),
+  );
 }

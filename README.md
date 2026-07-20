@@ -20,6 +20,19 @@ python -m pip install -r tools/requirements.txt
 python tools/export_docx.py
 ```
 
+Проектная документация:
+
+- [UX-flow](docs/ux-flow.md);
+- [OpenAPI 3.1](docs/openapi.yaml);
+- [модель данных](docs/data-model.md);
+- [ADR мобильной архитектуры](docs/adr/001-mobile-architecture.md).
+
+Проверка OpenAPI:
+
+```bash
+python tools/validate_openapi.py
+```
+
 ## Backend
 
 Требования:

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoDoctor — автомобиль под контролем</title>
+  <meta name="description" content="AutoDoctor — мобильный помощник автовладельца: проверенный план обслуживания, журнал, документы, напоминания и контекстный AI по вашей машине. Закрытый пилот в Беларуси.">
+  <meta property="og:title" content="AutoDoctor — автомобиль под контролем">
+  <meta property="og:description" content="План обслуживания, история автомобиля и честная AI-оценка в одном мобильном помощнике.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://autodoctor.by/">
+  <meta name="theme-color" content="#0b0e11">
+  <link rel="canonical" href="https://autodoctor.by/">
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Перейти к содержанию</a>
+
+  <header class="site-header" data-header>
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="AutoDoctor — на главную">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M4 20.5 8.5 9h15L28 20.5M7 20.5h18M10 15.5h12M9 24h2m10 0h2"/>
+          <circle cx="10" cy="21" r="3"/><circle cx="22" cy="21" r="3"/>
+        </svg>
+        <span>Auto<span>Doctor</span></span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span class="sr-only">Открыть меню</span>
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="site-nav" id="site-nav" aria-label="Основная навигация">
+        <a href="#features">Возможности</a>
+        <a href="#how">Как работает</a>
+        <a href="#ai">AI</a>
+        <a href="#faq">FAQ</a>
+        <a class="button button-small button-primary" href="#pilot">Попасть в пилот</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero section" id="top">
+      <div class="hero-grid container">
+        <div class="hero-copy reveal">
+          <div class="eyebrow"><span class="signal-dot"></span> Закрытый пилот · Беларусь</div>
+          <h1>Автомобиль<br>под контролем.<br><em>Без догадок.</em></h1>
+          <p class="hero-lead">Проверенный план обслуживания, полная история и контекстный AI-помощник — для конкретной машины, а не «среднего автомобиля».</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#pilot">Попасть в закрытый пилот</a>
+            <a class="button button-ghost" href="#plan">Посмотреть продукт</a>
+          </div>
+          <ul class="trust-notes" aria-label="Ключевые особенности">
+            <li><span>BY</span> Пилот в Беларуси</li>
+            <li><span>OS</span> Android и iOS</li>
+            <li><span>✓</span> Проверенные данные</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual reveal" aria-label="Интерфейс AutoDoctor рядом с контуром автомобиля" role="img">
+          <div class="instrument instrument-top"><span>СИСТЕМА</span><strong>ГОТОВА</strong></div>
+          <div class="car-stage" aria-hidden="true">
+            <svg class="car-line" viewBox="0 0 760 360" fill="none">
+              <path class="road-line" d="M20 302h720"/>
+              <path d="M79 261c17-48 55-75 109-84l106-19c43-49 86-76 145-79 69-4 121 23 177 77l62 20c28 9 43 28 44 57l-2 34h-43"/>
+              <path d="M84 267H62v-27l21-15 26-3M173 267h318m104 0h83"/>
+              <path d="m310 156 48-48c25-17 55-25 89-26l7 75M463 157h139M295 160l-99 17M350 166l-10 71M470 165l13 71"/>
+              <path d="M115 222h57l20-35M607 181l42 18 23 38M97 235h63M600 236h76"/>
+              <circle cx="224" cy="265" r="49"/><circle cx="224" cy="265" r="27"/>
+              <circle cx="548" cy="265" r="49"/><circle cx="548" cy="265" r="27"/>
+              <path class="accent-line" d="M298 159h305M93 218c112-43 278-59 509-58"/>
+            </svg>
+          </div>
+          <div class="phone-shell">
+            <div class="phone-top"><span>09:41</span><i></i><span>84%</span></div>
+            <div class="phone-head"><small>МОЙ АВТОМОБИЛЬ</small><strong>Volvo XC60</strong><span>54 820 км</span></div>
+            <div class="health-ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="49"/>
+                <circle class="ring-value" cx="60" cy="60" r="49"/>
+              </svg>
+              <div><strong>87</strong><span>состояние</span></div>
+            </div>
+            <div class="phone-event"><i class="event-icon">!</i><div><small>ЧЕРЕЗ 1 180 КМ</small><strong>Моторное масло</strong></div><span>→</span></div>
+            <div class="phone-event muted"><i class="event-icon">✓</i><div><small>В НОРМЕ</small><strong>Тормозная система</strong></div><span>→</span></div>
+            <div class="phone-ai"><span class="ai-orb"></span><div><small>AUTODOCTOR AI</small><strong>Задать вопрос о машине</strong></div></div>
+          </div>
+          <div class="diagnostic-node" aria-hidden="true">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="36"/><path d="M34 45h32M38 58h24M50 25v10M50 65v10"/>
+              <circle cx="39" cy="45" r="2"/><circle cx="61" cy="45" r="2"/>
+            </svg>
+            <span>AI / DIAGNOSTIC</span>
+          </div>
+          <div class="instrument instrument-bottom"><span>ПРОФИЛЬ</span><strong>XC60 · 2021</strong></div>
+        </div>
+      </div>
+      <div class="hero-rail" aria-hidden="true"><span>01</span><i></i><span>AUTODOCTOR / CONTROL SYSTEM</span></div>
+    </section>
+
+    <section class="narrative section">
+      <div class="container split-layout">
+        <div class="section-heading reveal">
+          <span class="section-index">01 / СИСТЕМНЫЙ ПОДХОД</span>
+          <h2>Машина не должна быть набором <em>разрозненных заметок</em></h2>
+        </div>
+        <div class="story-flow reveal">
+          <div class="story-row is-problem"><span class="story-code">СЕЙЧАС</span><p>Регламент — в интернете. Чеки — в бардачке. Пробег — в памяти. Совет — без контекста.</p></div>
+          <div class="story-connector" aria-hidden="true"><span></span><i></i><span></span></div>
+          <div class="story-row is-solution"><span class="story-code">С AUTODOCTOR</span><p>Единый цифровой профиль знает машину, её историю и следующий правильный шаг.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="plan-section section" id="plan">
+      <div class="container">
+        <div class="section-heading heading-row reveal">
+          <div><span class="section-index">02 / ПЛАН ОБСЛУЖИВАНИЯ</span><h2>Что, когда и <em>почему</em></h2></div>
+          <p>Системные расходники собраны слева. Выберите узел — план покажет его статус и ближайшее действие.</p>
+        </div>
+        <div class="plan-console reveal">
+          <div class="console-bar"><span><i></i> АВТОМОБИЛЬ ПОДКЛЮЧЁН</span><strong>VOLVO XC60 · 54 820 КМ</strong><span>ПЛАН / 2026</span></div>
+          <div class="plan-workspace">
+            <div class="consumables-rail" aria-label="Системные расходники">
+              <span class="rail-title">СИСТЕМЫ</span>
+              <button class="consumable is-active" type="button" data-item="oil" aria-pressed="true"><span class="rail-icon">01</span><span>Масло<br>двигателя</span><i></i></button>
+              <button class="consumable" type="button" data-item="brakes" aria-pressed="false"><span class="rail-icon">02</span><span>Тормозная<br>система</span><i></i></button>
+              <button class="consumable" type="button" data-item="filters" aria-pressed="false"><span class="rail-icon">03</span><span>Фильтры<br>и воздух</span><i></i></button>
+              <button class="consumable" type="button" data-item="fluids" aria-pressed="false"><span class="rail-icon">04</span><span>Тех.<br>жидкости</span><i></i></button>
+            </div>
+            <div class="timeline-panel">
+              <div class="timeline-scale" aria-hidden="true"><span>50 000</span><span>55 000</span><span>60 000</span><span>65 000</span></div>
+              <div class="timeline-track">
+                <span class="track-progress"></span>
+                <div class="timeline-marker done" style="--pos:12%"><i>✓</i><span>Выполнено<br><small>48 300 км</small></span></div>
+                <div class="timeline-marker now" style="--pos:43%"><i></i><span>Сейчас<br><small>54 820 км</small></span></div>
+                <div class="timeline-marker due" style="--pos:67%"><i>!</i><span data-plan-marker>Замена масла<br><small>56 000 км</small></span></div>
+              </div>
+              <div class="plan-detail" aria-live="polite">
+                <div class="detail-status"><span data-plan-kicker>СКОРО ПО ПРОБЕГУ</span><strong data-plan-title>Моторное масло и фильтр</strong></div>
+                <div class="detail-metric"><small>ОСТАЛОСЬ</small><strong data-plan-distance>1 180 км</strong></div>
+                <div class="detail-metric"><small>ВАЖНОСТЬ</small><strong data-plan-priority>Высокая</strong></div>
+                <p data-plan-copy>Интервал рассчитан по регламенту и истории автомобиля. После выполнения сохраните работу и фактический пробег.</p>
+              </div>
+            </div>
+          </div>
+          <div class="console-footer"><span>ДАННЫЕ: РЕГЛАМЕНТ + ИСТОРИЯ</span><span>ОБНОВЛЕНО СЕГОДНЯ, 09:41</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features section" id="features">
+      <div class="container">
+        <div class="section-heading reveal"><span class="section-index">03 / ВОЗМОЖНОСТИ</span><h2>Одна система. <em>Весь контекст.</em></h2></div>
+        <div class="feature-grid">
+          <article class="feature feature-wide reveal"><span class="feature-number">01</span><div><h3>План обслуживания</h3><p>Понятная последовательность работ с основанием, сроком и приоритетом.</p></div><div class="mini-timeline" aria-hidden="true"><i></i><b></b><i></i><b></b><i></i></div></article>
+          <article class="feature reveal"><span class="feature-number">02</span><h3>Журнал работ и расходов</h3><p>Сервисная история, документы и затраты всегда привязаны к автомобилю.</p><div class="bar-chart" aria-hidden="true"><i style="--h:38%"></i><i style="--h:64%"></i><i style="--h:45%"></i><i style="--h:82%"></i><i style="--h:56%"></i></div></article>
+          <article class="feature feature-ai reveal"><span class="feature-number">03</span><h3>Контекстный AI</h3><p>Учитывает выбранную машину, пробег и историю. Объясняет, но не выдаёт догадку за диагноз.</p><div class="feature-orbit" aria-hidden="true"><span></span><i></i><i></i><i></i></div></article>
+          <article class="feature reveal"><span class="feature-number">04</span><h3>Аналитика владения</h3><p>Динамика расходов без выдуманных прогнозов и скрытых допущений.</p><div class="sparkline" aria-hidden="true"><svg viewBox="0 0 260 64"><path d="M2 51 35 45 62 49 91 30l30 8 35-22 31 10 33-14 38 4"/></svg></div></article>
+          <article class="feature reveal"><span class="feature-number">05</span><h3>Документы и напоминания</h3><p>Страховка, техосмотр и важные даты — с напоминанием заранее.</p><div class="doc-lines" aria-hidden="true"><i></i><i></i><i></i><b>12 / 08</b></div></article>
+          <article class="feature feature-wide reveal"><span class="feature-number">06</span><div><h3>Несколько автомобилей</h3><p>Отдельный достоверный контекст для каждой машины — без смешивания историй.</p></div><div class="vehicle-tabs" aria-hidden="true"><span>XC60 <i>АКТИВЕН</i></span><span>POLO <i>ПРОФИЛЬ</i></span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="ai-section section" id="ai">
+      <div class="container ai-layout">
+        <div class="ai-copy reveal">
+          <span class="section-index">04 / AUTODOCTOR AI</span>
+          <h2>Оценка по трём осям. <em>Решение — за вами.</em></h2>
+          <p>AI помогает разобрать симптом и подготовиться к сервису. Срочность, сложность и ориентир затрат оцениваются отдельно — так ответ не превращается в одно расплывчатое число.</p>
+          <ul class="ai-limits">
+            <li><span>01</span> Не ставит окончательный диагноз</li>
+            <li><span>02</span> Не придумывает регламенты и цены</li>
+            <li><span>03</span> Указывает, когда нужен специалист</li>
+          </ul>
+        </div>
+        <div class="assessment-console reveal">
+          <div class="assessment-head"><span>AUTODOCTOR / ОЦЕНКА</span><i class="ai-orb"></i></div>
+          <div class="warning-panel"><strong><span>!</span> СНАЧАЛА — БЕЗОПАСНОСТЬ</strong><p>При красном индикаторе давления масла остановите двигатель. Не продолжайте движение до проверки.</p></div>
+          <div class="assessment-query"><small>СИМПТОМ</small><p>«После запуска горит красная маслёнка и слышен металлический звук»</p></div>
+          <div class="score-row"><div><span>СРОЧНОСТЬ</span><small>Критическая</small></div><div class="score-track score-danger" aria-label="Срочность: 5 из 5"><i></i><i></i><i></i><i></i><i></i></div><strong>5 / 5</strong></div>
+          <div class="score-row"><div><span>СЛОЖНОСТЬ</span><small>Нужен сервис</small></div><div class="score-track" aria-label="Сложность: 4 из 5"><i></i><i></i><i></i><i></i><i class="off"></i></div><strong>4 / 5</strong></div>
+          <div class="score-row"><div><span>ЗАТРАТЫ</span><small>После диагностики</small></div><div class="score-track score-neutral" aria-label="Затраты: 0 из 5, неизвестно"><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i></div><strong>— / 5</strong></div>
+          <div class="assessment-note">Оценка не заменяет диагностику. Критические риски поднимаются правилами безопасности до рекомендаций AI.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="how section" id="how">
+      <div class="container">
+        <div class="section-heading heading-row reveal"><div><span class="section-index">05 / КАК РАБОТАЕТ</span><h2>От VIN до <em>спокойного владения</em></h2></div><p>Несколько шагов — и у автомобиля появляется рабочий цифровой контекст.</p></div>
+        <ol class="steps">
+          <li class="reveal"><span>01</span><div class="step-mark">VIN</div><h3>Добавьте автомобиль</h3><p>Укажите VIN или внесите данные вручную.</p></li>
+          <li class="reveal"><span>02</span><div class="step-mark">KM</div><h3>Заполните историю</h3><p>Пробег и прошлые работы уточнят контекст.</p></li>
+          <li class="reveal"><span>03</span><div class="step-mark">PLAN</div><h3>Получите план</h3><p>Ближайшие действия собраны по приоритету.</p></li>
+          <li class="reveal"><span>04</span><div class="step-mark">AI</div><h3>Ведите машину дальше</h3><p>Фиксируйте работы и задавайте вопросы.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="trust section">
+      <div class="container trust-layout reveal">
+        <div class="trust-seal" aria-hidden="true"><svg viewBox="0 0 160 160"><circle cx="80" cy="80" r="67"/><circle cx="80" cy="80" r="49"/><path d="m57 80 15 15 32-36"/></svg><span>PRIVATE<br>BY DESIGN</span></div>
+        <div><span class="section-index">06 / ДОВЕРИЕ И ПРИВАТНОСТЬ</span><h2>Ваш автомобиль.<br><em>Ваши данные.</em></h2></div>
+        <div class="trust-list">
+          <div><span>01</span><p><strong>Прозрачный контекст</strong>Вы видите, какие данные используются для плана и ответа.</p></div>
+          <div><span>02</span><p><strong>Без рекламных трекеров</strong>Лендинг не собирает аналитику и не отправляет скрытые запросы.</p></div>
+          <div><span>03</span><p><strong>Осознанное действие</strong>Заявка открывает ваше почтовое приложение — отправку контролируете вы.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq section" id="faq">
+      <div class="container faq-layout">
+        <div class="section-heading reveal"><span class="section-index">07 / FAQ</span><h2>Перед стартом</h2></div>
+        <div class="accordion reveal">
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="faq-1"><span>Для каких автомобилей работает AutoDoctor?</span><i></i></button></h3><div class="faq-answer" id="faq-1" hidden><p>Покрытие зависит от доступности проверенных данных по марке и модели. В заявке укажите автомобиль — команда пилота подтвердит поддержку без обещаний «для всех машин».</p></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="faq-2"><span>AI может поставить диагноз?</span><i></i></button></h3><div class="faq-answer" id="faq-2" hidden><p>Нет. Он помогает оценить ситуацию, объясняет возможные причины и следующий безопасный шаг. Окончательный диагноз ставит специалист после проверки автомобиля.</p></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="faq-3"><span>Сколько стоит участие?</span><i></i></button></h3><div class="faq-answer" id="faq-3" hidden><p>Условия закрытого пилота сообщаются приглашённым участникам до подключения. На лендинге нет выдуманной цены или скрытого списания.</p></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="faq-4"><span>Что происходит после заявки?</span><i></i></button></h3><div class="faq-answer" id="faq-4" hidden><p>Откроется ваше почтовое приложение с подготовленным письмом. После отправки команда проверит соответствие пилоту и свяжется с вами.</p></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="faq-5"><span>Будет ли версия для Android и iOS?</span><i></i></button></h3><div class="faq-answer" id="faq-5" hidden><p>Да, продукт ориентирован на обе платформы. Доступность конкретной сборки и сроки подключения уточняются для участников пилота.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pilot section" id="pilot">
+      <div class="container pilot-panel reveal">
+        <div class="pilot-copy">
+          <span class="section-index">ЗАКРЫТЫЙ ПИЛОТ · БЕЛАРУСЬ</span>
+          <h2>Знайте, что нужно<br>вашей машине. <em>Заранее.</em></h2>
+          <p>Оставьте заявку на участие. Мы уточним автомобиль и доступность места в пилоте.</p>
+        </div>
+        <form class="pilot-form" novalidate>
+          <div class="field"><label for="email">Email <span aria-hidden="true">*</span></label><input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com"><span class="field-error" id="email-error"></span></div>
+          <div class="field"><label for="car">Автомобиль <small>необязательно</small></label><input id="car" name="car" type="text" autocomplete="off" placeholder="Марка, модель, год"></div>
+          <div class="field"><label for="message">Что важно учесть? <small>необязательно</small></label><textarea id="message" name="message" rows="3" placeholder="Например: хочу вести два автомобиля"></textarea></div>
+          <label class="check"><input id="consent" name="consent" type="checkbox" required><span aria-hidden="true"></span><span>Согласен передать данные из письма для обработки заявки на пилот.</span></label>
+          <span class="field-error" id="consent-error"></span>
+          <button class="button button-primary submit-button" type="submit">Подготовить письмо-заявку <span>→</span></button>
+          <p class="form-note">Нажатие откроет почтовое приложение. Сайт ничего не отправляет автоматически.</p>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="brand" href="#top"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 20.5 8.5 9h15L28 20.5M7 20.5h18M10 15.5h12"/><circle cx="10" cy="21" r="3"/><circle cx="22" cy="21" r="3"/></svg><span>Auto<span>Doctor</span></span></a>
+      <p>Мобильный помощник автовладельца</p>
+      <nav aria-label="Навигация в подвале"><a href="#features">Возможности</a><a href="#ai">AI</a><a href="#faq">FAQ</a></nav>
+      <span>© <span data-year></span> AutoDoctor</span>
+    </div>
+  </footer>
+</body>
+</html>

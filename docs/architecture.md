@@ -45,3 +45,9 @@ Laravel Cloud, Frankfurt
 - Серверная БД: PostgreSQL.
 - Размещение: Laravel Cloud Starter, EU Central Frankfurt.
 - Домен и почта: Hostland.
+
+## Документы проектирования
+
+- [UX-flow и карта экранов](ux-flow.md)
+- [Модель данных MVP](data-model.md)
+- [ADR-001: мобильная архитектура Flutter](adr/001-mobile-architecture.md)
