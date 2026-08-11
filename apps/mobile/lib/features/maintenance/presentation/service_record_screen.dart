@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/locale_controller.dart';
+import '../../../core/widgets/odometer_mileage_input.dart';
 import '../../../l10n/l10n.dart';
 import '../../vehicle/vehicle_controller.dart';
 import '../maintenance.dart';
@@ -180,16 +180,16 @@ class _ServiceRecordScreenState extends ConsumerState<ServiceRecordScreen> {
               trailing: const Icon(Icons.calendar_today_outlined),
               onTap: _saving ? null : _pickDate,
             ),
-            TextFormField(
-              key: const Key('service-mileage'),
-              controller: _mileage,
+            MileageInputField(
+              fieldKey: const Key('service-mileage'),
+              value: int.tryParse(_mileage.text.trim()),
+              unit: vehicle?.mileageUnit ?? 'km',
+              label: '${context.l10n.serviceMileage}, ${vehicle?.mileageUnit ?? 'km'}',
               enabled: !_saving,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                labelText:
-                    '${context.l10n.serviceMileage}, ${vehicle?.mileageUnit ?? 'km'}',
-              ),
+              onChanged: (next) {
+                _mileage.text = '$next';
+                setState(() {});
+              },
             ),
             const SizedBox(height: 12),
             TextFormField(

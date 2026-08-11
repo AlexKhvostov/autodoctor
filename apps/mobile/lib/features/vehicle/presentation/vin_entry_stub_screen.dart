@@ -1,18 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/locale_controller.dart';
 import '../../../core/widgets/automotive_widgets.dart';
+import '../../../core/widgets/odometer_mileage_input.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n.dart';
 import '../../guest_bootstrap/guest_bootstrap_controller.dart';
+import '../../maintenance/maintenance_controller.dart';
 import '../vehicle.dart';
 import '../vehicle_catalog.dart';
 import '../vehicle_controller.dart';
-
-const _otherModelValue = '__other_model__';
 
 class VinEntryScreen extends ConsumerStatefulWidget {
   const VinEntryScreen({super.key});
@@ -23,12 +26,15 @@ class VinEntryScreen extends ConsumerStatefulWidget {
 
 class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _makeController = TextEditingController();
+  final _modelController = TextEditingController();
+  final _makeFocusNode = FocusNode();
+  final _modelFocusNode = FocusNode();
   late final Map<String, TextEditingController> _fields;
   bool _more = false;
-  VehicleMakeOption? _make;
-  String? _model;
   int? _year;
   VehicleFuelType? _fuel;
+  double? _engineLiters;
   VehicleTransmissionType? _transmission;
   VehicleDrivetrain? _drivetrain;
   DateTime? _firstUseDate;
@@ -43,18 +49,8 @@ class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
       }
     });
     final draft = ref.read(vehicleSetupControllerProvider).draft;
-    final catalog = ref.read(vehicleCatalogProvider);
-    _make = catalog.findMake(draft.make);
-    if (_make == null && draft.make.isNotEmpty) {
-      _make = catalog.makes.last;
-    }
-    if (_make != null && !_make!.isOther) {
-      _model = _make!.models.contains(draft.model)
-          ? draft.model
-          : draft.model.isEmpty
-          ? null
-          : _otherModelValue;
-    }
+    _makeController.text = draft.make;
+    _modelController.text = draft.model;
     _year =
         draft.productionYear != null &&
             draft.productionYear! >= 1980 &&
@@ -62,6 +58,11 @@ class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
         ? draft.productionYear
         : null;
     _fuel = draft.fuelType;
+    _engineLiters = draft.engineDisplacementCc != null
+        ? draft.engineDisplacementCc! / 1000
+        : _fuel != null && _fuel != VehicleFuelType.electric
+        ? 1.6
+        : null;
     _transmission = draft.transmissionType;
     _drivetrain = draft.drivetrain;
     _firstUseDate = draft.firstUseDate;
@@ -74,23 +75,14 @@ class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
         draft.firstUseDate != null;
     _fields = {
       'vin': TextEditingController(text: draft.vin),
-      'manualMake': TextEditingController(
-        text: _make?.isOther == true ? draft.make : '',
-      ),
-      'manualModel': TextEditingController(
-        text: _make?.isOther == true || _model == _otherModelValue
-            ? draft.model
-            : '',
-      ),
       'mileage': TextEditingController(text: draft.mileage?.toString()),
-      'displacement': TextEditingController(
-        text: draft.engineDisplacementCc?.toString(),
-      ),
       'generation': TextEditingController(text: draft.generation),
       'engineCode': TextEditingController(text: draft.engineCode),
       'power': TextEditingController(text: draft.powerKw?.toString()),
       'market': TextEditingController(text: draft.market),
     };
+    _makeController.addListener(_refreshCompletionState);
+    _modelController.addListener(_refreshCompletionState);
     for (final controller in _fields.values) {
       controller.addListener(_refreshCompletionState);
     }
@@ -104,6 +96,10 @@ class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
 
   @override
   void dispose() {
+    _makeController.dispose();
+    _modelController.dispose();
+    _makeFocusNode.dispose();
+    _modelFocusNode.dispose();
     for (final controller in _fields.values) {
       controller.dispose();
     }
@@ -113,25 +109,23 @@ class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
   bool get _needsDisplacement =>
       _fuel != null && _fuel != VehicleFuelType.electric;
 
+  double get _effectiveEngineLiters => _engineLiters ?? 1.6;
+
   VehicleDraft _draft() {
     final catalog = ref.read(vehicleCatalogProvider);
-    final make = _make?.isOther == true
-        ? catalog.normalizeManualValue(_fields['manualMake']!.text)
-        : _make?.apiValue ?? '';
-    final model = _make?.isOther == true || _model == _otherModelValue
-        ? catalog.normalizeManualValue(_fields['manualModel']!.text)
-        : _model ?? '';
     return VehicleDraft(
       vin: _fields['vin']!.text.toUpperCase(),
-      make: make,
-      model: model,
+      make: catalog.normalizeManualValue(_makeController.text),
+      model: catalog.normalizeManualValue(_modelController.text),
       generation: _fields['generation']!.text,
       productionYear: _year,
       mileage: int.tryParse(_fields['mileage']!.text),
       fuelType: _fuel,
       engineDisplacementCc: _fuel == VehicleFuelType.electric
           ? null
-          : int.tryParse(_fields['displacement']!.text),
+          : _needsDisplacement
+          ? (_effectiveEngineLiters * 1000).round()
+          : null,
       engineCode: _fields['engineCode']!.text,
       powerKw: double.tryParse(_fields['power']!.text.replaceAll(',', '.')),
       transmissionType: _transmission,
@@ -152,6 +146,178 @@ class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
     }
   }
 
+  void _onFuelChanged(VehicleFuelType? value) {
+    setState(() {
+      _fuel = value;
+      if (value != null && value != VehicleFuelType.electric) {
+        _engineLiters ??= 1.6;
+      } else if (value == VehicleFuelType.electric) {
+        _engineLiters = null;
+      }
+    });
+    _save();
+  }
+
+  Widget _autocompleteOptions(
+    BuildContext context,
+    AutocompleteOnSelected<String> onSelected,
+    Iterable<String> options,
+  ) {
+    if (options.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Material(
+        elevation: 6,
+        shadowColor: Colors.black26,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: 220,
+            maxWidth: MediaQuery.sizeOf(context).width - 48,
+          ),
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            shrinkWrap: true,
+            itemCount: options.length,
+            separatorBuilder: (_, _) => Divider(
+              height: 1,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            itemBuilder: (context, index) {
+              final option = options.elementAt(index);
+              return ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                title: Text(option),
+                onTap: () => onSelected(option),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _makeField(AppLocalizations l10n, VehicleCatalog catalog) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: RawAutocomplete<String>(
+        textEditingController: _makeController,
+        focusNode: _makeFocusNode,
+        optionsBuilder: (value) => catalog.suggestMakes(value.text),
+        onSelected: (option) {
+          setState(() {
+            _makeController.text = option;
+            _modelController.clear();
+          });
+          _save();
+        },
+        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+          return TextFormField(
+            key: const Key('vehicle-make-select'),
+            controller: controller,
+            focusNode: focusNode,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: l10n.vehicleMake,
+              hintText: l10n.vehicleMake,
+              suffixIcon: const Icon(Icons.search, size: 20),
+            ),
+            validator: _required100,
+            onChanged: (_) {
+              if (_modelController.text.isNotEmpty) {
+                _modelController.clear();
+              }
+              _save();
+            },
+          );
+        },
+        optionsViewBuilder: (context, onSelected, options) =>
+            _autocompleteOptions(context, onSelected, options),
+      ),
+    );
+  }
+
+  Widget _modelField(AppLocalizations l10n, VehicleCatalog catalog) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: RawAutocomplete<String>(
+        textEditingController: _modelController,
+        focusNode: _modelFocusNode,
+        optionsBuilder: (value) {
+          final make = _makeController.text.trim();
+          if (make.isEmpty) return const Iterable<String>.empty();
+          return catalog.suggestModels(make, value.text);
+        },
+        onSelected: (option) {
+          setState(() => _modelController.text = option);
+          _save();
+        },
+        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+          return TextFormField(
+            key: const Key('vehicle-model-select'),
+            controller: controller,
+            focusNode: focusNode,
+            textCapitalization: TextCapitalization.words,
+            enabled: _makeController.text.trim().isNotEmpty,
+            decoration: InputDecoration(
+              labelText: l10n.vehicleModel,
+              hintText: l10n.vehicleModel,
+              suffixIcon: const Icon(Icons.search, size: 20),
+            ),
+            validator: _required100,
+            onChanged: (_) => _save(),
+          );
+        },
+        optionsViewBuilder: (context, onSelected, options) =>
+            _autocompleteOptions(context, onSelected, options),
+      ),
+    );
+  }
+
+  Widget _engineSlider(AppLocalizations l10n) {
+    final liters = _effectiveEngineLiters;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.engineDisplacement,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              Text(
+                '${liters.toStringAsFixed(1)} L',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            key: const Key('vehicle-engine-displacement-input'),
+            value: liters,
+            min: 1.0,
+            max: 6.0,
+            divisions: 50,
+            label: '${liters.toStringAsFixed(1)} L',
+            onChanged: (value) {
+              setState(() => _engineLiters = value);
+              _save();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -159,213 +325,191 @@ class _VinEntryScreenState extends ConsumerState<VinEntryScreen> {
     final years = [
       for (var year = DateTime.now().year; year >= 1980; year--) year,
     ];
-    return Form(
-      key: _formKey,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final draftComplete = _draft().isComplete;
+
+    return Scaffold(
+      body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _FlowHeader(
-              label: l10n.vehicleDetailsStep,
-              title: l10n.vehicleDetails,
-              backKey: const Key('vin-back'),
-              onBack: () {
-                _save();
-                context.go('/garage/add');
-              },
-            ),
-            const SizedBox(height: 12),
-            AutomotivePanel(
-              emphasized: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _dropdown<VehicleMakeOption>(
-                    key: const Key('vehicle-make-select'),
-                    label: l10n.vehicleMake,
-                    value: _make,
-                    values: catalog.makes,
-                    title: (value) =>
-                        value.isOther ? l10n.other : value.apiValue!,
-                    onChanged: (value) {
-                      _fields['manualMake']!.clear();
-                      _fields['manualModel']!.clear();
-                      setState(() {
-                        _make = value;
-                        _model = null;
-                      });
-                    },
-                  ),
-                  if (_make?.isOther == true)
-                    _text(
-                      'manualMake',
-                      l10n.vehicleMakeOther,
-                      key: const Key('vehicle-make-other-input'),
-                      validator: _required100,
-                    ),
-                  if (_make != null && !_make!.isOther)
-                    _dropdown<String>(
-                      key: const Key('vehicle-model-select'),
-                      label: l10n.vehicleModel,
-                      value: _model,
-                      values: [..._make!.models, _otherModelValue],
-                      title: (value) =>
-                          value == _otherModelValue ? l10n.otherModel : value,
-                      onChanged: (value) {
-                        _fields['manualModel']!.clear();
-                        setState(() {
-                          _model = value;
-                        });
-                      },
-                    ),
-                  if (_make?.isOther == true || _model == _otherModelValue)
-                    _text(
-                      'manualModel',
-                      l10n.vehicleModelOther,
-                      key: const Key('vehicle-model-other-input'),
-                      validator: _required100,
-                    ),
-                  _dropdown<int>(
-                    key: const Key('vehicle-year-select'),
-                    label: l10n.productionYear,
-                    value: _year,
-                    values: years,
-                    title: (value) => '$value',
-                    onChanged: (value) => setState(() => _year = value),
-                  ),
-                  _dropdown<VehicleFuelType>(
-                    key: const Key('vehicle-fuel-select'),
-                    label: l10n.fuelType,
-                    value: _fuel,
-                    values: VehicleFuelType.values,
-                    title: (value) => _fuelLabel(value, l10n),
-                    onChanged: (value) => setState(() => _fuel = value),
-                  ),
-                  if (_fuel != VehicleFuelType.electric)
-                    _text(
-                      'displacement',
-                      l10n.engineDisplacement,
-                      key: const Key('vehicle-engine-displacement-input'),
-                      number: true,
-                      validator: (value) {
-                        if (!_needsDisplacement && (value ?? '').isEmpty) {
-                          return null;
-                        }
-                        final amount = int.tryParse(value ?? '');
-                        return amount != null && amount >= 1 && amount <= 20000
-                            ? null
-                            : l10n.displacementValidation;
-                      },
-                    ),
-                  _dropdown<VehicleTransmissionType>(
-                    key: const Key('vehicle-transmission-select'),
-                    label: '${l10n.transmissionType} (${l10n.optional})',
-                    value: _transmission,
-                    values: const [
-                      VehicleTransmissionType.manual,
-                      VehicleTransmissionType.automatic,
-                    ],
-                    title: (value) => _transmissionLabel(value, l10n),
-                    onChanged: (value) => setState(() => _transmission = value),
-                    required: false,
-                  ),
-                  _text(
-                    'mileage',
-                    '${l10n.mileageKm} (${l10n.optional})',
-                    key: const Key('vehicle-mileage-input'),
-                    number: true,
-                    validator: (value) {
-                      if ((value ?? '').isEmpty) return null;
-                      final mileage = int.tryParse(value!);
-                      return mileage != null && mileage >= 0
-                          ? null
-                          : l10n.nonNegativeValidation;
-                    },
-                  ),
-                  _text(
-                    'vin',
-                    '${l10n.vin} (${l10n.optional})',
-                    key: const Key('vin-input'),
-                    maxLength: 17,
-                    helperText: l10n.vinOptionalHelper,
-                    capitalization: TextCapitalization.characters,
-                    formatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'[A-HJ-NPR-Za-hj-npr-z0-9]'),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _FlowHeader(
+                        label: l10n.vehicleDetailsStep,
+                        title: l10n.vehicleDetails,
+                        backKey: const Key('vin-back'),
+                        onBack: () {
+                          _save();
+                          context.go('/garage/add');
+                        },
                       ),
-                      _UpperCaseFormatter(),
+                      const SizedBox(height: 12),
+                      AutomotivePanel(
+                        emphasized: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _makeField(l10n, catalog),
+                            _modelField(l10n, catalog),
+                            _dropdown<int>(
+                              key: const Key('vehicle-year-select'),
+                              label: l10n.productionYear,
+                              value: _year,
+                              values: years,
+                              title: (value) => '$value',
+                              onChanged: (value) =>
+                                  setState(() => _year = value),
+                            ),
+                            _dropdown<VehicleFuelType>(
+                              key: const Key('vehicle-fuel-select'),
+                              label: l10n.fuelType,
+                              value: _fuel,
+                              values: VehicleFuelType.values,
+                              title: (value) => _fuelLabel(value, l10n),
+                              onChanged: _onFuelChanged,
+                            ),
+                            if (_needsDisplacement) _engineSlider(l10n),
+                            _dropdown<VehicleTransmissionType>(
+                              key: const Key('vehicle-transmission-select'),
+                              label: '${l10n.transmissionType} (${l10n.optional})',
+                              value: _transmission,
+                              values: const [
+                                VehicleTransmissionType.manual,
+                                VehicleTransmissionType.automatic,
+                              ],
+                              title: (value) => _transmissionLabel(value, l10n),
+                              onChanged: (value) =>
+                                  setState(() => _transmission = value),
+                              required: false,
+                            ),
+                            MileageInputField(
+                              fieldKey: const Key('vehicle-mileage-input'),
+                              value: int.tryParse(_fields['mileage']!.text),
+                              unit: 'km',
+                              label: '${l10n.mileageKm} (${l10n.optional})',
+                              onChanged: (next) {
+                                _fields['mileage']!.text = '$next';
+                                setState(() {});
+                              },
+                            ),
+                            _text(
+                              'vin',
+                              '${l10n.vin} (${l10n.optional})',
+                              key: const Key('vin-input'),
+                              maxLength: 17,
+                              helperText: l10n.vinOptionalHelper,
+                              capitalization: TextCapitalization.characters,
+                              formatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[A-HJ-NPR-Za-hj-npr-z0-9]'),
+                                ),
+                                _UpperCaseFormatter(),
+                              ],
+                              validator: (value) {
+                                if ((value ?? '').isEmpty) return null;
+                                return RegExp(r'^[A-HJ-NPR-Z0-9]{17}$')
+                                        .hasMatch(value!)
+                                    ? null
+                                    : l10n.vinValidation;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ExpansionTile(
+                        key: const Key('vehicle-more-details'),
+                        initiallyExpanded: _more,
+                        tilePadding: EdgeInsets.zero,
+                        title: Text(
+                          '${l10n.moreVehicleDetails} (${l10n.optional})',
+                        ),
+                        subtitle: Text(l10n.optionalDetailsAccuracy),
+                        onExpansionChanged: (value) => setState(() => _more = value),
+                        children: [
+                          _text(
+                            'generation',
+                            l10n.generation,
+                            validator: _optional100,
+                          ),
+                          _text(
+                            'engineCode',
+                            l10n.engineCode,
+                            validator: _optional100,
+                          ),
+                          _text(
+                            'power',
+                            l10n.powerKw,
+                            decimal: true,
+                            validator: (value) {
+                              if ((value ?? '').isEmpty) return null;
+                              final power =
+                                  double.tryParse(value!.replaceAll(',', '.'));
+                              return power != null &&
+                                      power > 0 &&
+                                      power <= 2000
+                                  ? null
+                                  : l10n.powerValidation;
+                            },
+                          ),
+                          _dropdown<VehicleDrivetrain>(
+                            label: l10n.drivetrain,
+                            value: _drivetrain,
+                            values: VehicleDrivetrain.values,
+                            title: (value) => _drivetrainLabel(value, l10n),
+                            onChanged: (value) =>
+                                setState(() => _drivetrain = value),
+                            required: false,
+                          ),
+                          _text('market', l10n.market, validator: _optional100),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(l10n.firstUseDate),
+                            subtitle: Text(
+                              _firstUseDate == null
+                                  ? l10n.notSpecified
+                                  : DateFormat.yMMMd(
+                                      Localizations.localeOf(
+                                        context,
+                                      ).toLanguageTag(),
+                                    ).format(_firstUseDate!),
+                            ),
+                            trailing: const Icon(Icons.calendar_month_outlined),
+                            onTap: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: _firstUseDate ?? DateTime.now(),
+                                firstDate: DateTime(1886),
+                                lastDate: DateTime.now(),
+                              );
+                              if (date != null) {
+                                setState(() => _firstUseDate = date);
+                                _save();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ],
-                    validator: (value) {
-                      if ((value ?? '').isEmpty) return null;
-                      return RegExp(r'^[A-HJ-NPR-Z0-9]{17}$').hasMatch(value!)
-                          ? null
-                          : l10n.vinValidation;
-                    },
                   ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            ExpansionTile(
-              key: const Key('vehicle-more-details'),
-              initiallyExpanded: _more,
-              title: Text('${l10n.moreVehicleDetails} (${l10n.optional})'),
-              subtitle: Text(l10n.optionalDetailsAccuracy),
-              onExpansionChanged: (value) => _more = value,
-              children: [
-                _text('generation', l10n.generation, validator: _optional100),
-                _text('engineCode', l10n.engineCode, validator: _optional100),
-                _text(
-                  'power',
-                  l10n.powerKw,
-                  decimal: true,
-                  validator: (value) {
-                    if ((value ?? '').isEmpty) return null;
-                    final power = double.tryParse(value!.replaceAll(',', '.'));
-                    return power != null && power > 0 && power <= 2000
-                        ? null
-                        : l10n.powerValidation;
-                  },
-                ),
-                _dropdown<VehicleDrivetrain>(
-                  label: l10n.drivetrain,
-                  value: _drivetrain,
-                  values: VehicleDrivetrain.values,
-                  title: (value) => _drivetrainLabel(value, l10n),
-                  onChanged: (value) => setState(() => _drivetrain = value),
-                  required: false,
-                ),
-                _text('market', l10n.market, validator: _optional100),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.firstUseDate),
-                  subtitle: Text(
-                    _firstUseDate == null
-                        ? l10n.notSpecified
-                        : DateFormat.yMMMd(
-                            Localizations.localeOf(context).toLanguageTag(),
-                          ).format(_firstUseDate!),
-                  ),
-                  trailing: const Icon(Icons.calendar_month_outlined),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: _firstUseDate ?? DateTime.now(),
-                      firstDate: DateTime(1886),
-                      lastDate: DateTime.now(),
-                    );
-                    if (date != null) setState(() => _firstUseDate = date);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              key: const Key('vehicle-continue'),
-              onPressed: _draft().isComplete ? _continue : null,
-              icon: const Icon(Icons.arrow_forward),
-              label: Text(l10n.reviewVehicle),
+            Padding(
+              padding: EdgeInsets.fromLTRB(12, 8, 12, 12 + bottomInset),
+              child: FilledButton.icon(
+                key: const Key('vehicle-continue'),
+                onPressed: draftComplete ? _continue : null,
+                icon: const Icon(Icons.arrow_forward),
+                label: Text(l10n.reviewVehicle),
+              ),
             ),
           ],
         ),
@@ -600,11 +744,23 @@ class VehicleConfirmScreen extends ConsumerWidget {
             onPressed: state.submitting
                 ? null
                 : () async {
+                    final locale = ref.read(activeLocaleProvider).languageCode;
                     final vehicle = await ref
                         .read(vehicleSetupControllerProvider.notifier)
                         .create();
                     if (vehicle != null && context.mounted) {
-                      context.go('/plan/first');
+                      unawaited(
+                        ref
+                            .read(maintenanceControllerProvider.notifier)
+                            .ensureRoadmap(
+                              vehicle.id,
+                              locale: locale,
+                              force: true,
+                            ),
+                      );
+                      if (context.mounted) {
+                        context.go('/garage/add/skill-quiz');
+                      }
                     }
                   },
             icon: state.submitting

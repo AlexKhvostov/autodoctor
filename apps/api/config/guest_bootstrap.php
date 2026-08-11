@@ -6,7 +6,7 @@ return [
     'capabilities' => [
         'public_browse' => true,
         'anonymous_sessions' => true,
-        'social_auth_providers' => ['telegram', 'google', 'apple'],
+        'social_auth_providers' => ['google'],
         'email_password_auth' => false,
         'max_vehicles_per_user' => 1,
     ],

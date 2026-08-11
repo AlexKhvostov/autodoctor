@@ -21,6 +21,7 @@ class MaintenanceState {
     this.consumables,
     this.serviceRecords,
     this.mileageForecast,
+    this.mileageObservations,
     this.conditionObservations,
     this.forecastFailure,
     this.failure,
@@ -35,6 +36,7 @@ class MaintenanceState {
   final ConsumableList? consumables;
   final ServiceRecordList? serviceRecords;
   final MileageForecast? mileageForecast;
+  final MileageObservationList? mileageObservations;
   final ConditionObservationList? conditionObservations;
   final MaintenanceFailure? forecastFailure;
   final MaintenanceFailure? failure;
@@ -52,6 +54,7 @@ class MaintenanceState {
     ConsumableList? consumables,
     ServiceRecordList? serviceRecords,
     MileageForecast? mileageForecast,
+    MileageObservationList? mileageObservations,
     ConditionObservationList? conditionObservations,
     MaintenanceFailure? forecastFailure,
     bool clearForecastFailure = false,
@@ -67,6 +70,7 @@ class MaintenanceState {
     consumables: consumables ?? this.consumables,
     serviceRecords: serviceRecords ?? this.serviceRecords,
     mileageForecast: mileageForecast ?? this.mileageForecast,
+    mileageObservations: mileageObservations ?? this.mileageObservations,
     conditionObservations: conditionObservations ?? this.conditionObservations,
     forecastFailure: clearForecastFailure
         ? null
@@ -168,6 +172,7 @@ class MaintenanceController extends Notifier<MaintenanceState> {
         _repository.getServiceRecords(vehicleId, locale: locale),
         _repository.getConditionObservations(vehicleId, locale: locale),
         _optionalForecast(vehicleId, locale),
+        _repository.getMileageObservations(vehicleId, locale: locale),
       ]);
       if (generation != _generation || !state.matches(vehicleId, locale)) {
         return;
@@ -183,6 +188,7 @@ class MaintenanceController extends Notifier<MaintenanceState> {
         mileageForecast: (results[5] as _ForecastResult).value,
         forecastFailure: (results[5] as _ForecastResult).failure,
         clearForecastFailure: (results[5] as _ForecastResult).failure == null,
+        mileageObservations: results[6] as MileageObservationList,
         clearFailure: true,
       );
     } on MaintenanceFailure catch (failure) {
@@ -414,6 +420,7 @@ class MaintenanceController extends Notifier<MaintenanceState> {
       _repository.getConsumables(vehicleId, locale: locale),
       _repository.getServiceRecords(vehicleId, locale: locale),
       _repository.getConditionObservations(vehicleId, locale: locale),
+      _repository.getMileageObservations(vehicleId, locale: locale),
     ]);
     if (generation != _generation || !state.matches(vehicleId, locale)) {
       throw const MaintenanceFailure(code: 'STALE_MAINTENANCE_CONTEXT');
@@ -426,6 +433,7 @@ class MaintenanceController extends Notifier<MaintenanceState> {
       consumables: results[2] as ConsumableList,
       serviceRecords: results[3] as ServiceRecordList,
       conditionObservations: results[4] as ConditionObservationList,
+      mileageObservations: results[5] as MileageObservationList,
       clearFailure: true,
     );
   }

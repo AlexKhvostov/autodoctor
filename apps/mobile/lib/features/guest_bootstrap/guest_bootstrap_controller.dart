@@ -8,9 +8,14 @@ final sessionTokenStoreProvider = Provider<SessionTokenStore>(
   (ref) => SecureSessionTokenStore(),
 );
 
+final guestProfileIdStoreProvider = Provider<GuestProfileIdStore>(
+  (ref) => SecureGuestProfileIdStore(),
+);
+
 final guestBootstrapRepositoryProvider = Provider<GuestBootstrapRepository>(
   (ref) => DioGuestBootstrapRepository(
     ref.watch(sessionTokenStoreProvider),
+    ref.watch(guestProfileIdStoreProvider),
     locale: ref.watch(activeLocaleProvider).languageCode,
   ),
 );

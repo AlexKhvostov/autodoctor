@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\SessionResource;
 use App\Models\AnonymousSession;
+use App\Models\GuestProfile;
 use App\Services\IdempotencyService;
 use App\Support\LocaleResolver;
 use Illuminate\Http\JsonResponse;
@@ -18,12 +19,13 @@ class SessionController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->rejectUnknownFields($request, ['locale', 'platform', 'app_version']);
+        $this->rejectUnknownFields($request, ['locale', 'platform', 'app_version', 'guest_profile_id']);
 
         $validated = Validator::make($request->all(), [
             'locale' => ['required', 'string', 'max:32', 'regex:/^(?:ru|en)(?:[-_][A-Za-z]{2})?$/i'],
             'platform' => ['required', 'in:android,ios'],
             'app_version' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'guest_profile_id' => ['sometimes', 'nullable', 'uuid', 'exists:guest_profiles,id'],
         ])->validate();
         $validated['locale'] = LocaleResolver::normalize($validated['locale']);
 
@@ -34,8 +36,17 @@ class SessionController extends Controller
             function (string $key) use ($validated): JsonResponse {
                 $token = $this->tokenForIdempotencyKey($key);
                 $now = now();
+
+                $profileId = $validated['guest_profile_id'] ?? null;
+                if (! is_string($profileId) || $profileId === '') {
+                    $profileId = GuestProfile::query()->create()->id;
+                }
+
                 $session = AnonymousSession::query()->create([
-                    ...$validated,
+                    'guest_profile_id' => $profileId,
+                    'locale' => $validated['locale'],
+                    'platform' => $validated['platform'],
+                    'app_version' => $validated['app_version'] ?? null,
                     'token_hash' => hash('sha256', $token),
                     'status' => 'active',
                     'last_activity_at' => $now,
@@ -45,14 +56,19 @@ class SessionController extends Controller
                 return response()->json([
                     'session' => (new SessionResource($session))->resolve(),
                     'session_token' => $token,
+                    'guest_profile_id' => $profileId,
                 ], 201);
             },
             // The token is never persisted. A replay derives it with a keyed HMAC
             // because OpenAPI has no installation identifier for a safer public scope.
-            fn (array $body): array => ['session' => $body['session']],
+            fn (array $body): array => [
+                'session' => $body['session'],
+                'guest_profile_id' => $body['guest_profile_id'] ?? null,
+            ],
             fn (array $body, string $key): array => [
-                ...$body,
+                'session' => $body['session'],
                 'session_token' => $this->tokenForIdempotencyKey($key),
+                'guest_profile_id' => $body['guest_profile_id'] ?? null,
             ],
         );
     }

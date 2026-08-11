@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'google' => [
+        // Web / server client id (aud of id_token from mobile often equals this).
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'android_client_id' => env('GOOGLE_ANDROID_CLIENT_ID'),
+        'ios_client_id' => env('GOOGLE_IOS_CLIENT_ID'),
+    ],
+
 ];

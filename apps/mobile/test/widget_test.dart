@@ -9,21 +9,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('opens in Russian on maintenance plan with five shell tabs', (
+  testWidgets('opens in Russian on AI assistant with five shell tabs', (
     tester,
   ) async {
     final repository = FakeGuestBootstrapRepository();
     await _pumpApp(tester, repository: repository);
     await tester.pumpAndSettle();
 
-    expect(find.text('План обслуживания'), findsOneWidget);
+    expect(find.text('AI-ассистент'), findsOneWidget);
     for (final label in ['План', 'Журнал', 'AI', 'Состояние', 'Ещё']) {
       expect(find.text(label), findsWidgets);
     }
     expect(find.text('Аналитика'), findsNothing);
     expect(find.byKey(const Key('header-add-vehicle')), findsOneWidget);
-    expect(find.text('Пример'), findsWidgets);
-    expect(find.byKey(const Key('roadmap-quick-add')), findsOneWidget);
+    expect(find.byKey(const Key('assistant-topics-empty')), findsOneWidget);
     expect(repository.createCalls, 0);
     expect(repository.consentCalls, 0);
     final container = ProviderScope.containerOf(
@@ -31,7 +30,7 @@ void main() {
     );
     expect(
       container.read(routerProvider).routeInformationProvider.value.uri.path,
-      '/roadmap',
+      '/assistant',
     );
   });
 
@@ -42,9 +41,14 @@ void main() {
     await _pumpApp(tester, repository: repository, locale: const Locale('en'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Maintenance plan'), findsOneWidget);
+    expect(find.text('AI assistant'), findsOneWidget);
     expect(find.text('Plan'), findsWidgets);
     expect(find.text('More'), findsWidgets);
+
+    await tester.tap(find.text('Plan').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Maintenance plan'), findsOneWidget);
     expect(
       find.ancestor(
         of: find.byKey(const Key('header-add-vehicle')),
@@ -754,6 +758,7 @@ class FakeGuestBootstrapRepository implements GuestBootstrapRepository {
     return const CreatedGuestSession(
       session: GuestSession(id: 'session-id', status: 'active'),
       token: 'new-token',
+      guestProfileId: 'profile-id',
     );
   }
 

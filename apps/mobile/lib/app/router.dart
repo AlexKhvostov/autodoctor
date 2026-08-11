@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/profile_screen.dart';
 import '../features/assistant/presentation/assistant_chat_screen.dart';
 import '../features/assistant/presentation/assistant_threads_screen.dart';
 import '../features/browse/presentation/browse_screens.dart';
 import '../features/browse/presentation/browse_shell.dart';
+import '../features/browse/presentation/component_catalog_screen.dart';
 import '../features/maintenance/presentation/maintenance_screens.dart';
 import '../features/maintenance/presentation/history_wizard_screen.dart';
 import '../features/maintenance/presentation/service_record_screen.dart';
 import '../features/maintenance/presentation/state_screen.dart';
+import '../features/agent_profile/presentation/agent_profile_screen.dart';
+import '../features/guest_skill/presentation/owner_skill_quiz_screen.dart';
 import '../features/vehicle/presentation/add_vehicle_start_screen.dart';
 import '../features/vehicle/presentation/vin_entry_stub_screen.dart';
 
@@ -21,7 +25,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 GoRouter buildRouter() {
   return GoRouter(
-    initialLocation: '/roadmap',
+    initialLocation: '/assistant',
     routes: [
       ShellRoute(
         builder: (context, state, child) => GlobalHeaderFrame(child: child),
@@ -44,13 +48,31 @@ GoRouter buildRouter() {
                 const MaterialPage<void>(child: AnalyticsScreen()),
           ),
           GoRoute(
+            path: '/dev/ui-kit',
+            pageBuilder: (context, state) =>
+                const MaterialPage<void>(child: ComponentCatalogScreen()),
+          ),
+          GoRoute(
+            path: '/profile',
+            pageBuilder: (context, state) =>
+                const MaterialPage<void>(child: ProfileScreen()),
+          ),
+          GoRoute(
             // Keep outside `/assistant` prefix to avoid shell-branch match conflicts.
             path: '/ai/chat/:threadId',
             pageBuilder: (context, state) => MaterialPage<void>(
               child: AssistantChatScreen(
                 threadId: state.pathParameters['threadId']!,
+                initialPrompt: state.extra is String
+                    ? state.extra as String
+                    : null,
               ),
             ),
+          ),
+          GoRoute(
+            path: '/ai/agent',
+            pageBuilder: (context, state) =>
+                const MaterialPage<void>(child: AgentProfileScreen()),
           ),
           GoRoute(
             path: '/garage/consumables',
@@ -71,6 +93,11 @@ GoRouter buildRouter() {
             path: '/garage/add/confirm',
             pageBuilder: (context, state) =>
                 const MaterialPage<void>(child: VehicleConfirmScreen()),
+          ),
+          GoRoute(
+            path: '/garage/add/skill-quiz',
+            pageBuilder: (context, state) =>
+                const MaterialPage<void>(child: OwnerSkillQuizScreen()),
           ),
           GoRoute(
             path: '/plan/first',

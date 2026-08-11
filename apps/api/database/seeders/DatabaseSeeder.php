@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(MaintenanceV1Seeder::class);
         $this->call(MaintenanceV2Seeder::class);
+        $this->call(AiConfigSeeder::class);
 
         // User::factory(10)->create();
 
@@ -24,5 +25,14 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        User::query()->updateOrCreate(
+            ['email' => 'admin@autodoctor.local'],
+            [
+                'name' => 'AutoDoctor Admin',
+                'password' => 'password',
+                'is_admin' => true,
+            ],
+        );
     }
 }

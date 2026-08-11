@@ -2,84 +2,313 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../vehicle/vehicle.dart';
+import '../vehicle/vehicle_controller.dart';
 import 'assistant.dart';
-import 'assistant_llm.dart';
+import 'assistant_api.dart';
 import 'assistant_store.dart';
 
 class AssistantState {
   const AssistantState({
     this.threads = const [],
+    this.archivedThreads = const [],
+    this.listTab = 0,
     this.loading = true,
     this.sending = false,
     this.error,
+    this.errorCode,
   });
 
   final List<ChatThread> threads;
+  final List<ChatThread> archivedThreads;
+  final int listTab; // 0 active, 1 archive
   final bool loading;
   final bool sending;
   final String? error;
+  final String? errorCode;
+
+  bool get isFuelEmpty => errorCode == 'AGENT_FUEL_EMPTY';
 
   AssistantState copyWith({
     List<ChatThread>? threads,
+    List<ChatThread>? archivedThreads,
+    int? listTab,
     bool? loading,
     bool? sending,
     String? error,
+    String? errorCode,
     bool clearError = false,
   }) => AssistantState(
     threads: threads ?? this.threads,
+    archivedThreads: archivedThreads ?? this.archivedThreads,
+    listTab: listTab ?? this.listTab,
     loading: loading ?? this.loading,
     sending: sending ?? this.sending,
     error: clearError ? null : error ?? this.error,
+    errorCode: clearError ? null : errorCode ?? this.errorCode,
   );
 
+  List<ChatThread> get visibleThreads =>
+      listTab == 0 ? threads : archivedThreads;
+
   ChatThread? threadById(String id) =>
-      threads.where((thread) => thread.id == id).firstOrNull;
+      [...threads, ...archivedThreads]
+          .where((thread) => thread.id == id)
+          .firstOrNull;
 }
 
 class AssistantController extends Notifier<AssistantState> {
   final _uuid = const Uuid();
   late final AssistantThreadStore _store;
-  late final AssistantLlmClient _llm;
 
   @override
   AssistantState build() {
     _store = ref.watch(assistantThreadStoreProvider);
-    _llm = AssistantLlmClient();
+    ref.listen(vehicleSetupControllerProvider, (previous, next) {
+      if (previous?.activeVehicle?.id != next.activeVehicle?.id) {
+        load();
+      }
+    });
     Future.microtask(load);
     return const AssistantState();
   }
 
-  Future<void> load() async {
-    state = state.copyWith(loading: true, clearError: true);
-    final threads = List<ChatThread>.from(await _store.load());
-    threads.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    state = state.copyWith(threads: threads, loading: false);
+  void setListTab(int tab) {
+    state = state.copyWith(listTab: tab);
   }
 
-  Future<ChatThread> createThread({String? title}) async {
+  Future<void> load() async {
+    state = state.copyWith(loading: true, clearError: true);
+    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
+    if (vehicle == null) {
+      final local = await _store.load();
+      state = state.copyWith(
+        threads: local
+            .where((t) => !t.isArchived)
+            .toList(growable: false),
+        archivedThreads: local
+            .where((t) => t.isArchived)
+            .toList(growable: false),
+        loading: false,
+      );
+      return;
+    }
+
+    try {
+      final api = ref.read(assistantApiClientProvider);
+      final locale = 'ru';
+      final active = await api.listThreads(
+        vehicleId: vehicle.id,
+        locale: locale,
+        status: 'active',
+      );
+      final archived = await api.listThreads(
+        vehicleId: vehicle.id,
+        locale: locale,
+        status: 'archived',
+      );
+      state = state.copyWith(
+        threads: active,
+        archivedThreads: archived,
+        loading: false,
+        clearError: true,
+      );
+      await _store.save([...active, ...archived]);
+    } on AssistantApiException catch (error) {
+      final local = await _store.load();
+      state = state.copyWith(
+        threads: local.where((t) => !t.isArchived).toList(growable: false),
+        archivedThreads: local
+            .where((t) => t.isArchived)
+            .toList(growable: false),
+        loading: false,
+        error: error.message,
+      );
+    } on Object catch (error) {
+      state = state.copyWith(loading: false, error: error.toString());
+    }
+  }
+
+  Future<ChatThread> createThread({
+    String? title,
+    List<ChatMessage> messages = const [],
+    ChatTitleSource titleSource = ChatTitleSource.auto,
+  }) async {
+    final resolved =
+        title?.trim().isNotEmpty == true ? title!.trim() : 'Новый чат';
     final thread = ChatThread(
       id: _uuid.v4(),
-      title: title?.trim().isNotEmpty == true ? title!.trim() : 'Новый чат',
+      title: resolved,
       updatedAt: DateTime.now(),
-      messages: const [],
+      messages: messages,
+      titleSource: titleSource,
     );
     final next = [thread, ...state.threads];
-    state = state.copyWith(threads: next, clearError: true);
-    await _store.save(next);
+    state = state.copyWith(threads: next, listTab: 0, clearError: true);
+    await _store.save([...next, ...state.archivedThreads]);
     return thread;
   }
 
-  Future<void> deleteThread(String threadId) async {
-    final next = state.threads
-        .where((thread) => thread.id != threadId)
-        .toList(growable: false);
-    state = state.copyWith(threads: next, clearError: true);
-    await _store.save(next);
+  Future<ChatThread> createWelcomeThread({
+    required String title,
+    required String welcomeMessage,
+  }) {
+    return createThread(
+      title: title,
+      titleSource: ChatTitleSource.user,
+      messages: [
+        ChatMessage(
+          id: _uuid.v4(),
+          role: ChatRole.assistant,
+          content: welcomeMessage,
+          createdAt: DateTime.now(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> openThread(String threadId, {required String locale}) async {
+    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
+    final existing = state.threadById(threadId);
+    if (vehicle == null || existing == null) return;
+    if (existing.messages.isNotEmpty) return;
+    try {
+      final full = await ref
+          .read(assistantApiClientProvider)
+          .getThread(
+            vehicleId: vehicle.id,
+            threadId: threadId,
+            locale: locale,
+          );
+      _replaceThread(full);
+      await _persistAll();
+    } on Object {
+      // Keep local stub if remote fetch fails.
+    }
+  }
+
+  Future<void> renameThread(
+    String threadId,
+    String title, {
+    required String locale,
+  }) async {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return;
+    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
+    final local = state.threadById(threadId);
+    if (local == null) return;
+
+    if (vehicle == null) {
+      _replaceThread(
+        local.copyWith(
+          title: trimmed,
+          titleSource: ChatTitleSource.user,
+          updatedAt: DateTime.now(),
+        ),
+      );
+      await _persistAll();
+      return;
+    }
+
+    try {
+      final updated = await ref
+          .read(assistantApiClientProvider)
+          .updateThread(
+            vehicleId: vehicle.id,
+            threadId: threadId,
+            locale: locale,
+            title: trimmed,
+          );
+      _replaceThread(
+        updated.copyWith(messages: local.messages),
+      );
+      await _persistAll();
+    } on AssistantApiException catch (error) {
+      state = state.copyWith(error: error.message);
+    }
+  }
+
+  Future<void> setThreadStatus(
+    String threadId,
+    ChatThreadStatus status, {
+    required String locale,
+  }) async {
+    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
+    final local = state.threadById(threadId);
+    if (local == null) return;
+
+    if (vehicle == null) {
+      final updated = local.copyWith(
+        status: status,
+        updatedAt: DateTime.now(),
+        clearResolvedAt: status == ChatThreadStatus.active,
+        clearArchivedAt: status != ChatThreadStatus.archived,
+        resolvedAt: status == ChatThreadStatus.resolved
+            ? DateTime.now()
+            : local.resolvedAt,
+        archivedAt: status == ChatThreadStatus.archived
+            ? DateTime.now()
+            : local.archivedAt,
+      );
+      _applyStatusMove(updated);
+      await _persistAll();
+      return;
+    }
+
+    try {
+      final updated = await ref
+          .read(assistantApiClientProvider)
+          .updateThread(
+            vehicleId: vehicle.id,
+            threadId: threadId,
+            locale: locale,
+            status: status,
+          );
+      _applyStatusMove(updated.copyWith(messages: local.messages));
+      await _persistAll();
+    } on AssistantApiException catch (error) {
+      state = state.copyWith(error: error.message);
+    }
+  }
+
+  Future<void> deleteThread(String threadId, {required String locale}) async {
+    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
+    final local = state.threadById(threadId);
+    if (local == null) return;
+
+    if (vehicle == null) {
+      _removeThread(threadId);
+      await _persistAll();
+      return;
+    }
+
+    try {
+      await ref
+          .read(assistantApiClientProvider)
+          .deleteThread(
+            vehicleId: vehicle.id,
+            threadId: threadId,
+            locale: locale,
+          );
+      _removeThread(threadId);
+      await _persistAll();
+    } on AssistantApiException catch (error) {
+      state = state.copyWith(error: error.message);
+    }
+  }
+
+  void _removeThread(String threadId) {
+    state = state.copyWith(
+      threads: state.threads.where((t) => t.id != threadId).toList(),
+      archivedThreads: state.archivedThreads
+          .where((t) => t.id != threadId)
+          .toList(),
+    );
   }
 
   Future<void> sendMessage({
     required String threadId,
     required String text,
+    required String locale,
     Vehicle? vehicle,
   }) async {
     final trimmed = text.trim();
@@ -87,6 +316,16 @@ class AssistantController extends Notifier<AssistantState> {
     final thread = state.threadById(threadId);
     if (thread == null) return;
 
+    if (vehicle == null) {
+      state = state.copyWith(
+        sending: false,
+        error: 'Для ответа AI нужен выбранный автомобиль.',
+      );
+      return;
+    }
+
+    final isFirstMessage = thread.messages.isEmpty;
+    final allowAutoTitle = _allowsAutoTitle(thread);
     final userMessage = ChatMessage(
       id: _uuid.v4(),
       role: ChatRole.user,
@@ -94,49 +333,99 @@ class AssistantController extends Notifier<AssistantState> {
       createdAt: DateTime.now(),
     );
     var updated = thread.copyWith(
-      title: thread.messages.isEmpty
+      title: allowAutoTitle && (isFirstMessage || _isPlaceholderTitle(thread.title))
           ? _titleFrom(trimmed)
           : thread.title,
+      titleSource: allowAutoTitle ? ChatTitleSource.auto : thread.titleSource,
       updatedAt: DateTime.now(),
       messages: [...thread.messages, userMessage],
     );
     _replaceThread(updated);
     state = state.copyWith(sending: true, clearError: true);
-    await _store.save(state.threads);
+    await _persistAll();
 
     try {
-      final reply = await _llm.complete(
-        history: updated.messages,
-        vehicleContext: vehicle == null
-            ? null
-            : [
-                '${vehicle.make} ${vehicle.model}',
-                'год: ${vehicle.productionYear}',
-                if (vehicle.mileage != null)
-                  'пробег: ${vehicle.mileage} ${vehicle.mileageUnit ?? 'km'}',
-              ].join(', '),
-      );
+      final prior = updated.messages
+          .where((message) => message.id != userMessage.id)
+          .toList(growable: false);
+      final result = await ref
+          .read(assistantApiClientProvider)
+          .sendMessage(
+            vehicleId: vehicle.id,
+            message: trimmed,
+            locale: locale,
+            threadId: threadId,
+            suggestTitle: allowAutoTitle &&
+                (isFirstMessage || _isPlaceholderTitle(thread.title)),
+            history: prior,
+          );
       final assistantMessage = ChatMessage(
         id: _uuid.v4(),
         role: ChatRole.assistant,
-        content: reply,
+        content: result.reply,
         createdAt: DateTime.now(),
+        tokensSpent: result.tokensSpent,
       );
+      final nextTitle = !allowAutoTitle
+          ? updated.title
+          : ((result.title != null && result.title!.trim().isNotEmpty)
+                ? result.title!.trim()
+                : updated.title);
       updated = updated.copyWith(
+        title: nextTitle,
+        titleSource: allowAutoTitle ? ChatTitleSource.auto : thread.titleSource,
         updatedAt: DateTime.now(),
         messages: [...updated.messages, assistantMessage],
+        messagesCount: updated.messages.length + 1,
       );
       _replaceThread(updated);
       state = state.copyWith(sending: false, clearError: true);
-      await _store.save(state.threads);
-    } on AssistantLlmException catch (error) {
-      state = state.copyWith(sending: false, error: error.message);
+      await _persistAll();
+    } on AssistantApiException catch (error) {
+      state = state.copyWith(
+        sending: false,
+        error: error.message,
+        errorCode: error.code,
+      );
     } on Object catch (error) {
-      state = state.copyWith(sending: false, error: error.toString());
+      state = state.copyWith(
+        sending: false,
+        error: error.toString(),
+        errorCode: 'UNKNOWN',
+      );
     }
   }
 
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
+  void _applyStatusMove(ChatThread thread) {
+    final without = [...state.threads, ...state.archivedThreads]
+        .where((item) => item.id != thread.id)
+        .toList(growable: false);
+    final active = without.where((t) => !t.isArchived).toList(growable: true);
+    final archived = without.where((t) => t.isArchived).toList(growable: true);
+    if (thread.isArchived) {
+      archived.insert(0, thread);
+    } else {
+      active.insert(0, thread);
+    }
+    active.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    archived.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    state = state.copyWith(threads: active, archivedThreads: archived);
+  }
+
   void _replaceThread(ChatThread thread) {
+    if (thread.isArchived) {
+      final next = [
+        thread,
+        ...state.archivedThreads.where((item) => item.id != thread.id),
+      ];
+      next.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      state = state.copyWith(archivedThreads: next);
+      return;
+    }
     final next = [
       thread,
       ...state.threads.where((item) => item.id != thread.id),
@@ -145,11 +434,27 @@ class AssistantController extends Notifier<AssistantState> {
     state = state.copyWith(threads: next);
   }
 
+  Future<void> _persistAll() async {
+    await _store.save([...state.threads, ...state.archivedThreads]);
+  }
+
   String _titleFrom(String text) {
     final compact = text.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (compact.length <= 42) return compact;
     return '${compact.substring(0, 42).trimRight()}…';
   }
+
+  bool _isPlaceholderTitle(String title) {
+    final normalized = title.trim().toLowerCase();
+    return normalized.isEmpty ||
+        normalized == 'новый чат' ||
+        normalized == 'new chat';
+  }
+
+  /// User-locked titles stay; placeholders (even wrongly marked user) can rename.
+  bool _allowsAutoTitle(ChatThread thread) =>
+      thread.titleSource != ChatTitleSource.user ||
+      _isPlaceholderTitle(thread.title);
 }
 
 final assistantControllerProvider =

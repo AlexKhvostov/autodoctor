@@ -50,7 +50,75 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String historyCompletenessBannerShort(int percent) {
+    return '$percent% complete';
+  }
+
+  @override
   String get historyCompletenessCta => 'Refine history';
+
+  @override
+  String get historyCompletenessCtaShort => 'Refine';
+
+  @override
+  String get historyCompletenessFill => 'Fill in';
+
+  @override
+  String get historyCompletenessCollapse => 'Collapse';
+
+  @override
+  String get historyCompletenessAlarmTitle =>
+      'You can add service history details';
+
+  @override
+  String get garageAddBlocked => 'Adding a car is unavailable';
+
+  @override
+  String get profileStatsTitle => 'Your activity';
+
+  @override
+  String get profileStatsVehicles => 'Cars';
+
+  @override
+  String get profileStatsActions => 'Records';
+
+  @override
+  String get profileStatsChats => 'Chats';
+
+  @override
+  String get journalColDate => 'Date';
+
+  @override
+  String get journalColEvent => 'Event';
+
+  @override
+  String get journalColType => 'Type';
+
+  @override
+  String get journalEditTitle => 'Journal entry';
+
+  @override
+  String get journalIconsLegendTitle => 'Work type icons';
+
+  @override
+  String get journalIconsLegendBody =>
+      'Each entry shows the maintenance node icon (oil, filters, brakes, inspection, etc.). Tap an entry to open that node’s card.';
+
+  @override
+  String get journalOpenNodeMissing =>
+      'No matching state node found for this entry yet';
+
+  @override
+  String get journalLegendOil => 'Oil / filters';
+
+  @override
+  String get journalLegendBrakes => 'Brakes';
+
+  @override
+  String get journalLegendInspect => 'Inspection';
+
+  @override
+  String get journalLegendOther => 'Other work';
 
   @override
   String get openState => 'Open Condition';
@@ -68,8 +136,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stateNeedsData => 'Needs data';
 
   @override
+  String get stateNeedsDataUrgent => 'Required — fill in';
+
+  @override
+  String get stateNeedsDataBadge => 'no data';
+
+  @override
   String stateUsedPercent(int percent) {
     return 'Used $percent%';
+  }
+
+  @override
+  String stateUsedPercentShort(int percent) {
+    return '$percent%';
   }
 
   @override
@@ -81,10 +160,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stateWearCaption => 'wear';
 
   @override
-  String get stateTriggerTime => 'time';
+  String get stateTriggerTime => 'By time';
 
   @override
-  String get stateTriggerMileage => 'mileage';
+  String get stateTriggerMileage => 'By mileage';
+
+  @override
+  String get stateTriggerTimeHint =>
+      'The interval is currently limited by the calendar: the due date comes before the mileage limit.';
+
+  @override
+  String get stateTriggerMileageHint =>
+      'The interval is currently limited by mileage: the odometer limit comes before the calendar date.';
+
+  @override
+  String get stateWearCaptionHint =>
+      'Wear from the latest estimate. 0% is like new, 100% means replace soon.';
+
+  @override
+  String get stateCurrentFactsInfo =>
+      'Node summary: how much life is used and what currently limits the interval (time or mileage).';
+
+  @override
+  String get stateUpdateSectionInfo =>
+      'Log a service or check: date, mileage, wear and cost. Data stays with your vehicle.';
+
+  @override
+  String get stateServiceHistoryInfo =>
+      'Recent records for this node. You can edit or delete them.';
+
+  @override
+  String get mileageTimelineInconsistentLater =>
+      'Check the values: a later entry already has lower mileage. Date and mileage should increase together.';
+
+  @override
+  String get mileageTimelineInconsistentEarlier =>
+      'Check the values: an earlier entry already has higher mileage. Date and mileage should increase together.';
 
   @override
   String get stateScaleCaption => 'life';
@@ -96,6 +207,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stateLastServiceUnknownShort => 'service unknown';
+
+  @override
+  String stateNextDueShort(String label) {
+    return 'next $label';
+  }
+
+  @override
+  String get stateNextDueUnknown => 'due date unknown';
+
+  @override
+  String intervalEveryKm(int value) {
+    return 'every $value km';
+  }
+
+  @override
+  String intervalEveryDays(int value) {
+    return 'every $value days';
+  }
+
+  @override
+  String get intervalEveryYear => 'once a year';
+
+  @override
+  String get planPastLabel => 'Past';
+
+  @override
+  String get planFutureLabel => 'Upcoming';
 
   @override
   String get stateUpdateSection => 'Update data';
@@ -113,10 +251,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stateWearHint => '0 = new or no wear';
 
   @override
-  String get stateLaborCost => 'Labor cost';
+  String get stateLaborCost => 'Labor';
 
   @override
-  String get statePartsCost => 'Parts cost';
+  String get statePartsCost => 'Parts';
+
+  @override
+  String get stateCostSection => 'Cost';
 
   @override
   String get stateUpdateDate => 'Date';
@@ -196,13 +337,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyFinishLater => 'Finish later';
 
   @override
+  String get historySkipQuestion => 'Skip';
+
+  @override
+  String get historyAnswerLater => 'Answer later';
+
+  @override
+  String get historyIntroGotIt => 'Got it';
+
+  @override
+  String get historyWizardFriendlyHint =>
+      'Answer as you remember. If unsure, choose “I don’t know” or “Answer later”.';
+
+  @override
+  String get historyWizardIntroDetail =>
+      'We use these answers to calculate a personal maintenance plan: due dates and remaining life for your vehicle. The information stays in your app and is never shared with third parties.';
+
+  @override
+  String get historyLastServicePrompt =>
+      'When was it last serviced or replaced?';
+
+  @override
+  String get historyChooseAnswer => 'Choose an option';
+
+  @override
+  String get historyDoneKnownShort => 'Yes, I remember when';
+
+  @override
+  String get historyDoneKnownHint => 'Add a date or mileage';
+
+  @override
+  String get historyUnknownShort => 'I don’t remember / don’t know';
+
+  @override
+  String get historyUnknownHint => 'That’s fine — you can update later';
+
+  @override
+  String get historyNeverHint => 'This work hasn’t been done yet';
+
+  @override
+  String get historyNotApplicableHint => 'Not relevant for this car';
+
+  @override
+  String get historyKnownDetailsTitle => 'When was it?';
+
+  @override
   String get historyNever => 'Never';
 
   @override
   String get historyAdditional => 'Additional';
 
   @override
-  String get historyWearToggle => 'Enter wear / remaining';
+  String get historyWearToggle => 'Specify wear';
+
+  @override
+  String get historyWearHint => 'Wear of 80% means 20% remaining.';
 
   @override
   String get historyRemainingPercent => 'Remaining, %';
@@ -271,6 +460,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get garageEmpty => 'Garage is empty';
 
   @override
+  String get garageTitle => 'Garage';
+
+  @override
+  String get garageSecondCarTitle => 'Second car';
+
+  @override
+  String get garageSecondCarLocked =>
+      'Adding a second car unlocks after subscription';
+
+  @override
+  String get garageOneCarHint =>
+      'We currently support one car. The second slot is reserved for subscription.';
+
+  @override
+  String get garageOpenAnalytics => 'Analytics';
+
+  @override
+  String get garageOpenNotes => 'Notes';
+
+  @override
+  String get garageSelect => 'Select';
+
+  @override
+  String get garageSelected => 'Selected';
+
+  @override
+  String get vehiclePassport => 'Vehicle passport';
+
+  @override
+  String get passportIdentity => 'Identity';
+
+  @override
+  String get passportPowertrain => 'Powertrain';
+
+  @override
+  String get passportUsage => 'Usage';
+
+  @override
+  String get passportSections => 'Sections';
+
+  @override
+  String get garageVehicleNotes => 'Vehicle notes';
+
+  @override
+  String get garageVehicleNotesEmpty => 'No saved notes for this car yet.';
+
+  @override
   String get addVehicleSemantics => 'Add vehicle. Open setup';
 
   @override
@@ -300,6 +536,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guestProfileFuture =>
       'Sign-in and synchronization will be available in later stages.';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileGuestHint =>
+      'You are in guest mode. Sign in with Google to keep your name, preferences, and chats across devices.';
+
+  @override
+  String get signInWithGoogle => 'Sign in with Google';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String get profileSignedIn => 'Signed in';
+
+  @override
+  String get profileSignedOut => 'Signed out';
+
+  @override
+  String get profileError => 'Could not load profile';
 
   @override
   String get addEvent => 'Add event';
@@ -764,17 +1022,538 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantTopicsEmpty => 'No chats yet. Tap “New chat” to start.';
 
   @override
+  String get assistantEmptyTitle => 'No chats yet';
+
+  @override
+  String get assistantEmptySubtitle =>
+      'Start a chat — the assistant replies with your car and preferences in mind.';
+
+  @override
+  String get assistantEmptyCta => 'Start a chat';
+
+  @override
+  String get agentIntroSubtitle => 'A smart helper for your car';
+
+  @override
+  String get agentIntroBody =>
+      'Knows your car data, remembers what matters from chats, and answers in your style — it can advise on service, help with a symptom, consumable due dates, a pre-trip check, and questions for the workshop.';
+
+  @override
+  String get agentIntroExamples =>
+      'Knows your car data, remembers what matters from chats, and answers in your style — it can advise on service, help with a symptom, consumable due dates, a pre-trip check, and questions for the workshop.';
+
+  @override
+  String get assistantQuickStartsHint => 'Where to start';
+
+  @override
+  String get agentIntroTipCar => 'Vehicle context';
+
+  @override
+  String get agentIntroTipMemory => 'Chat memory';
+
+  @override
+  String get agentIntroTipEnergy => 'AI tokens for replies';
+
+  @override
+  String get agentIntroOpenProfile => 'Profile & settings';
+
+  @override
+  String get agentIntroCollapse => 'Collapse';
+
+  @override
+  String get agentIntroExpand => 'More';
+
+  @override
+  String get agentIntroChatsLabel => 'Your chats';
+
+  @override
+  String agentIntroRepliesLeft(int count) {
+    return '≈ $count replies';
+  }
+
+  @override
+  String agentTypicalReplyCost(int amount) {
+    return 'typical question ≈ $amount tok.';
+  }
+
+  @override
+  String get assistantQuickStartsLabel => 'Quick start';
+
+  @override
+  String get assistantQuickStartService => 'What matters most for service now';
+
+  @override
+  String get assistantQuickStartServicePrompt =>
+      'What should I check for maintenance right now?';
+
+  @override
+  String get assistantQuickStartSymptom =>
+      'Figure out an unusual sound or symptom';
+
+  @override
+  String get assistantQuickStartSymptomPrompt =>
+      'There’s an unusual sound in the car. Help me figure out what to check first.';
+
+  @override
+  String get assistantQuickStartWorkshop =>
+      'Prepare questions for the workshop';
+
+  @override
+  String get assistantQuickStartWorkshopPrompt =>
+      'Help me prepare a short list of questions and checks for a workshop visit.';
+
+  @override
+  String assistantChatEmptyHistory(int percent) {
+    return 'Service history is $percent% complete.';
+  }
+
+  @override
+  String get assistantChatEmptyHistoryUnknown =>
+      'The more complete the service history, the more precise the helper’s tips.';
+
+  @override
+  String get assistantChatEmptyHistoryCta => 'Add more history';
+
+  @override
+  String get assistantChatEmptyIntro =>
+      'You can pick one of the topics below — or just type your own question in the message field.';
+
+  @override
+  String get assistantChatEmptyTopicsLabel => 'Suggested topics:';
+
+  @override
+  String get assistantChatEmptyOwnHint =>
+      'You don’t have to pick from the list — describe your situation in your own words.';
+
+  @override
+  String assistantTokensSpent(int amount) {
+    return '−$amount tok.';
+  }
+
+  @override
+  String get agentNoteForget => 'Forget';
+
+  @override
+  String get agentNoteForgetDone => 'Note removed';
+
+  @override
+  String get assistantWelcomeTitle => 'Getting to know you';
+
+  @override
+  String assistantWelcomeMessage(String vehicle) {
+    return 'Hello! I’m your helper for $vehicle. How can I help — a symptom, service, or just figuring out the car?';
+  }
+
+  @override
+  String get ownerSkillQuizTitle => 'A couple of simple questions';
+
+  @override
+  String get ownerSkillQuizHint =>
+      'This helps me explain more clearly — without unnecessary jargon.';
+
+  @override
+  String get ownerSkillQ1 => 'How familiar are you with cars?';
+
+  @override
+  String get ownerSkillQ1Novice => 'I barely know cars';
+
+  @override
+  String get ownerSkillQ1Basic => 'I know the basics';
+
+  @override
+  String get ownerSkillQ1Confident => 'I’m quite confident';
+
+  @override
+  String get ownerSkillQ2 =>
+      'If something’s wrong, would you look under the hood or at the wheels yourself?';
+
+  @override
+  String get ownerSkillQ2Never => 'No, only a workshop';
+
+  @override
+  String get ownerSkillQ2Sometimes => 'Sometimes the simple stuff';
+
+  @override
+  String get ownerSkillQ2Yes => 'Yes, I can check';
+
+  @override
+  String get ownerSkillQ3 => 'What suits you better?';
+
+  @override
+  String get ownerSkillQ3Simple => 'Keep explanations as simple as possible';
+
+  @override
+  String get ownerSkillQ3Detailed => 'A bit more detail is fine';
+
+  @override
+  String get agentProfileTitle => 'Agent profile';
+
+  @override
+  String get agentProfileSaved => 'Settings saved';
+
+  @override
+  String agentFuelLevel(String amount) {
+    return 'AI tokens: $amount';
+  }
+
+  @override
+  String get agentFuelLiters => 'AI token balance with no purchase cap';
+
+  @override
+  String get agentTokensBalanceLabel => 'AI tokens';
+
+  @override
+  String get agentTokensAdd => 'Add';
+
+  @override
+  String get agentTokensTapHint => 'Tap — how they’re spent';
+
+  @override
+  String get agentTokensGuideTitle => 'How AI tokens are spent';
+
+  @override
+  String get agentTokensGuideIntro =>
+      'Each assistant reply spends AI tokens from your balance. Rough guide:';
+
+  @override
+  String agentTokensGuideOneReply(int amount) {
+    return 'One reply ≈ $amount tok.';
+  }
+
+  @override
+  String agentTokensGuideShort(int amount) {
+    return 'Short chat (2–3 replies) ≈ $amount tok.';
+  }
+
+  @override
+  String agentTokensGuideMedium(int amount) {
+    return 'Typical chat (8–10 replies) ≈ $amount tok.';
+  }
+
+  @override
+  String agentTokensGuideLong(int amount) {
+    return 'Long deep-dive (20+ replies) ≈ $amount tok.';
+  }
+
+  @override
+  String get agentTokensGuideSeeUsage => 'View usage';
+
+  @override
+  String agentApproxReplies(int count) {
+    return 'About $count replies left';
+  }
+
+  @override
+  String get assistantChatGuideTitle => 'Good to know';
+
+  @override
+  String get assistantChatGuideAction => 'Guide';
+
+  @override
+  String get assistantChatGuideBody =>
+      '• The assistant uses your car data and preferences.\n• It may note important details from the chat for later replies.\n• Very long threads hurt quality — start a new chat for a new topic.\n• This is LLM guidance, not a diagnosis or a substitute for a workshop — decisions are yours.';
+
+  @override
+  String get agentEnergyLowTitle => 'AI tokens are running low';
+
+  @override
+  String get agentEnergyLowBanner =>
+      'Few tokens left for replies — answers may stop soon. Better to buy more AI tokens in advance.';
+
+  @override
+  String get agentEnergyLowAction => 'Buy tokens';
+
+  @override
+  String get agentEnergyUnitShort => 'tok.';
+
+  @override
+  String get agentUsageTitle => 'AI token usage';
+
+  @override
+  String get agentUsageToday => 'Today';
+
+  @override
+  String get agentUsageWeek => '7 days';
+
+  @override
+  String get agentUsageAll => 'All time';
+
+  @override
+  String agentUsageFuel(String liters) {
+    return 'Spent: $liters AI tokens';
+  }
+
+  @override
+  String agentUsageTokens(int count) {
+    return 'Model tokens: $count';
+  }
+
+  @override
+  String get agentUsageEstimate =>
+      'Model tokens: estimate (provider did not return usage)';
+
+  @override
+  String agentUsageCost(String amount, String currency) {
+    return 'Estimated cost: $amount $currency';
+  }
+
+  @override
+  String get agentUsageWeekChart => 'Last 7 days';
+
+  @override
+  String get agentUsageLegendSpent => 'Spent';
+
+  @override
+  String get agentUsageLegendRefuel => 'Bought';
+
+  @override
+  String agentUsageCompactSpent(String amount) {
+    return '−$amount';
+  }
+
+  @override
+  String agentUsageCompactRefuel(String amount) {
+    return '+$amount';
+  }
+
+  @override
+  String get agentHowItAnswers => 'How it answers';
+
+  @override
+  String get agentHowItAnswersHint =>
+      'Sliders affect style. Safety and your skill level always win.';
+
+  @override
+  String get agentSelectOption => 'Choose an option';
+
+  @override
+  String get agentSliderSimplicity => 'Language simplicity';
+
+  @override
+  String get agentSliderSimplicityLow => 'Simpler';
+
+  @override
+  String get agentSliderSimplicityHigh => 'More technical';
+
+  @override
+  String get agentSliderVerbosity => 'Brevity';
+
+  @override
+  String get agentSliderVerbosityLow => 'Short';
+
+  @override
+  String get agentSliderVerbosityHigh => 'More detail';
+
+  @override
+  String get agentSliderDirectness => 'Directness';
+
+  @override
+  String get agentSliderDirectnessLow => 'Softer';
+
+  @override
+  String get agentSliderDirectnessHigh => 'More direct';
+
+  @override
+  String get agentSliderInitiative => 'Initiative';
+
+  @override
+  String get agentSliderInitiativeLow => 'Waits';
+
+  @override
+  String get agentSliderInitiativeHigh => 'Asks more';
+
+  @override
+  String get agentCustomInstructions => 'Your instructions for the agent';
+
+  @override
+  String get agentCustomInstructionsHint =>
+      'E.g. always use my name, don’t suggest a workshop first…';
+
+  @override
+  String get agentNotesTitle => 'What the agent noted for itself';
+
+  @override
+  String get agentNotesHint =>
+      'Not settings or forms — the agent picked this up from talking with you. Only extras beyond data you already entered.';
+
+  @override
+  String get agentNotesUser => 'About you — from chat';
+
+  @override
+  String get agentNotesVehicle => 'About the car — from chat';
+
+  @override
+  String get agentNotesEmpty =>
+      'Nothing noted yet. It will appear when important details come up in conversation.';
+
+  @override
+  String get agentRefuelTitle => 'Buy AI tokens';
+
+  @override
+  String get agentRefuelHint =>
+      'Purchase tokens for assistant replies. Payments soon — a demo top-up is available now.';
+
+  @override
+  String agentRefuelPackage(String label) {
+    return 'Pack $label';
+  }
+
+  @override
+  String get agentPaymentSoon => 'payment soon';
+
+  @override
+  String get agentRefuelStubDone => 'Demo AI tokens added to your balance';
+
+  @override
+  String get agentFuelEmptyTitle => 'AI tokens ran out';
+
+  @override
+  String get agentFuelEmptyBody =>
+      'Sorry for the inconvenience.\n\nThe assistant runs on a neural network — every reply spends AI tokens, so we can’t keep going for free without limits.\n\nBuy tokens in the agent profile, and we’ll continue right away.';
+
+  @override
+  String get agentFuelEmptyBanner =>
+      'AI tokens ran out — replies are paused for now';
+
+  @override
+  String get agentFuelEmptyRefuel => 'Buy tokens';
+
+  @override
+  String get agentFuelEmptyLater => 'Later';
+
+  @override
+  String get agentOwnerSkillTitle => 'Your technical level';
+
+  @override
+  String get agentOwnerSkillHint =>
+      'This helps the assistant choose simpler wording and safer checks.';
+
+  @override
+  String get agentOwnerSkillBand => 'How familiar are you with cars';
+
+  @override
+  String get agentOwnerSkillHandsOn =>
+      'Would you look under the hood / at the wheels yourself';
+
+  @override
+  String get agentOwnerSkillBandNeverTools => 'I’ve never held a screwdriver';
+
+  @override
+  String get agentOwnerSkillBandScared => 'I’m afraid to touch anything';
+
+  @override
+  String get agentOwnerSkillBandNovice => 'I barely know cars';
+
+  @override
+  String get agentOwnerSkillBandBasic => 'I know the basics';
+
+  @override
+  String get agentOwnerSkillBandCurious => 'Hobbyist — I read and watch';
+
+  @override
+  String get agentOwnerSkillBandConfident => 'I’m quite confident';
+
+  @override
+  String get agentOwnerSkillBandAdvanced => 'I do a lot myself';
+
+  @override
+  String get agentOwnerSkillBandPro => 'Mechanic / workshop staff';
+
+  @override
+  String get agentOwnerSkillHandsNever => 'No, only a workshop';
+
+  @override
+  String get agentOwnerSkillHandsOutside => 'Only outside (wheels, levels)';
+
+  @override
+  String get agentOwnerSkillHandsSometimes => 'Sometimes the simple stuff';
+
+  @override
+  String get agentOwnerSkillHandsOften => 'I often check myself';
+
+  @override
+  String get agentOwnerSkillHandsAlways => 'Yes, I’m fine under the hood';
+
+  @override
+  String get agentOwnerSkillHandsYes => 'Yes, I can check';
+
+  @override
+  String get agentPrefsLiveHint =>
+      'Sliders and instructions already affect assistant replies.';
+
+  @override
+  String get assistantFillHistoryManual => 'Fill history manually';
+
+  @override
+  String get assistantTopicsActive => 'Active';
+
+  @override
+  String get assistantTopicsArchive => 'Archive';
+
+  @override
+  String get assistantArchiveEmpty => 'Archive is empty.';
+
+  @override
   String get assistantEmptyThread => 'Empty chat';
 
   @override
   String get assistantDeleteTopic => 'Delete topic';
 
   @override
+  String get assistantDeleteTopicConfirmTitle => 'Delete this chat?';
+
+  @override
+  String get assistantDeleteTopicConfirmBody =>
+      'The chat will be gone forever. This can’t be undone.';
+
+  @override
+  String get assistantDeleteTopicConfirmAction => 'Delete';
+
+  @override
+  String get assistantRenameTopic => 'Rename';
+
+  @override
+  String get assistantRenameHint => 'Topic title';
+
+  @override
+  String get assistantTopicResolved => 'Resolved';
+
+  @override
+  String get assistantMarkResolved => 'Mark resolved';
+
+  @override
+  String get assistantMarkActive => 'Mark active';
+
+  @override
+  String get assistantArchiveTopic => 'Archive';
+
+  @override
+  String get assistantRestoreTopic => 'Restore';
+
+  @override
   String get assistantThreadMissing => 'This chat was not found.';
 
   @override
   String get assistantKeyMissing =>
-      'DeepSeek key is missing. Run with --dart-define=DEEPSEEK_API_KEY=…';
+      'AI is configured on the server. Check admin and the .env key.';
+
+  @override
+  String get assistantNeedsVehicle => 'Select or add a vehicle for AI replies.';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get odometerPickerTitle => 'Mileage';
+
+  @override
+  String get odometerPickerHint => 'Scroll each digit like an odometer.';
+
+  @override
+  String get odometerPickerSelected => 'Selected';
+
+  @override
+  String get odometerPickerConfirm => 'Done';
 
   @override
   String get journalLoading => 'Loading service records…';
@@ -834,8 +1613,104 @@ class AppLocalizationsEn extends AppLocalizations {
   String get odometerDynamics => 'Dynamics based on saved odometer readings';
 
   @override
+  String get analyticsMileageEmpty =>
+      'No saved mileage points yet. Update mileage to see them on the chart.';
+
+  @override
   String get fuelConsumptionFuture =>
       'Fuel consumption will appear only when enough high-quality data is available.';
+
+  @override
+  String get uiKitTitle => 'UI components';
+
+  @override
+  String get uiKitMoreDetail =>
+      'Buttons, fields, and panels reference for new screens';
+
+  @override
+  String get uiKitIntro =>
+      'Use these components as the reference when building new screens so the UI stays consistent.';
+
+  @override
+  String get uiKitSectionPanels => 'Panels';
+
+  @override
+  String get uiKitPanelDefault => 'AutomotivePanel — default content panel';
+
+  @override
+  String get uiKitPanelEmphasized => 'AutomotivePanel emphasized — left accent';
+
+  @override
+  String get uiKitSectionHeaders => 'Headers';
+
+  @override
+  String get uiKitSectionHeaderExample => 'Section header';
+
+  @override
+  String get uiKitSectionButtons => 'Buttons';
+
+  @override
+  String get uiKitPrimaryButton => 'Filled / primary';
+
+  @override
+  String get uiKitTonalButton => 'Tonal / secondary';
+
+  @override
+  String get uiKitOutlinedButton => 'Outlined';
+
+  @override
+  String get uiKitTextButton => 'Text';
+
+  @override
+  String get uiKitDisabledButton => 'Disabled';
+
+  @override
+  String get uiKitSectionInputs => 'Inputs';
+
+  @override
+  String get uiKitInputLabel => 'Field label';
+
+  @override
+  String get uiKitInputHint => 'Hint';
+
+  @override
+  String get uiKitInputErrorLabel => 'Field with error';
+
+  @override
+  String get uiKitInputError => 'Sample error text';
+
+  @override
+  String get uiKitDropdownLabel => 'Dropdown';
+
+  @override
+  String get uiKitSwitchLabel => 'Switch';
+
+  @override
+  String get uiKitSectionStatus => 'Status and gauges';
+
+  @override
+  String get uiKitStatusLabel => 'STATUS RAIL';
+
+  @override
+  String get uiKitStatusValue => 'OK';
+
+  @override
+  String get uiKitGaugeLabel => 'Consumable gauge';
+
+  @override
+  String get uiKitSectionPreview => 'No-car preview';
+
+  @override
+  String get uiKitPreviewGate => 'Message shown when no vehicle is selected';
+
+  @override
+  String get uiKitPreviewTileTitle => 'Preview row';
+
+  @override
+  String get uiKitPreviewTileDetail => 'Inactive sample entry';
+
+  @override
+  String get uiKitSectionColors => 'Theme colors';
 
   @override
   String structureWithoutData(String title, String detail) {
@@ -1379,7 +2254,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String historyProgress(int current, int total) {
-    return 'Item $current of $total';
+    return '$current/$total';
   }
 
   @override
@@ -1465,7 +2340,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setMileage => 'Set mileage';
 
   @override
-  String get currentMileage => 'Current mileage';
+  String get currentMileage => 'Actual mileage';
 
   @override
   String get mileageDecreaseNotAllowed =>
@@ -1596,6 +2471,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'More history or an inspection is needed.';
 
   @override
+  String get howSoonLabel => 'How soon';
+
+  @override
+  String howSoonDays(int days) {
+    return '$days d';
+  }
+
+  @override
+  String howSoonKm(int km) {
+    return '$km km';
+  }
+
+  @override
+  String howSoonOverdueDays(int days) {
+    return 'overdue $days d';
+  }
+
+  @override
+  String howSoonOverdueKm(int km) {
+    return 'overdue $km km';
+  }
+
+  @override
+  String get historyMileageOnly => 'by mileage';
+
+  @override
   String iconCategorySemantics(String label) {
     return 'Category: $label';
   }
@@ -1604,7 +2505,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceTimelineEmpty => 'No service records yet';
 
   @override
-  String get performed => 'Performed';
+  String get performed => 'Mark done';
 
   @override
   String get preliminaryEstimate => 'Preliminary estimate';

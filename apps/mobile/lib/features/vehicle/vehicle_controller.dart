@@ -105,6 +105,43 @@ class VehicleSetupController extends Notifier<VehicleSetupState> {
     }
   }
 
+  Future<Vehicle?> updateVehicle(String vehicleId, VehicleDraft draft) async {
+    final vehicle = state.vehicles
+        .where((item) => item.id == vehicleId)
+        .firstOrNull;
+    if (vehicle == null || state.submitting || !draft.isComplete) return null;
+    state = state.copyWith(submitting: true, clearFailure: true);
+    try {
+      final updated = await _repository.update(
+        vehicleId,
+        draft,
+        version: vehicle.version,
+        locale: _locale,
+      );
+      state = state.copyWith(
+        vehicles: [
+          for (final item in state.vehicles)
+            if (item.id == updated.id) updated else item,
+        ],
+        submitting: false,
+        clearFailure: true,
+      );
+      await ref
+          .read(maintenanceControllerProvider.notifier)
+          .ensureRoadmap(updated.id, locale: _locale, force: true);
+      return updated;
+    } on VehicleFailure catch (failure) {
+      state = state.copyWith(submitting: false, failure: failure);
+      return null;
+    } on Object {
+      state = state.copyWith(
+        submitting: false,
+        failure: const VehicleFailure(code: 'UNEXPECTED_RESPONSE'),
+      );
+      return null;
+    }
+  }
+
   Future<Vehicle?> updateMileage({
     required int value,
     required String unit,

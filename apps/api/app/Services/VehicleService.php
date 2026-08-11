@@ -17,10 +17,27 @@ class VehicleService
 {
     public function __construct(
         private readonly PlanCalculator $plans,
+        private readonly AccountOwnershipService $ownership,
     ) {}
+
+    /**
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator<int, Vehicle>
+     */
+    public function paginateForSession(AnonymousSession $session, int $page, int $perPage)
+    {
+        $this->ownership->ensureClaimedForSession($session);
+
+        return $this->visibleQuery($session)
+            ->with('configuration')
+            ->latest('created_at')
+            ->paginate($perPage, ['*'], 'page', $page);
+    }
 
     public function create(AnonymousSession $session, array $data): Vehicle
     {
+        $this->ownership->ensureClaimedForSession($session);
+        $session->loadMissing('guestProfile');
+
         $vin = $data['vin'] ?? null;
         $vinHash = $vin === null ? null : $this->vinHash($vin);
 
@@ -29,11 +46,13 @@ class VehicleService
         }
 
         $limit = (int) config('guest_bootstrap.capabilities.max_vehicles_per_user');
-        if ($session->vehicles()->count() >= $limit) {
+        if ($this->ownedCount($session) >= $limit) {
             throw new ApiException('VEHICLE_LIMIT_EXCEEDED', __('api.errors.vehicle_limit_exceeded'), 409);
         }
 
-        return DB::transaction(function () use ($session, $data, $vin, $vinHash): Vehicle {
+        $ownerUserId = $session->guestProfile?->user_id;
+
+        return DB::transaction(function () use ($session, $data, $vin, $vinHash, $ownerUserId): Vehicle {
             $now = now();
             $configuration = VehicleConfiguration::query()->create(
                 $this->configurationAttributes($data, $this->provenance(array_keys($data), $now->toISOString())),
@@ -41,7 +60,7 @@ class VehicleService
 
             $vehicle = Vehicle::query()->create([
                 'anonymous_session_id' => $session->id,
-                'user_id' => null,
+                'user_id' => $ownerUserId,
                 'configuration_id' => $configuration->id,
                 'vin_ciphertext' => $vin,
                 'vin_hash' => $vinHash,
@@ -201,9 +220,10 @@ class VehicleService
 
     public function owned(AnonymousSession $session, string $id, bool $forUpdate = false): Vehicle
     {
-        $query = Vehicle::query()
+        $this->ownership->ensureClaimedForSession($session);
+
+        $query = $this->visibleQuery($session)
             ->with('configuration')
-            ->where('anonymous_session_id', $session->id)
             ->whereKey($id);
 
         if ($forUpdate) {
@@ -216,6 +236,32 @@ class VehicleService
         }
 
         return $vehicle;
+    }
+
+    private function ownedCount(AnonymousSession $session): int
+    {
+        return $this->visibleQuery($session)->count();
+    }
+
+    /**
+     * Account-owned vehicles (user_id) plus still-unclaimed vehicles of this session.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<Vehicle>
+     */
+    private function visibleQuery(AnonymousSession $session)
+    {
+        $session->loadMissing('guestProfile');
+        $userId = $session->guestProfile?->user_id;
+
+        return Vehicle::query()->where(function ($query) use ($session, $userId): void {
+            if ($userId !== null) {
+                $query->where('user_id', $userId);
+            }
+            $query->orWhere(function ($inner) use ($session): void {
+                $inner->whereNull('user_id')
+                    ->where('anonymous_session_id', $session->id);
+            });
+        });
     }
 
     private function configurationAttributes(array $data, array $provenance): array

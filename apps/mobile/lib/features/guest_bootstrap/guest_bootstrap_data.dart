@@ -37,9 +37,28 @@ class SecureSessionTokenStore implements SessionTokenStore {
   Future<void> clear() => _storage.delete(key: _tokenKey);
 }
 
+class SecureGuestProfileIdStore implements GuestProfileIdStore {
+  SecureGuestProfileIdStore([FlutterSecureStorage? storage])
+    : _storage = storage ?? const FlutterSecureStorage();
+
+  static const _profileKey = 'guest_profile_id';
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<String?> read() => _storage.read(key: _profileKey);
+
+  @override
+  Future<void> write(String profileId) =>
+      _storage.write(key: _profileKey, value: profileId);
+
+  @override
+  Future<void> clear() => _storage.delete(key: _profileKey);
+}
+
 class DioGuestBootstrapRepository implements GuestBootstrapRepository {
   DioGuestBootstrapRepository(
-    this._tokenStore, {
+    this._tokenStore,
+    this._profileStore, {
     required String locale,
     Dio? dio,
     Uuid? uuid,
@@ -59,6 +78,7 @@ class DioGuestBootstrapRepository implements GuestBootstrapRepository {
            );
 
   final SessionTokenStore _tokenStore;
+  final GuestProfileIdStore _profileStore;
   final Uuid _uuid;
   final Dio _dio;
 
@@ -69,19 +89,29 @@ class DioGuestBootstrapRepository implements GuestBootstrapRepository {
     required String appVersion,
   }) async {
     try {
+      final existingProfileId = await _profileStore.read();
       final response = await _dio.post<Map<String, dynamic>>(
         '/sessions/anonymous',
         data: {
           'locale': locale,
           'platform': platform,
           'app_version': appVersion,
+          if (existingProfileId != null && existingProfileId.isNotEmpty)
+            'guest_profile_id': existingProfileId,
         },
         options: Options(headers: {'Idempotency-Key': _uuid.v4()}),
       );
       final body = _body(response);
+      final profileId = body['guest_profile_id'] as String? ??
+          (_map(body['session'])['guest_profile_id'] as String?);
+      if (profileId == null || profileId.isEmpty) {
+        throw const FormatException();
+      }
+      await _profileStore.write(profileId);
       return CreatedGuestSession(
         session: _session(_map(body['session'])),
         token: body['session_token'] as String,
+        guestProfileId: profileId,
       );
     } on DioException catch (error) {
       throw _failure(error);

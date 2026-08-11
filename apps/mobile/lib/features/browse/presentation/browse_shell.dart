@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/automotive_widgets.dart';
+import '../../../core/widgets/odometer_overlay.dart';
 import '../../../l10n/l10n.dart';
+import '../../auth/auth.dart';
+import '../../vehicle/presentation/garage_sheet.dart';
 import '../../vehicle/vehicle_controller.dart';
+import 'history_completeness_alarm.dart';
 
 class GlobalHeaderFrame extends ConsumerStatefulWidget {
   const GlobalHeaderFrame({required this.child, super.key});
@@ -21,36 +25,6 @@ class _GlobalHeaderFrameState extends ConsumerState<GlobalHeaderFrame> {
     super.initState();
     Future<void>.microtask(
       () => ref.read(vehicleSetupControllerProvider.notifier).load(),
-    );
-  }
-
-  void _showPreviewSheet(
-    BuildContext context, {
-    required String title,
-    required String text,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text(text),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(context.l10n.close),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -138,16 +112,7 @@ class _GlobalHeaderFrameState extends ConsumerState<GlobalHeaderFrame> {
                           ),
                           onTap: vehicle == null
                               ? () => context.go('/garage/add')
-                              : () => _showPreviewSheet(
-                                  context,
-                                  title: '${vehicle.make} ${vehicle.model}',
-                                  text: vehicle.mileage == null
-                                      ? context.l10n.vehicleProfileBasicSummary
-                                      : context.l10n.vehicleMileageSummary(
-                                          vehicle.mileage!,
-                                          vehicle.mileageUnit ?? 'km',
-                                        ),
-                                ),
+                              : () => showGarageSheet(context, ref),
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
                             height: 46,
@@ -219,21 +184,12 @@ class _GlobalHeaderFrameState extends ConsumerState<GlobalHeaderFrame> {
                         label: context.l10n.openGuestProfile,
                         child: InkWell(
                           customBorder: const CircleBorder(),
-                          onTap: () => _showPreviewSheet(
-                            context,
-                            title: context.l10n.guestProfile,
-                            text: context.l10n.guestProfileFuture,
-                          ),
-                          child: CircleAvatar(
-                            radius: 17,
+                          onTap: () => context.push('/profile'),
+                          child: _ProfileAvatar(
+                            user: ref.watch(authControllerProvider).asData?.value,
+                            guestInitial: context.l10n.guestProfileInitial,
                             backgroundColor: colors.surfaceContainerHighest,
-                            child: Text(
-                              context.l10n.guestProfileInitial,
-                              style: TextStyle(
-                                color: colors.onSecondaryContainer,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            foregroundColor: colors.onSecondaryContainer,
                           ),
                         ),
                       ),
@@ -242,11 +198,75 @@ class _GlobalHeaderFrameState extends ConsumerState<GlobalHeaderFrame> {
                 ),
               ),
             ),
-            Expanded(child: widget.child),
+            const HistoryCompletenessAlarmBanner(),
+            Expanded(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(child: widget.child),
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: HistoryCompletenessAlarmTab(),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    required this.user,
+    required this.guestInitial,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  final AuthUser? user;
+  final String guestInitial;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final photoUrl = user?.photoUrl;
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: 17,
+        backgroundColor: backgroundColor,
+        backgroundImage: NetworkImage(photoUrl),
+      );
+    }
+
+    final initial = user == null
+        ? guestInitial
+        : _initialFromName(user!.name, user!.email);
+
+    return CircleAvatar(
+      radius: 17,
+      backgroundColor: backgroundColor,
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: foregroundColor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  static String _initialFromName(String name, String email) {
+    final source = name.trim().isNotEmpty ? name.trim() : email.trim();
+    if (source.isEmpty) {
+      return '?';
+    }
+    return String.fromCharCode(source.runes.first).toUpperCase();
   }
 }
 
@@ -275,20 +295,31 @@ class BrowseShell extends StatelessWidget {
             ),
           ],
         ),
-        if (navigationShell.currentIndex == 0)
-          Positioned(
-            right: 16,
-            bottom: 82,
-            child: Semantics(
-              button: true,
-              label: context.l10n.addEventJournalSemantics,
-              child: FloatingActionButton(
-                key: const Key('roadmap-quick-add'),
-                tooltip: context.l10n.addEvent,
-                onPressed: () => showQuickAddPreview(context),
-                child: const Icon(Icons.add),
-              ),
-            ),
+        if (navigationShell.currentIndex == 0 ||
+            navigationShell.currentIndex == 3)
+          ValueListenableBuilder<int>(
+            valueListenable: odometerPickerOpenCount,
+            builder: (context, openCount, _) {
+              if (openCount > 0) return const SizedBox.shrink();
+              return Positioned(
+                right: 16,
+                bottom: 82,
+                child: Semantics(
+                  button: true,
+                  label: context.l10n.addEventJournalSemantics,
+                  child: FloatingActionButton(
+                    key: Key(
+                      navigationShell.currentIndex == 3
+                          ? 'journal-quick-add'
+                          : 'roadmap-quick-add',
+                    ),
+                    tooltip: context.l10n.addEvent,
+                    onPressed: () => showQuickAddPreview(context),
+                    child: const Icon(Icons.add),
+                  ),
+                ),
+              );
+            },
           ),
       ],
     );

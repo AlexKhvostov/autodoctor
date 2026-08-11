@@ -6,12 +6,15 @@ import 'package:go_router/go_router.dart';
 import '../../../app/locale_controller.dart';
 import '../../../app/theme.dart';
 import '../../../core/widgets/automotive_widgets.dart';
+import '../../../core/widgets/odometer_mileage_input.dart';
 import '../../../l10n/l10n.dart';
 import '../../browse/presentation/browse_screens.dart';
 import '../../vehicle/vehicle.dart';
 import '../../vehicle/vehicle_controller.dart';
 import '../maintenance.dart';
 import '../maintenance_controller.dart';
+import 'state_screen.dart';
+import 'work_node_icons.dart';
 
 class FirstPlanScreen extends ConsumerStatefulWidget {
   const FirstPlanScreen({super.key});
@@ -322,7 +325,7 @@ Future<void> openConsumablesSideSheet({
   ),
 );
 
-class _RealRoadmap extends ConsumerWidget {
+class _RealRoadmap extends ConsumerStatefulWidget {
   const _RealRoadmap({
     required this.timeline,
     required this.plan,
@@ -336,93 +339,79 @@ class _RealRoadmap extends ConsumerWidget {
   final MileageForecast? forecast;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final future = showableFuturePlanItems(timeline.items);
-    final completeness = historyCompletenessPercent(plan.items);
-    final colors = Theme.of(context).colorScheme;
+  ConsumerState<_RealRoadmap> createState() => _RealRoadmapState();
+}
 
-    return ListView(
+class _RealRoadmapState extends ConsumerState<_RealRoadmap> {
+  final _nowKey = GlobalKey();
+  final _scrollController = ScrollController();
+  var _didScrollToNow = false;
+  var _scrollAttempts = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollToNow();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToNow() {
+    if (_didScrollToNow) return;
+    final ctx = _nowKey.currentContext;
+    if (ctx == null) {
+      if (_scrollAttempts++ > 20) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToNow();
+      });
+      return;
+    }
+    _didScrollToNow = true;
+    Scrollable.ensureVisible(
+      ctx,
+      alignment: 0.12,
+      duration: Duration.zero,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final future = showableFuturePlanItems(widget.timeline.items);
+
+    return Column(
       key: const Key('real-timeline'),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Material(
-          key: const Key('history-completeness-banner'),
-          color: colors.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => context.push('/history/wizard'),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.l10n.historyCompletenessBanner(completeness),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.l10n.historyCompletenessCta,
-                    style: TextStyle(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        _MileageQuickBlock(vehicle: widget.vehicle),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+          child: TechnicalLabel(context.l10n.planTimelineLabel),
         ),
         const SizedBox(height: 8),
-        TextButton.icon(
-          key: const Key('open-state-from-plan'),
-          onPressed: () => context.go('/state'),
-          icon: const Icon(Icons.monitor_heart_outlined, size: 18),
-          label: Text(context.l10n.openState),
-        ),
-        const SizedBox(height: 8),
-        TechnicalLabel(context.l10n.planTimelineLabel),
-        const SizedBox(height: 8),
-        _PlanRoadTimeline(
-          timeline: timeline,
-          vehicle: vehicle,
-          future: future,
-          forecast: forecast,
-        ),
-        const SizedBox(height: 12),
-        AutomotivePanel(
-          key: const Key('plan-analytics-strip'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        Expanded(
+          child: ListView(
+            controller: _scrollController,
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
             children: [
-              TechnicalLabel(context.l10n.planAnalyticsStrip),
-              const SizedBox(height: 4),
-              Text(
-                timeline.currentMileage == null
-                    ? context.l10n.nowHistoryUnknown
-                    : context.l10n.nowAtMileage(
-                        timeline.currentMileage!,
-                        timeline.currentMileageUnit ?? 'km',
-                      ),
+              _PlanRoadTimeline(
+                timeline: widget.timeline,
+                vehicle: widget.vehicle,
+                future: future,
+                forecast: widget.forecast,
+                nowKey: _nowKey,
               ),
-              if (forecast case final forecastValue?)
-                Text(
-                  context.l10n.forecastAnnualDistance(
-                    forecastValue.isDefaultAssumption
-                        ? context.l10n.preliminaryEstimate
-                        : forecastValue.estimateLabel,
-                    forecastValue.annualDistance,
-                    forecastValue.annualDistanceUnit,
-                  ),
-                ),
-              Text(context.l10n.planNearestCount(future.length)),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                key: const Key('plan-open-analytics'),
-                onPressed: () => context.push('/analytics'),
-                child: Text(context.l10n.openAnalytics),
+              const SizedBox(height: 16),
+              _PlanAnalyticsQuiet(
+                timeline: widget.timeline,
+                forecast: widget.forecast,
+                nearestCount: future.length,
               ),
             ],
           ),
@@ -432,11 +421,284 @@ class _RealRoadmap extends ConsumerWidget {
   }
 }
 
-class _PlanRoadTimeline extends StatelessWidget {
+class _MileageQuickBlock extends ConsumerStatefulWidget {
+  const _MileageQuickBlock({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  ConsumerState<_MileageQuickBlock> createState() => _MileageQuickBlockState();
+}
+
+class _MileageQuickBlockState extends ConsumerState<_MileageQuickBlock> {
+  late final TextEditingController _controller;
+  var _saving = false;
+  var _dirty = false;
+  String? _error;
+  String? _syncedKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.vehicle.mileage?.toString() ?? '',
+    );
+    _syncedKey = '${widget.vehicle.id}:${widget.vehicle.mileage}';
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _syncFrom(Vehicle vehicle) {
+    final key = '${vehicle.id}:${vehicle.mileage}';
+    if (_saving || key == _syncedKey) return;
+    _syncedKey = key;
+    _controller.text = vehicle.mileage?.toString() ?? '';
+    _dirty = false;
+  }
+
+
+  Future<void> _save() async {
+    if (_saving) return;
+    final vehicle =
+        ref.read(vehicleSetupControllerProvider).activeVehicle ?? widget.vehicle;
+    final value = int.tryParse(_controller.text.trim());
+    final unit = vehicle.mileageUnit ?? 'km';
+    if (value == null ||
+        value < 0 ||
+        (vehicle.mileage != null &&
+            mileageInKm(value, unit) <
+                mileageInKm(vehicle.mileage!, unit))) {
+      setState(() => _error = context.l10n.mileageDecreaseNotAllowed);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final result = await ref
+        .read(vehicleSetupControllerProvider.notifier)
+        .updateMileage(value: value, unit: unit);
+    if (!mounted) return;
+    if (result != null) {
+      _syncedKey = '${vehicle.id}:$value';
+      setState(() {
+        _saving = false;
+        _dirty = false;
+      });
+      return;
+    }
+    final failure = ref.read(vehicleSetupControllerProvider).failure;
+    setState(() {
+      _saving = false;
+      _error = failure?.code == 'VERSION_CONFLICT'
+          ? context.l10n.versionConflict
+          : failure?.safeMessage.isNotEmpty == true
+          ? failure!.safeMessage
+          : context.l10n.mileageUpdateError;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final live = ref.watch(vehicleSetupControllerProvider).activeVehicle;
+    final vehicle =
+        (live != null && live.id == widget.vehicle.id) ? live : widget.vehicle;
+    _syncFrom(vehicle);
+
+    final colors = Theme.of(context).colorScheme;
+    final unit = vehicle.mileageUnit ?? 'km';
+
+    return Material(
+      key: const Key('mileage-quick-block'),
+      color: colors.surfaceContainerHigh,
+      elevation: 1,
+      shadowColor: Colors.black38,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.primary.withValues(alpha: 0.35)),
+        ),
+        padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              context.l10n.currentMileage,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 40,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 38,
+                      child: MileageInputField(
+                        fieldKey: const Key('mileage-update-input'),
+                        value: int.tryParse(_controller.text.trim()),
+                        unit: unit,
+                        compact: true,
+                        enabled: !_saving,
+                        onChanged: (next) {
+                          _controller.text = '$next';
+                          setState(() {
+                            _error = null;
+                            _dirty = next != vehicle.mileage;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton.filled(
+                      key: const Key('mileage-update-save'),
+                      tooltip: context.l10n.save,
+                      onPressed: _saving ? null : _save,
+                      padding: EdgeInsets.zero,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(40, 40),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: _dirty
+                            ? colors.primary
+                            : colors.primary.withValues(alpha: 0.22),
+                        foregroundColor: _dirty
+                            ? colors.onPrimary
+                            : colors.onSurfaceVariant.withValues(alpha: 0.55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check, size: 18),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                _error!,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: colors.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanAnalyticsQuiet extends StatelessWidget {
+  const _PlanAnalyticsQuiet({
+    required this.timeline,
+    required this.nearestCount,
+    this.forecast,
+  });
+
+  final VehicleTimeline timeline;
+  final MileageForecast? forecast;
+  final int nearestCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      key: const Key('plan-analytics-strip'),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.l10n.planAnalyticsStrip,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            timeline.currentMileage == null
+                ? context.l10n.nowHistoryUnknown
+                : context.l10n.nowAtMileage(
+                    timeline.currentMileage!,
+                    timeline.currentMileageUnit ?? 'km',
+                  ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          if (forecast case final forecastValue?)
+            Text(
+              context.l10n.forecastAnnualDistance(
+                forecastValue.isDefaultAssumption
+                    ? context.l10n.preliminaryEstimate
+                    : forecastValue.estimateLabel,
+                forecastValue.annualDistance,
+                forecastValue.annualDistanceUnit,
+              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          Text(
+            context.l10n.planNearestCount(nearestCount),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              key: const Key('plan-open-analytics'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                foregroundColor: colors.onSurfaceVariant,
+              ),
+              onPressed: () => context.push('/analytics'),
+              child: Text(context.l10n.openAnalytics),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanRoadTimeline extends ConsumerWidget {
   const _PlanRoadTimeline({
     required this.timeline,
     required this.vehicle,
     required this.future,
+    required this.nowKey,
     this.forecast,
   });
 
@@ -444,73 +706,202 @@ class _PlanRoadTimeline extends StatelessWidget {
   final Vehicle vehicle;
   final List<TimelineItem> future;
   final MileageForecast? forecast;
+  final GlobalKey nowKey;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
-    final automotive =
-        Theme.of(context).extension<AutomotiveColors>() ??
-        AutomotiveColors.dark;
+    final past = timeline.serviceRecords.take(3).toList(growable: false);
 
     return AutomotivePanel(
       key: const Key('plan-road'),
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final record in timeline.serviceRecords.take(3))
-            _RoadEvent(
-              accent: colors.secondary,
-              railColor: colors.outlineVariant,
-              isLast: false,
-              dot: Icons.build_circle_outlined,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    record.title ??
-                        record.items.map((item) => item.title).join(', '),
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  Text(
-                    [
-                      _formatDate(record.serviceDate),
-                      if (record.mileage != null)
-                        '${record.mileage} ${record.mileageUnit ?? 'km'}',
-                    ].join(' · '),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+          if (past.isNotEmpty) ...[
+            _TimelineSectionLabel(label: context.l10n.planPastLabel),
+            const SizedBox(height: 6),
+            for (final record in past)
+              _RoadEvent(
+                accent: colors.tertiary,
+                railColor: colors.outlineVariant.withValues(alpha: 0.7),
+                isLast: false,
+                muted: true,
+                dense: true,
+                completed: true,
+                child: _PastTimelineCard(record: record),
               ),
-            ),
-          _RoadEvent(
-            accent: automotive.warning,
-            railColor: colors.primary,
-            isLast: future.isEmpty,
-            emphasized: true,
-            dot: Icons.my_location,
-            child: _CurrentMarker(timeline: timeline, vehicle: vehicle),
+          ],
+          KeyedSubtree(
+            key: nowKey,
+            child: _NowDivider(timeline: timeline),
           ),
-          if (forecast case final value?) _ForecastOrientation(forecast: value),
           if (future.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 38, bottom: 8),
+              padding: const EdgeInsets.only(left: 8, top: 8, bottom: 8),
               child: Text(context.l10n.timelineEmpty),
             )
-          else
+          else ...[
+            _TimelineSectionLabel(label: context.l10n.planFutureLabel),
+            const SizedBox(height: 6),
             for (var index = 0; index < future.length; index++)
               _RoadEvent(
                 accent: _actionColor(context, future[index].actionLevel),
                 railColor: colors.outlineVariant,
                 isLast: index == future.length - 1,
-                emphasized: index == 0,
-                dot: _categoryIcon(future[index].primaryCategory),
+                dense: true,
+                workCode: future[index].item.workCode,
+                onTap: () => _openPlanItem(
+                  context,
+                  ref,
+                  vehicle: vehicle,
+                  workCode: future[index].item.workCode,
+                  forecast: forecast,
+                ),
                 child: _TimelineNode(
                   item: future[index],
-                  isLast: true,
-                  compact: index > 0,
+                  currentMileage: timeline.currentMileage,
                 ),
               ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _openPlanItem(
+  BuildContext context,
+  WidgetRef ref, {
+  required Vehicle vehicle,
+  required String workCode,
+  MileageForecast? forecast,
+}) async {
+  final consumables =
+      ref.read(maintenanceControllerProvider).consumables?.items ??
+      const <Consumable>[];
+  final match = consumables
+      .where(
+        (item) =>
+            item.workCode == workCode ||
+            item.id.replaceAll('-', '_') == workCode,
+      )
+      .firstOrNull;
+  if (match != null) {
+    await showStateDetailSheet(
+      context: context,
+      ref: ref,
+      vehicle: vehicle,
+      item: match,
+      forecast: forecast,
+    );
+    return;
+  }
+  if (context.mounted) {
+    context.push(
+      '/service/add?workCode=${Uri.encodeQueryComponent(workCode)}',
+    );
+  }
+}
+
+class _TimelineSectionLabel extends StatelessWidget {
+  const _TimelineSectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Text(
+      label.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: colors.onSurfaceVariant,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.6,
+      ),
+    );
+  }
+}
+
+class _NowDivider extends StatelessWidget {
+  const _NowDivider({required this.timeline});
+
+  final VehicleTimeline timeline;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final mileageDetail = timeline.currentMileage == null
+        ? context.l10n.notSpecified
+        : '${timeline.currentMileage} ${timeline.currentMileageUnit ?? 'km'}';
+    final position =
+        '${_formatDate(DateTime.now())} · $mileageDetail';
+
+    return Padding(
+      key: const Key('current-mileage-marker'),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: colors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: colors.surface, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.45),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 2,
+              color: colors.primary.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: colors.primary,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.nowMarker,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colors.onPrimary,
+                    fontWeight: FontWeight.w800,
+                    height: 1.05,
+                  ),
+                ),
+                Text(
+                  position,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colors.onPrimary.withValues(alpha: 0.92),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 2,
+              color: colors.primary.withValues(alpha: 0.85),
+            ),
+          ),
         ],
       ),
     );
@@ -522,41 +913,75 @@ class _RoadEvent extends StatelessWidget {
     required this.accent,
     required this.railColor,
     required this.isLast,
-    required this.dot,
     required this.child,
-    this.emphasized = false,
+    this.dense = false,
+    this.muted = false,
+    this.completed = false,
+    this.onTap,
+    this.workCode,
   });
 
   final Color accent;
   final Color railColor;
   final bool isLast;
-  final IconData dot;
   final Widget child;
-  final bool emphasized;
+  final bool dense;
+  final bool muted;
+  final bool completed;
+  final VoidCallback? onTap;
+  final String? workCode;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final success =
+        Theme.of(context).extension<AutomotiveColors>()?.success ??
+        colors.tertiary;
+    final card = DecoratedBox(
+      decoration: BoxDecoration(
+        color: muted ? colors.surface : colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: colors.outlineVariant.withValues(alpha: muted ? 0.55 : 1),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          dense ? 8 : 10,
+          dense ? 6 : 8,
+          dense ? 8 : 10,
+          dense ? 6 : 8,
+        ),
+        child: child,
+      ),
+    );
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: 28,
+            width: 26,
             child: Column(
               children: [
                 Container(
-                  width: emphasized ? 26 : 22,
-                  height: emphasized ? 26 : 22,
+                  width: 16,
+                  height: 16,
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.18),
+                    color: completed
+                        ? success.withValues(alpha: 0.18)
+                        : colors.surface,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: accent,
-                      width: emphasized ? 2 : 1.4,
+                      color: completed
+                          ? success
+                          : accent.withValues(alpha: muted ? 0.45 : 0.9),
+                      width: 1.6,
                     ),
                   ),
-                  child: Icon(dot, size: emphasized ? 14 : 12, color: accent),
+                  child: completed
+                      ? Icon(Icons.check_rounded, size: 11, color: success)
+                      : null,
                 ),
                 if (!isLast)
                   Expanded(
@@ -572,27 +997,21 @@ class _RoadEvent extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 4 : 14),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: emphasized
-                      ? colors.surfaceContainerHigh
-                      : colors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: emphasized
-                        ? accent.withValues(alpha: 0.55)
-                        : colors.outlineVariant,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                  child: child,
-                ),
-              ),
+              padding: EdgeInsets.only(bottom: isLast ? 2 : (dense ? 8 : 12)),
+              child: onTap == null
+                  ? card
+                  : Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        key: Key('plan-item-tap-${workCode ?? 'x'}'),
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: onTap,
+                        child: card,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -601,200 +1020,261 @@ class _RoadEvent extends StatelessWidget {
   }
 }
 
-class _ForecastOrientation extends StatelessWidget {
-  const _ForecastOrientation({required this.forecast});
-  final MileageForecast forecast;
+class _CompletionMark extends StatelessWidget {
+  const _CompletionMark({required this.done});
+
+  final bool done;
 
   @override
   Widget build(BuildContext context) {
-    final window = forecast.nextWorkWindow;
-    final label = forecast.isDefaultAssumption
-        ? context.l10n.preliminaryEstimate
-        : forecast.estimateLabel;
-    return Semantics(
-      label: label,
-      child: Padding(
-        key: const Key('mileage-forecast-orientation'),
-        padding: const EdgeInsets.only(bottom: 12, left: 38),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.forecastAnnualDistance(
-                    label,
-                    forecast.annualDistance,
-                    forecast.annualDistanceUnit,
-                  ),
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                if (window?.from != null && window?.to != null)
-                  Text(
-                    context.l10n.forecastWindow(
-                      _formatDate(window!.from!),
-                      _formatDate(window.to!),
-                    ),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-              ],
-            ),
-          ),
+    final colors = Theme.of(context).colorScheme;
+    final success =
+        Theme.of(context).extension<AutomotiveColors>()?.success ??
+        const Color(0xFF65C18C);
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: done ? success.withValues(alpha: 0.14) : colors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: done ? success : colors.outlineVariant,
+          width: 1.4,
         ),
       ),
+      child: done
+          ? Icon(Icons.check_rounded, size: 15, color: success)
+          : null,
     );
   }
 }
 
-class _CurrentMarker extends ConsumerWidget {
-  const _CurrentMarker({required this.timeline, required this.vehicle});
+class _PastTimelineCard extends StatelessWidget {
+  const _PastTimelineCard({required this.record});
 
-  final VehicleTimeline timeline;
-  final Vehicle vehicle;
+  final ServiceRecord record;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => OutlinedButton(
-    key: const Key('current-mileage-marker'),
-    onPressed: () => _editMileage(context, ref, vehicle),
-    child: Column(
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final workCode =
+        record.items.isNotEmpty ? record.items.first.workCode : null;
+    final title =
+        record.title ?? record.items.map((item) => item.title).join(', ');
+
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.l10n.nowMarker),
-        Text(
-          timeline.currentMileage == null
-              ? context.l10n.nowHistoryUnknown
-              : context.l10n.nowAtMileage(
-                  timeline.currentMileage!,
-                  timeline.currentMileageUnit ?? 'km',
+        Icon(
+          workNodeIcon(workCode),
+          size: 18,
+          color: colors.onSurfaceVariant.withValues(alpha: 0.85),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              Text(
+                [
+                  _formatDate(record.serviceDate),
+                  if (record.mileage != null)
+                    '${record.mileage} ${record.mileageUnit ?? 'km'}',
+                ].join(' · '),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
-        Text(
-          timeline.currentMileage == null
-              ? context.l10n.setMileage
-              : context.l10n.refineMileage,
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
+        const SizedBox(width: 8),
+        const _CompletionMark(done: true),
       ],
-    ),
-  );
+    );
+  }
 }
 
 class _TimelineNode extends StatelessWidget {
-  const _TimelineNode({
-    required this.item,
-    required this.isLast,
-    this.compact = false,
-  });
+  const _TimelineNode({required this.item, this.currentMileage});
 
   final TimelineItem item;
-  final bool isLast;
-  final bool compact;
+  final int? currentMileage;
 
   @override
   Widget build(BuildContext context) {
     final maintenance = item.item;
-    final body = Column(
+    final colors = Theme.of(context).colorScheme;
+    final interval = _intervalCriterion(context, maintenance.interval);
+    final howSoon = _howSoonLabel(
+      context,
+      maintenance,
+      currentMileage: currentMileage,
+    );
+
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(maintenance.title, style: Theme.of(context).textTheme.titleSmall),
-        Text(
-          _conciseDue(context, maintenance),
-          style: Theme.of(context).textTheme.bodySmall,
+        Icon(
+          workNodeIcon(maintenance.workCode),
+          size: 18,
+          color: _actionColor(context, item.actionLevel),
         ),
-        const SizedBox(height: 2),
-        Wrap(
-          spacing: 2,
-          children: [
-            _Indicator(
-              family: 'action',
-              value: item.actionLevel.name,
-              icon: _actionIcon(item.actionLevel),
-              color: _actionColor(context, item.actionLevel),
-              label: _actionLabel(context, item.actionLevel),
-            ),
-            _Indicator(
-              family: 'basis',
-              value: item.basis.name,
-              icon: _basisIcon(item.basis),
-              color: _basisColor(context, item.basis),
-              label: _basisLabel(context, item.basis),
-            ),
-          ],
-        ),
-        if (!compact)
-          TextButton.icon(
-            key: Key('performed-${maintenance.workCode}'),
-            onPressed: () => context.push(
-              '/service/add?workCode=${Uri.encodeQueryComponent(maintenance.workCode)}',
-            ),
-            icon: const Icon(Icons.task_alt, size: 17),
-            label: Text(context.l10n.performed),
-          ),
-      ],
-    );
-    if (compact) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            _CategoryNodeIcon(category: item.primaryCategory),
-            const SizedBox(width: 8),
-            Expanded(child: body),
-          ],
-        ),
-      );
-    }
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 34,
-            child: Column(
-              children: [
-                _CategoryNodeIcon(category: item.primaryCategory),
-                if (!isLast)
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Expanded(
-                    child: VerticalDivider(
-                      color: Theme.of(context).colorScheme.outlineVariant,
+                    child: Text(
+                      maintenance.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 4),
+                  _Indicator(
+                    family: 'action',
+                    value: item.actionLevel.name,
+                    icon: _actionIcon(item.actionLevel),
+                    color: _actionColor(context, item.actionLevel),
+                    label: _actionLabel(context, item.actionLevel),
+                  ),
+                  _Indicator(
+                    family: 'basis',
+                    value: item.basis.name,
+                    icon: _basisIcon(item.basis),
+                    color: _basisColor(context, item.basis),
+                    label: _basisLabel(context, item.basis),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _conciseDue(context, maintenance),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              if (interval != null)
+                Text(
+                  interval,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 72,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const _CompletionMark(done: false),
+              if (howSoon != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  howSoon,
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: _actionColor(context, item.actionLevel),
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 13),
-              child: body,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _CategoryNodeIcon extends StatelessWidget {
-  const _CategoryNodeIcon({required this.category});
-  final String category;
+String? _howSoonLabel(
+  BuildContext context,
+  MaintenanceItem item, {
+  int? currentMileage,
+}) {
+  final due = item.due;
+  final parts = <String>[];
+  if (due.date != null) {
+    final today = DateTime.now();
+    final dueDay = DateTime(due.date!.year, due.date!.month, due.date!.day);
+    final nowDay = DateTime(today.year, today.month, today.day);
+    final days = dueDay.difference(nowDay).inDays;
+    parts.add(
+      days >= 0
+          ? context.l10n.howSoonDays(days)
+          : context.l10n.howSoonOverdueDays(-days),
+    );
+  }
+  if (due.mileage != null && currentMileage != null) {
+    final km = due.mileage! - currentMileage;
+    parts.add(
+      km >= 0
+          ? context.l10n.howSoonKm(km)
+          : context.l10n.howSoonOverdueKm(-km),
+    );
+  }
+  if (parts.isEmpty) return null;
+  // Prefer the more urgent signal when both exist.
+  if (parts.length == 2) {
+    final daysLeft = due.date == null
+        ? null
+        : DateTime(
+            due.date!.year,
+            due.date!.month,
+            due.date!.day,
+          ).difference(DateTime(
+            DateTime.now().year,
+            DateTime.now().month,
+            DateTime.now().day,
+          )).inDays;
+    final kmLeft = due.mileage! - currentMileage!;
+    if (daysLeft != null && daysLeft <= 0) return parts.first;
+    if (kmLeft <= 0) return parts.last;
+    // Show both, stacked for the narrow column.
+    return parts.join('\n');
+  }
+  return parts.first;
+}
 
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: context.l10n.iconCategorySemantics(_category(context, category)),
-    child: CircleAvatar(
-      key: Key('category-node-$category'),
-      radius: 14,
-      child: Icon(_categoryIcon(category), size: 16),
-    ),
-  );
+String? _intervalCriterion(BuildContext context, MaintenanceInterval interval) {
+  final parts = <String>[];
+  if (interval.mileageKm != null) {
+    parts.add(context.l10n.intervalEveryKm(interval.mileageKm!));
+  }
+  if (interval.days != null) {
+    if (interval.days == 365 || interval.days == 366) {
+      parts.add(context.l10n.intervalEveryYear);
+    } else {
+      parts.add(context.l10n.intervalEveryDays(interval.days!));
+    }
+  }
+  if (parts.isEmpty) return null;
+  return parts.join(' · ');
 }
 
 class _Indicator extends StatelessWidget {
@@ -824,20 +1304,8 @@ class _Indicator extends StatelessWidget {
             _showLegend(context, focusFamily: family, focusValue: value),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 15, color: color),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelSmall?.copyWith(color: color),
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.all(4),
+          child: Icon(icon, size: 16, color: color),
         ),
       ),
     ),
@@ -927,7 +1395,12 @@ class _ConsumablesSheetState extends State<_ConsumablesSheet> {
                         ),
                         child: ListTile(
                           key: Key('consumable-row-${item.id}'),
-                          leading: Icon(_workIcon(item.id)),
+                          leading: Icon(
+                            workNodeIcon(
+                              item.workCode.isEmpty ? null : item.workCode,
+                              fallbackId: item.id,
+                            ),
+                          ),
                           title: Text(item.title),
                           subtitle: Text(_consumableState(context, item)),
                           trailing: Icon(
@@ -1266,116 +1739,6 @@ class _ErrorPanel extends StatelessWidget {
   }
 }
 
-Future<void> _editMileage(
-  BuildContext context,
-  WidgetRef ref,
-  Vehicle vehicle,
-) async {
-  final controller = TextEditingController(
-    text: vehicle.mileage?.toString() ?? '',
-  );
-  String? error;
-  var saving = false;
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (sheetContext) => StatefulBuilder(
-      builder: (context, setState) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            16 + MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  context.l10n.currentMileage,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextField(
-                  key: const Key('mileage-update-input'),
-                  controller: controller,
-                  autofocus: true,
-                  enabled: !saving,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(
-                    suffixText: vehicle.mileageUnit ?? 'km',
-                    errorText: error,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  key: const Key('mileage-update-save'),
-                  onPressed: saving
-                      ? null
-                      : () async {
-                          final value = int.tryParse(controller.text);
-                          if (value == null ||
-                              value < 0 ||
-                              (vehicle.mileage != null &&
-                                  mileageInKm(
-                                        value,
-                                        vehicle.mileageUnit ?? 'km',
-                                      ) <
-                                      mileageInKm(
-                                        vehicle.mileage!,
-                                        vehicle.mileageUnit ?? 'km',
-                                      ))) {
-                            setState(
-                              () => error =
-                                  context.l10n.mileageDecreaseNotAllowed,
-                            );
-                            return;
-                          }
-                          setState(() {
-                            saving = true;
-                            error = null;
-                          });
-                          final result = await ref
-                              .read(vehicleSetupControllerProvider.notifier)
-                              .updateMileage(
-                                value: value,
-                                unit: vehicle.mileageUnit ?? 'km',
-                              );
-                          if (!sheetContext.mounted) return;
-                          if (result != null) {
-                            Navigator.pop(sheetContext);
-                            return;
-                          }
-                          final failure = ref
-                              .read(vehicleSetupControllerProvider)
-                              .failure;
-                          setState(() {
-                            saving = false;
-                            final message = failure?.code == 'VERSION_CONFLICT'
-                                ? context.l10n.versionConflict
-                                : failure?.safeMessage.isNotEmpty == true
-                                ? failure!.safeMessage
-                                : context.l10n.mileageUpdateError;
-                            error = failure?.requestId == null
-                                ? message
-                                : '$message ${context.l10n.requestIdLabel(failure!.requestId!)}';
-                          });
-                        },
-                  child: Text(context.l10n.save),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-  await Future<void>.delayed(const Duration(milliseconds: 400));
-  controller.dispose();
-}
-
 Future<void> showWearDialog(
   BuildContext context,
   WidgetRef ref,
@@ -1412,16 +1775,16 @@ Future<void> showWearDialog(
                   errorText: error,
                 ),
               ),
-              TextField(
-                key: const Key('wear-mileage-input'),
-                controller: mileage,
+              MileageInputField(
+                fieldKey: const Key('wear-mileage-input'),
+                value: int.tryParse(mileage.text.trim()),
+                unit: vehicle.mileageUnit ?? 'km',
+                label: '${context.l10n.currentMileage}, ${vehicle.mileageUnit ?? 'km'}',
                 enabled: !saving,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  labelText:
-                      '${context.l10n.currentMileage}, ${vehicle.mileageUnit ?? 'km'}',
-                ),
+                onChanged: (next) {
+                  mileage.text = '$next';
+                  setState(() {});
+                },
               ),
               ListTile(
                 key: const Key('wear-date'),
@@ -1653,13 +2016,6 @@ String _status(BuildContext context, MaintenanceStatus status) =>
       MaintenanceStatus.unrecognized => context.l10n.unknownValue,
     };
 
-String _category(BuildContext context, String value) => switch (value) {
-  'inspection' => context.l10n.categoryInspection,
-  'parts' => context.l10n.categoryParts,
-  'maintenance_repair' => context.l10n.categoryMaintenance,
-  _ => context.l10n.unknownValue,
-};
-
 String _consumableState(BuildContext context, Consumable item) {
   if (item.kind == ConsumableKind.conditionBased) {
     return item.inspectedAt == null
@@ -1687,22 +2043,6 @@ String _limiting(BuildContext context, String trigger) => switch (trigger) {
   'time' => context.l10n.limitingTime,
   'mileage' => context.l10n.limitingMileage,
   _ => context.l10n.limitingUnknown,
-};
-
-IconData _workIcon(String id) {
-  if (id.contains('oil')) return Icons.oil_barrel_outlined;
-  if (id.contains('tire')) return Icons.tire_repair_outlined;
-  if (id.contains('coolant')) return Icons.water_drop_outlined;
-  if (id.contains('brake')) return Icons.album_outlined;
-  if (id.contains('filter')) return Icons.air_outlined;
-  return Icons.build_outlined;
-}
-
-IconData _categoryIcon(String category) => switch (category) {
-  'inspection' => Icons.manage_search_outlined,
-  'parts' => Icons.settings_outlined,
-  'maintenance_repair' => Icons.car_repair_outlined,
-  _ => Icons.category_outlined,
 };
 
 String _actionLabel(BuildContext context, TimelineActionLevel value) =>
@@ -1766,7 +2106,8 @@ String _basisExplanation(BuildContext context, PresentationBasis value) =>
     };
 
 IconData _basisIcon(PresentationBasis value) => switch (value) {
-  PresentationBasis.confirmed => Icons.check_circle_outline,
+  // Not a checkmark — that reads as "already done" on the timeline.
+  PresentationBasis.confirmed => Icons.assignment_outlined,
   PresentationBasis.forecast => Icons.timeline_outlined,
   PresentationBasis.missingData => Icons.help_outline,
   PresentationBasis.unrecognized => Icons.help_outline,

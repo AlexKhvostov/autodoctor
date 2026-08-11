@@ -36,6 +36,11 @@ class Vehicle extends Model
         return $this->belongsTo(AnonymousSession::class);
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function mileageObservations(): HasMany
     {
         return $this->hasMany(MileageObservation::class);
@@ -64,5 +69,20 @@ class Vehicle extends Model
     public function planItemUiPreferences(): HasMany
     {
         return $this->hasMany(VehiclePlanItemUiPreference::class);
+    }
+
+    public function aiNotes(): HasMany
+    {
+        return $this->hasMany(VehicleAiNote::class);
+    }
+
+    public function issues(): HasMany
+    {
+        return $this->hasMany(VehicleIssue::class);
+    }
+
+    public function assistantThreads(): HasMany
+    {
+        return $this->hasMany(AssistantThread::class);
     }
 }

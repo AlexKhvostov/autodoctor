@@ -169,27 +169,74 @@ class Vehicle {
   final String? drivetrain;
   final String? market;
 
-  Vehicle copyWith({int? version, int? mileage, String? mileageUnit}) =>
-      Vehicle(
-        id: id,
-        version: version ?? this.version,
-        vinMasked: vinMasked,
-        make: make,
-        model: model,
-        generation: generation,
-        mileage: mileage ?? this.mileage,
-        mileageUnit: mileageUnit ?? this.mileageUnit,
-        productionYear: productionYear,
-        firstUseDate: firstUseDate,
-        fuelType: fuelType,
-        engineDisplacementCc: engineDisplacementCc,
-        engineCode: engineCode,
-        powerKw: powerKw,
-        transmissionType: transmissionType,
-        transmissionGears: transmissionGears,
-        drivetrain: drivetrain,
-        market: market,
-      );
+  Vehicle copyWith({
+    int? version,
+    String? vinMasked,
+    String? make,
+    String? model,
+    String? generation,
+    int? mileage,
+    String? mileageUnit,
+    int? productionYear,
+    DateTime? firstUseDate,
+    String? fuelType,
+    int? engineDisplacementCc,
+    String? engineCode,
+    double? powerKw,
+    String? transmissionType,
+    int? transmissionGears,
+    String? drivetrain,
+    String? market,
+  }) => Vehicle(
+    id: id,
+    version: version ?? this.version,
+    vinMasked: vinMasked ?? this.vinMasked,
+    make: make ?? this.make,
+    model: model ?? this.model,
+    generation: generation ?? this.generation,
+    mileage: mileage ?? this.mileage,
+    mileageUnit: mileageUnit ?? this.mileageUnit,
+    productionYear: productionYear ?? this.productionYear,
+    firstUseDate: firstUseDate ?? this.firstUseDate,
+    fuelType: fuelType ?? this.fuelType,
+    engineDisplacementCc: engineDisplacementCc ?? this.engineDisplacementCc,
+    engineCode: engineCode ?? this.engineCode,
+    powerKw: powerKw ?? this.powerKw,
+    transmissionType: transmissionType ?? this.transmissionType,
+    transmissionGears: transmissionGears ?? this.transmissionGears,
+    drivetrain: drivetrain ?? this.drivetrain,
+    market: market ?? this.market,
+  );
+
+  VehicleDraft toDraft() => VehicleDraft(
+    make: make,
+    model: model,
+    generation: generation ?? '',
+    mileage: mileage,
+    productionYear: productionYear,
+    firstUseDate: firstUseDate,
+    fuelType: VehicleFuelType.values
+        .where((value) => value.name == fuelType)
+        .firstOrNull,
+    engineDisplacementCc: engineDisplacementCc,
+    engineCode: engineCode ?? '',
+    powerKw: powerKw,
+    transmissionType: switch (transmissionType) {
+      'manual' => VehicleTransmissionType.manual,
+      'automatic' => VehicleTransmissionType.automatic,
+      _ => null,
+    },
+    transmissionGears: transmissionGears,
+    drivetrain: switch (drivetrain) {
+      'fwd' => VehicleDrivetrain.fwd,
+      'rwd' => VehicleDrivetrain.rwd,
+      'awd' => VehicleDrivetrain.awd,
+      'four_wd' => VehicleDrivetrain.fourWd,
+      'other' => VehicleDrivetrain.other,
+      _ => null,
+    },
+    market: market ?? '',
+  );
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     final mileage = json['mileage'] is Map
@@ -227,6 +274,12 @@ class Vehicle {
 abstract interface class VehicleRepository {
   Future<List<Vehicle>> list({required String locale});
   Future<Vehicle> create(VehicleDraft draft, {required String locale});
+  Future<Vehicle> update(
+    String vehicleId,
+    VehicleDraft draft, {
+    required int version,
+    required String locale,
+  });
   Future<MileageConfirmation> updateMileage(
     String vehicleId, {
     required int value,

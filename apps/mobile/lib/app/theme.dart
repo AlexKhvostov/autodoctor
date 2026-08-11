@@ -20,14 +20,14 @@ class AutomotiveColors extends ThemeExtension<AutomotiveColors> {
     metal: Color(0xFF68747B),
     metalBright: Color(0xFFB8C2C7),
     info: Color(0xFF64B5F6),
-    warning: Color(0xFFF2A72B),
+    warning: Color(0xFFFFB454),
     requiredAction: Color(0xFFFF8A3D),
     error: Color(0xFFFF6B63),
-    onWarning: Color(0xFF251700),
+    onWarning: Color(0xFF1A1200),
     success: Color(0xFF65C18C),
     onSuccess: Color(0xFF002111),
     track: Color(0xFF30383D),
-    trackActive: Color(0xFFF2A72B),
+    trackActive: Color(0xFF1ECAD3),
   );
 
   final Color metal;
@@ -97,10 +97,10 @@ class AutomotiveColors extends ThemeExtension<AutomotiveColors> {
 
 ThemeData buildAutoDoctorTheme() {
   const scheme = ColorScheme.dark(
-    primary: Color(0xFFF2A72B),
-    onPrimary: Color(0xFF251700),
-    primaryContainer: Color(0xFF4A3208),
-    onPrimaryContainer: Color(0xFFFFDDA5),
+    primary: Color(0xFF1ECAD3),
+    onPrimary: Color(0xFF00363A),
+    primaryContainer: Color(0xFF00565C),
+    onPrimaryContainer: Color(0xFF9FF1F5),
     secondary: Color(0xFF91A4B1),
     onSecondary: Color(0xFF102028),
     secondaryContainer: Color(0xFF273943),
@@ -120,8 +120,8 @@ ThemeData buildAutoDoctorTheme() {
     scrim: Color(0xFF000000),
     inverseSurface: Color(0xFFE4E8EA),
     onInverseSurface: Color(0xFF252A2D),
-    inversePrimary: Color(0xFF7C5700),
-    surfaceTint: Color(0xFFF2A72B),
+    inversePrimary: Color(0xFF00696F),
+    surfaceTint: Color(0xFF1ECAD3),
     surfaceContainerLowest: Color(0xFF090C0E),
     surfaceContainerLow: Color(0xFF13181C),
     surfaceContainer: Color(0xFF171D21),

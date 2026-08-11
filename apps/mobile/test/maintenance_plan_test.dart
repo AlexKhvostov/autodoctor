@@ -309,15 +309,11 @@ void main() {
     expect(find.text('Категория'), findsNothing);
   });
 
-  testWidgets('plan home keeps banner nearest card and mileage marker', (
+  testWidgets('plan home keeps nearest card and mileage marker', (
     tester,
   ) async {
     await _pumpRoadmap(tester, FakeMaintenanceRepository());
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const Key('history-completeness-banner')),
-      findsOneWidget,
-    );
     expect(find.byKey(const Key('plan-road')), findsOneWidget);
     expect(find.byKey(const Key('real-timeline')), findsOneWidget);
     expect(find.byKey(const Key('current-mileage-marker')), findsOneWidget);
@@ -384,11 +380,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('current-mileage-marker')));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('mileage-update-input')),
-      '9999',
-    );
-    await tester.showKeyboard(find.byKey(const Key('mileage-update-input')));
+    await _enterMileageViaOdometer(tester, const Key('mileage-update-input'), 9999);
     await tester.tap(find.byKey(const Key('mileage-update-save')));
     await tester.pump();
     expect(
@@ -396,10 +388,7 @@ void main() {
       findsOneWidget,
     );
     expect(vehicleRepository.updateCalls, 0);
-    await tester.enterText(
-      find.byKey(const Key('mileage-update-input')),
-      '12000',
-    );
+    await _enterMileageViaOdometer(tester, const Key('mileage-update-input'), 12000);
     await tester.tap(find.byKey(const Key('mileage-update-save')));
     await tester.pumpAndSettle();
     expect(vehicleRepository.updateCalls, 1);
@@ -521,11 +510,15 @@ void main() {
       locale: const Locale('ru'),
     );
     await tester.pumpAndSettle();
+    await _dismissHistoryIntro(tester);
 
-    expect(find.text('Пункт 1 из 2'), findsOneWidget);
+    expect(find.textContaining('1/2'), findsOneWidget);
     await tester.tap(find.byKey(const Key('history-skip-item')));
     await tester.pump();
-    expect(find.text('Пункт 2 из 2'), findsOneWidget);
+    expect(find.textContaining('1/2'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('history-next')));
+    await tester.pump();
+    expect(find.textContaining('2/2'), findsOneWidget);
   });
 
   testWidgets('known answer validates and submits mileage payload', (
@@ -539,13 +532,16 @@ void main() {
       locale: const Locale('ru'),
     );
     await tester.pumpAndSettle();
+    await _dismissHistoryIntro(tester);
 
     expect(find.byKey(const Key('history-fields-first')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('history-answer-done_known')));
+    await tester.pump();
     await tester.tap(find.byKey(const Key('history-save')));
     await tester.pump();
     expect(find.text('Укажите дату или корректный пробег.'), findsOneWidget);
 
-    await tester.enterText(find.byKey(const Key('history-mileage')), '5000');
+    await _enterMileageViaOdometer(tester, const Key('history-mileage'), 5000);
     await tester.tap(find.byKey(const Key('history-save')));
     await tester.pumpAndSettle();
     expect(repository.submittedAnswers, hasLength(1));
@@ -598,6 +594,8 @@ void main() {
 
     expect(find.byKey(const Key('history-fields-first')), findsOneWidget);
     await tester.tap(find.byKey(const Key('history-answer-not_done')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('history-save')));
     await tester.pumpAndSettle();
     expect(repository.submittedAnswers, hasLength(1));
     expect(repository.submittedAnswers.single.workCode, 'engine_oil');
@@ -630,7 +628,10 @@ void main() {
       locale: const Locale('ru'),
     );
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('history-mileage')), '4321');
+    await _dismissHistoryIntro(tester);
+    await tester.tap(find.byKey(const Key('history-answer-done_known')));
+    await tester.pump();
+    await _enterMileageViaOdometer(tester, const Key('history-mileage'), 4321);
     await tester.tap(find.byKey(const Key('history-save')));
     await tester.pumpAndSettle();
 
@@ -655,7 +656,9 @@ void main() {
         locale: localized.$1,
       );
       await tester.pumpAndSettle();
+      expect(find.byKey(const Key('history-intro-dialog')), findsOneWidget);
       expect(find.text(localized.$2), findsOneWidget);
+      await _dismissHistoryIntro(tester);
       expect(find.text(localized.$3), findsOneWidget);
       expect(find.byKey(const Key('history-fields-first')), findsOneWidget);
     });
@@ -673,9 +676,16 @@ void main() {
       locale: const Locale('ru'),
     );
     await tester.pumpAndSettle();
+    await _dismissHistoryIntro(tester);
+    await tester.ensureVisible(find.byKey(const Key('history-answer-done_known')));
+    await tester.tap(find.byKey(const Key('history-answer-done_known')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('history-mileage')));
-    await tester.showKeyboard(find.byKey(const Key('history-mileage')));
-    await tester.pump();
+    await tester.tap(find.byKey(const Key('history-mileage')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('odometer-picker-drums')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('odometer-picker-cancel')));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 
@@ -1031,6 +1041,31 @@ Future<void> _pumpFirstPlan(
   Locale locale = const Locale('ru'),
 }) => _pump(tester, const FirstPlanScreen(), repository, locale: locale);
 
+Future<void> _dismissHistoryIntro(WidgetTester tester) async {
+  final gotIt = find.byKey(const Key('history-intro-got-it'));
+  if (gotIt.evaluate().isEmpty) return;
+  await tester.tap(gotIt);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _enterMileageViaOdometer(
+  WidgetTester tester,
+  Key fieldKey,
+  int value,
+) async {
+  await tester.ensureVisible(find.byKey(fieldKey));
+  await tester.tap(find.byKey(fieldKey));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const Key('odometer-picker-drums')), findsOneWidget);
+  await tester.enterText(
+    find.byKey(const Key('odometer-picker-test-input')),
+    '$value',
+  );
+  await tester.pump();
+  await tester.tap(find.byKey(const Key('odometer-picker-confirm')));
+  await tester.pumpAndSettle();
+}
+
 Future<void> _pumpRoadmap(
   WidgetTester tester,
   MaintenanceRepository repository, {
@@ -1224,6 +1259,12 @@ class FakeMaintenanceRepository implements MaintenanceRepository {
           estimateLabel: 'Оценка',
         ),
       );
+
+  @override
+  Future<MileageObservationList> getMileageObservations(
+    String vehicleId, {
+    required String locale,
+  }) async => const MileageObservationList(items: []);
 
   @override
   Future<ConditionObservationList> getConditionObservations(
@@ -1480,6 +1521,14 @@ class FakeMileageVehicleRepository implements VehicleRepository {
 
   @override
   Future<List<Vehicle>> list({required String locale}) async => [iceVehicle];
+
+  @override
+  Future<Vehicle> update(
+    String vehicleId,
+    VehicleDraft draft, {
+    required int version,
+    required String locale,
+  }) async => iceVehicle.copyWith(version: version + 1);
 
   @override
   Future<MileageConfirmation> updateMileage(

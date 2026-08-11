@@ -50,10 +50,15 @@ class GuestSession {
 }
 
 class CreatedGuestSession {
-  const CreatedGuestSession({required this.session, required this.token});
+  const CreatedGuestSession({
+    required this.session,
+    required this.token,
+    required this.guestProfileId,
+  });
 
   final GuestSession session;
   final String token;
+  final String guestProfileId;
 }
 
 class GuestBootstrapFailure implements Exception {
@@ -87,6 +92,15 @@ abstract interface class SessionTokenStore {
   Future<String?> read();
 
   Future<void> write(String token);
+
+  Future<void> clear();
+}
+
+/// Долгоживущий id гостевого профиля (имя, «вы/ты» и т.п.). Не сбрасывается при смене сессии.
+abstract interface class GuestProfileIdStore {
+  Future<String?> read();
+
+  Future<void> write(String profileId);
 
   Future<void> clear();
 }

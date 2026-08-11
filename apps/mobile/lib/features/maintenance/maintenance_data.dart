@@ -61,6 +61,16 @@ class DioMaintenanceRepository implements MaintenanceRepository {
   );
 
   @override
+  Future<MileageObservationList> getMileageObservations(
+    String vehicleId, {
+    required String locale,
+  }) => _get(
+    '/vehicles/$vehicleId/mileage-observations?per_page=200',
+    locale,
+    MileageObservationList.fromJson,
+  );
+
+  @override
   Future<ConditionObservationList> getConditionObservations(
     String vehicleId, {
     required String locale,

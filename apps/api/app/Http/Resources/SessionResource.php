@@ -12,6 +12,7 @@ class SessionResource extends JsonResource
         return [
             'id' => $this->id,
             'status' => $this->status,
+            'guest_profile_id' => $this->guest_profile_id,
             'expires_at' => $this->expires_at->toISOString(),
             'created_at' => $this->created_at->toISOString(),
             'updated_at' => $this->updated_at->toISOString(),

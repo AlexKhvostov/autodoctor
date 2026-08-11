@@ -26,7 +26,7 @@ class GuestBootstrapTest extends TestCase
             ->assertExactJson([
                 'public_browse' => true,
                 'anonymous_sessions' => true,
-                'social_auth_providers' => ['telegram', 'google', 'apple'],
+                'social_auth_providers' => ['google'],
                 'email_password_auth' => false,
                 'max_vehicles_per_user' => 1,
             ]);
@@ -297,8 +297,9 @@ class GuestBootstrapTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonStructure([
-                'session' => ['id', 'status', 'expires_at', 'created_at', 'updated_at', 'version'],
+                'session' => ['id', 'status', 'guest_profile_id', 'expires_at', 'created_at', 'updated_at', 'version'],
                 'session_token',
+                'guest_profile_id',
             ]);
 
         return [$response->json('session_token'), $response->json('session.id')];

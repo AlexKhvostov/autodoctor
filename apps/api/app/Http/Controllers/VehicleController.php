@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateVehicleRequest;
 use App\Http\Resources\MileageObservationResource;
 use App\Http\Resources\VehicleResource;
 use App\Models\AnonymousSession;
-use App\Models\Vehicle;
 use App\Services\IdempotencyService;
 use App\Services\VehicleService;
 use Illuminate\Http\JsonResponse;
@@ -33,11 +32,7 @@ class VehicleController extends Controller
         $session = $this->session($request);
         $page = $pagination['page'] ?? 1;
         $perPage = $pagination['per_page'] ?? 20;
-        $paginator = Vehicle::query()
-            ->with('configuration')
-            ->where('anonymous_session_id', $session->id)
-            ->latest('created_at')
-            ->paginate($perPage, ['*'], 'page', $page);
+        $paginator = $this->vehicles->paginateForSession($session, $page, $perPage);
 
         return response()->json([
             'items' => VehicleResource::collection($paginator->items())->resolve(),

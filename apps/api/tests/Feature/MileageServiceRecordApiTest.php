@@ -92,6 +92,41 @@ class MileageServiceRecordApiTest extends TestCase
             ->assertJsonPath('error.code', 'VEHICLE_NOT_FOUND');
     }
 
+    public function test_mileage_observations_list_is_owned_and_ordered(): void
+    {
+        $headers = $this->sessionHeaders();
+        $vehicle = $this->createVehicle($headers, null);
+        $this->withHeaders($headers)->putJson("/api/v1/vehicles/{$vehicle}/mileage", [
+            'mileage' => ['value' => 1000, 'unit' => 'km'],
+            'observed_at' => '2026-07-18T10:00:00Z',
+            'version' => 1,
+        ])->assertOk();
+        $this->withHeaders([...$headers, 'Idempotency-Key' => (string) Str::uuid()])
+            ->putJson("/api/v1/vehicles/{$vehicle}/mileage", [
+                'mileage' => ['value' => 1200, 'unit' => 'km'],
+                'observed_at' => '2026-07-19T10:00:00Z',
+                'version' => 2,
+            ])->assertOk();
+        $this->withHeaders([...$headers, 'Idempotency-Key' => (string) Str::uuid()])
+            ->putJson("/api/v1/vehicles/{$vehicle}/mileage", [
+                'mileage' => ['value' => 1500, 'unit' => 'km'],
+                'observed_at' => '2026-07-20T10:00:00Z',
+                'version' => 3,
+            ])->assertOk();
+
+        $list = $this->withHeaders($headers)
+            ->getJson("/api/v1/vehicles/{$vehicle}/mileage-observations")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 3);
+        $values = collect($list->json('items'))->pluck('mileage.value')->all();
+        $this->assertSame([1000, 1200, 1500], $values);
+
+        $other = $this->sessionHeaders();
+        $this->withHeaders($other)
+            ->getJson("/api/v1/vehicles/{$vehicle}/mileage-observations")
+            ->assertNotFound();
+    }
+
     public function test_service_create_defaults_mileage_syncs_history_and_replays_atomically(): void
     {
         $headers = $this->sessionHeaders('ru');

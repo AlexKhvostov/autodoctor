@@ -815,6 +815,58 @@ class MileageForecast {
   }
 }
 
+class MileageObservation {
+  const MileageObservation({
+    required this.id,
+    required this.vehicleId,
+    required this.value,
+    required this.unit,
+    required this.observedAt,
+    this.source,
+  });
+
+  final String id;
+  final String vehicleId;
+  final int value;
+  final String unit;
+  final DateTime observedAt;
+  final String? source;
+
+  int get valueKm =>
+      unit == 'mi' ? (value * 1.609344).round() : value;
+
+  factory MileageObservation.fromJson(Object? value) {
+    final json = _map(value);
+    final mileage = _map(json['mileage']);
+    return MileageObservation(
+      id: json['id'] is String ? json['id'] as String : '',
+      vehicleId: json['vehicle_id'] is String
+          ? json['vehicle_id'] as String
+          : '',
+      value: (mileage['value'] as num?)?.toInt() ?? 0,
+      unit: mileage['unit'] is String ? mileage['unit'] as String : 'km',
+      observedAt: json['observed_at'] is String
+          ? DateTime.tryParse(json['observed_at'] as String) ??
+                DateTime.fromMillisecondsSinceEpoch(0)
+          : DateTime.fromMillisecondsSinceEpoch(0),
+      source: json['source'] is String ? json['source'] as String : null,
+    );
+  }
+}
+
+class MileageObservationList {
+  const MileageObservationList({required this.items});
+
+  final List<MileageObservation> items;
+
+  factory MileageObservationList.fromJson(Map<String, dynamic> json) =>
+      MileageObservationList(
+        items: _list(json['items'])
+            .map(MileageObservation.fromJson)
+            .toList(growable: false),
+      );
+}
+
 class ConditionObservation {
   const ConditionObservation({
     required this.id,
@@ -948,13 +1000,18 @@ bool isHistoryAnswerResolved(HistoryAnswerValue? answer) =>
     answer != HistoryAnswerValue.unknown &&
     answer != HistoryAnswerValue.unrecognized;
 
+/// Any explicit wizard answer counts for the completeness banner, including
+/// «не знаю» (`unknown`).
+bool isHistoryAnswerFilled(HistoryAnswerValue? answer) =>
+    answer != null && answer != HistoryAnswerValue.unrecognized;
+
 int historyCompletenessPercent(Iterable<MaintenanceItem> items) {
   final applicable = items
       .where((item) => item.status != MaintenanceStatus.notApplicable)
       .toList(growable: false);
   if (applicable.isEmpty) return 100;
   final resolved = applicable
-      .where((item) => isHistoryAnswerResolved(item.historyState.answer))
+      .where((item) => isHistoryAnswerFilled(item.historyState.answer))
       .length;
   return ((resolved / applicable.length) * 100).round().clamp(0, 100);
 }
@@ -987,27 +1044,45 @@ List<Consumable> sortStateTiles(Iterable<Consumable> items) {
   final result = items
       .where((item) => item.status != MaintenanceStatus.notApplicable)
       .toList();
-  int rank(MaintenanceStatus status) => switch (status) {
-    MaintenanceStatus.overdue => 0,
-    MaintenanceStatus.soon => 1,
-    MaintenanceStatus.current => 2,
-    MaintenanceStatus.unknown => 3,
-    MaintenanceStatus.completed => 4,
-    MaintenanceStatus.notApplicable => 5,
-    MaintenanceStatus.unrecognized => 6,
-  };
+
+  double? progressOf(Consumable item) {
+    final wear = item.latestObservation?.wearPercent;
+    if (wear != null) return (wear / 100).clamp(0.0, 1.5);
+    final used = item.usedFraction;
+    if (used != null) return used.clamp(0.0, 1.5);
+    return null;
+  }
+
+  bool missingData(Consumable item) =>
+      item.basis == 'missing_data' || item.status == MaintenanceStatus.unknown;
+
+  /// 0 = most urgent (ending / overdue / missing), higher = calmer.
+  int urgencyBucket(Consumable item) {
+    final progress = progressOf(item);
+    if (item.status == MaintenanceStatus.overdue ||
+        item.requiresCheckNow ||
+        (progress != null && progress >= 1.0)) {
+      return 0;
+    }
+    if (missingData(item)) return 1;
+    if (item.status == MaintenanceStatus.soon ||
+        (progress != null && progress >= 0.8)) {
+      return 2;
+    }
+    if (progress != null && progress >= 0.6) return 3;
+    if (item.status == MaintenanceStatus.current) return 4;
+    if (item.status == MaintenanceStatus.completed) return 5;
+    return 6;
+  }
+
   result.sort((a, b) {
-    final requiredA =
-        a.requiresCheckNow ||
-        a.importance == MaintenanceImportance.required ||
-        a.importance == MaintenanceImportance.criticalAttention;
-    final requiredB =
-        b.requiresCheckNow ||
-        b.importance == MaintenanceImportance.required ||
-        b.importance == MaintenanceImportance.criticalAttention;
-    if (requiredA != requiredB) return requiredA ? -1 : 1;
-    final status = rank(a.status).compareTo(rank(b.status));
-    if (status != 0) return status;
+    final bucket = urgencyBucket(a).compareTo(urgencyBucket(b));
+    if (bucket != 0) return bucket;
+    // Within a bucket: more "spent" / ending first.
+    final pa = progressOf(a) ?? -1;
+    final pb = progressOf(b) ?? -1;
+    final byProgress = pb.compareTo(pa);
+    if (byProgress != 0) return byProgress;
     return a.title.compareTo(b.title);
   });
   return result;
@@ -1148,6 +1223,10 @@ abstract interface class MaintenanceRepository {
     required List<HistoryAnswerWrite> answers,
   });
   Future<MileageForecast> getMileageForecast(
+    String vehicleId, {
+    required String locale,
+  });
+  Future<MileageObservationList> getMileageObservations(
     String vehicleId, {
     required String locale,
   });

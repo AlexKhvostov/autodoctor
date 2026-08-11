@@ -50,7 +50,75 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String historyCompletenessBannerShort(int percent) {
+    return 'Заполнено $percent%';
+  }
+
+  @override
   String get historyCompletenessCta => 'Уточнить историю';
+
+  @override
+  String get historyCompletenessCtaShort => 'Уточнить';
+
+  @override
+  String get historyCompletenessFill => 'Заполнить';
+
+  @override
+  String get historyCompletenessCollapse => 'Свернуть';
+
+  @override
+  String get historyCompletenessAlarmTitle =>
+      'Можно уточнить историю обслуживания';
+
+  @override
+  String get garageAddBlocked => 'Добавление авто недоступно';
+
+  @override
+  String get profileStatsTitle => 'Ваша активность';
+
+  @override
+  String get profileStatsVehicles => 'Авто';
+
+  @override
+  String get profileStatsActions => 'Записи';
+
+  @override
+  String get profileStatsChats => 'Чаты';
+
+  @override
+  String get journalColDate => 'Дата';
+
+  @override
+  String get journalColEvent => 'Событие';
+
+  @override
+  String get journalColType => 'Тип';
+
+  @override
+  String get journalEditTitle => 'Запись журнала';
+
+  @override
+  String get journalIconsLegendTitle => 'Иконки типов работ';
+
+  @override
+  String get journalIconsLegendBody =>
+      'У каждой записи — иконка узла обслуживания (масло, фильтры, тормоза, осмотр и т.д.). Нажмите запись, чтобы открыть карточку этого узла.';
+
+  @override
+  String get journalOpenNodeMissing =>
+      'Для этой записи узел состояния пока не найден';
+
+  @override
+  String get journalLegendOil => 'Масло / фильтры';
+
+  @override
+  String get journalLegendBrakes => 'Тормоза';
+
+  @override
+  String get journalLegendInspect => 'Осмотр';
+
+  @override
+  String get journalLegendOther => 'Прочие работы';
 
   @override
   String get openState => 'Открыть Состояние';
@@ -69,8 +137,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stateNeedsData => 'Нужны данные';
 
   @override
+  String get stateNeedsDataUrgent => 'Обязательно заполнить';
+
+  @override
+  String get stateNeedsDataBadge => 'нет данных';
+
+  @override
   String stateUsedPercent(int percent) {
     return 'Использовано $percent%';
+  }
+
+  @override
+  String stateUsedPercentShort(int percent) {
+    return '$percent%';
   }
 
   @override
@@ -82,10 +161,42 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stateWearCaption => 'износ';
 
   @override
-  String get stateTriggerTime => 'время';
+  String get stateTriggerTime => 'По времени';
 
   @override
-  String get stateTriggerMileage => 'пробег';
+  String get stateTriggerMileage => 'По пробегу';
+
+  @override
+  String get stateTriggerTimeHint =>
+      'Сейчас интервал упирается в календарь: срок по дате наступит раньше, чем по пробегу.';
+
+  @override
+  String get stateTriggerMileageHint =>
+      'Сейчас интервал упирается в пробег: лимит километров будет раньше календарной даты.';
+
+  @override
+  String get stateWearCaptionHint =>
+      'Показан износ по последней оценке. 0% — как новый, 100% — нужна замена.';
+
+  @override
+  String get stateCurrentFactsInfo =>
+      'Сводка по узлу: сколько ресурса уже использовано и что сейчас ограничивает срок (время или пробег).';
+
+  @override
+  String get stateUpdateSectionInfo =>
+      'Здесь вы фиксируете обслуживание или проверку: дату, пробег, износ и стоимость. Данные остаются в вашем автомобиле.';
+
+  @override
+  String get stateServiceHistoryInfo =>
+      'Последние записи по этому узлу. Можно открыть для правки или удаления.';
+
+  @override
+  String get mileageTimelineInconsistentLater =>
+      'Проверьте данные: есть более поздняя запись с меньшим пробегом. Дата и пробег должны расти согласованно.';
+
+  @override
+  String get mileageTimelineInconsistentEarlier =>
+      'Проверьте данные: есть более ранняя запись с большим пробегом. Дата и пробег должны расти согласованно.';
 
   @override
   String get stateScaleCaption => 'ресурс';
@@ -97,6 +208,33 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get stateLastServiceUnknownShort => 'обслуж. неизвестно';
+
+  @override
+  String stateNextDueShort(String label) {
+    return 'далее $label';
+  }
+
+  @override
+  String get stateNextDueUnknown => 'срок не определён';
+
+  @override
+  String intervalEveryKm(int value) {
+    return 'раз в $value км';
+  }
+
+  @override
+  String intervalEveryDays(int value) {
+    return 'раз в $value дн.';
+  }
+
+  @override
+  String get intervalEveryYear => 'раз в год';
+
+  @override
+  String get planPastLabel => 'Уже было';
+
+  @override
+  String get planFutureLabel => 'Предстоит';
 
   @override
   String get stateUpdateSection => 'Обновить данные';
@@ -114,10 +252,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stateWearHint => '0 — новые или без износа';
 
   @override
-  String get stateLaborCost => 'Стоимость работ';
+  String get stateLaborCost => 'Работы';
 
   @override
-  String get statePartsCost => 'Стоимость запчастей';
+  String get statePartsCost => 'Запчасти';
+
+  @override
+  String get stateCostSection => 'Стоимость';
 
   @override
   String get stateUpdateDate => 'Дата';
@@ -198,13 +339,61 @@ class AppLocalizationsRu extends AppLocalizations {
   String get historyFinishLater => 'Завершить позже';
 
   @override
+  String get historySkipQuestion => 'Пропустить';
+
+  @override
+  String get historyAnswerLater => 'Отвечу позже';
+
+  @override
+  String get historyIntroGotIt => 'Понятно';
+
+  @override
+  String get historyWizardFriendlyHint =>
+      'Ответьте, как помните. Если не уверены — выберите «Не знаю» или «Отвечу позже».';
+
+  @override
+  String get historyWizardIntroDetail =>
+      'Эти данные нужны, чтобы точнее рассчитать персональный план обслуживания: сроки работ и остаток ресурса именно для вашего автомобиля. Информация хранится только в вашем приложении и никуда не передаётся третьим лицам.';
+
+  @override
+  String get historyLastServicePrompt =>
+      'Когда последний раз обслуживали или меняли?';
+
+  @override
+  String get historyChooseAnswer => 'Выберите вариант';
+
+  @override
+  String get historyDoneKnownShort => 'Да, помню когда';
+
+  @override
+  String get historyDoneKnownHint => 'Укажите дату или пробег';
+
+  @override
+  String get historyUnknownShort => 'Не помню / не знаю';
+
+  @override
+  String get historyUnknownHint => 'Это нормально — можно уточнить позже';
+
+  @override
+  String get historyNeverHint => 'Эту работу ещё не делали';
+
+  @override
+  String get historyNotApplicableHint => 'Для этой машины не актуально';
+
+  @override
+  String get historyKnownDetailsTitle => 'Когда это было?';
+
+  @override
   String get historyNever => 'Никогда';
 
   @override
   String get historyAdditional => 'Дополнительно';
 
   @override
-  String get historyWearToggle => 'Указать износ / остаток';
+  String get historyWearToggle => 'Указать износ';
+
+  @override
+  String get historyWearHint => 'Износ 80% означает остаток 20%.';
 
   @override
   String get historyRemainingPercent => 'Остаток, %';
@@ -273,6 +462,54 @@ class AppLocalizationsRu extends AppLocalizations {
   String get garageEmpty => 'Гараж пуст';
 
   @override
+  String get garageTitle => 'Гараж';
+
+  @override
+  String get garageSecondCarTitle => 'Второе авто';
+
+  @override
+  String get garageSecondCarLocked =>
+      'Добавление второго автомобиля — после подписки';
+
+  @override
+  String get garageOneCarHint =>
+      'Сейчас работаем с одним автомобилем. Второе место зарезервировано под подписку.';
+
+  @override
+  String get garageOpenAnalytics => 'Аналитика';
+
+  @override
+  String get garageOpenNotes => 'Заметки';
+
+  @override
+  String get garageSelect => 'Выбрать';
+
+  @override
+  String get garageSelected => 'Выбрано';
+
+  @override
+  String get vehiclePassport => 'Техпаспорт';
+
+  @override
+  String get passportIdentity => 'Идентификация';
+
+  @override
+  String get passportPowertrain => 'Силовая установка';
+
+  @override
+  String get passportUsage => 'Эксплуатация';
+
+  @override
+  String get passportSections => 'Разделы';
+
+  @override
+  String get garageVehicleNotes => 'Заметки по авто';
+
+  @override
+  String get garageVehicleNotesEmpty =>
+      'Пока нет сохранённых заметок по этой машине.';
+
+  @override
   String get addVehicleSemantics =>
       'Добавить автомобиль. Открыть начало добавления';
 
@@ -303,6 +540,28 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get guestProfileFuture =>
       'Вход и синхронизация будут доступны в следующих этапах.';
+
+  @override
+  String get profileTitle => 'Профиль';
+
+  @override
+  String get profileGuestHint =>
+      'Вы в гостевом режиме. Войдите через Google, чтобы сохранить имя, предпочтения и диалоги между устройствами.';
+
+  @override
+  String get signInWithGoogle => 'Войти через Google';
+
+  @override
+  String get signOut => 'Выйти';
+
+  @override
+  String get profileSignedIn => 'Вход выполнен';
+
+  @override
+  String get profileSignedOut => 'Вы вышли из аккаунта';
+
+  @override
+  String get profileError => 'Не удалось загрузить профиль';
 
   @override
   String get addEvent => 'Добавить событие';
@@ -775,17 +1034,538 @@ class AppLocalizationsRu extends AppLocalizations {
       'Пока нет диалогов. Нажмите «Новый чат», чтобы начать.';
 
   @override
+  String get assistantEmptyTitle => 'Пока нет диалогов';
+
+  @override
+  String get assistantEmptySubtitle =>
+      'Начните чат — ассистент ответит с учётом вашей машины и настроек.';
+
+  @override
+  String get assistantEmptyCta => 'Начать диалог';
+
+  @override
+  String get agentIntroSubtitle => 'Умный помощник по вашему авто';
+
+  @override
+  String get agentIntroBody =>
+      'Знает данные вашей машины, помнит важное из разговоров и отвечает в вашем стиле — поможет с советом по ТО, разобраться в симптоме, сроках расходников, проверкой перед поездкой и вопросами для сервиса.';
+
+  @override
+  String get agentIntroExamples =>
+      'Знает данные вашей машины, помнит важное из разговоров и отвечает в вашем стиле — поможет с советом по ТО, разобраться в симптоме, сроках расходников, проверкой перед поездкой и вопросами для сервиса.';
+
+  @override
+  String get assistantQuickStartsHint => 'С чего начать';
+
+  @override
+  String get agentIntroTipCar => 'Контекст авто';
+
+  @override
+  String get agentIntroTipMemory => 'Память из чата';
+
+  @override
+  String get agentIntroTipEnergy => 'AI-токены на ответы';
+
+  @override
+  String get agentIntroOpenProfile => 'Профиль и настройки';
+
+  @override
+  String get agentIntroCollapse => 'Свернуть';
+
+  @override
+  String get agentIntroExpand => 'Подробнее';
+
+  @override
+  String get agentIntroChatsLabel => 'Ваши чаты';
+
+  @override
+  String agentIntroRepliesLeft(int count) {
+    return '≈ $count ответов';
+  }
+
+  @override
+  String agentTypicalReplyCost(int amount) {
+    return 'типичный вопрос ≈ $amount ток.';
+  }
+
+  @override
+  String get assistantQuickStartsLabel => 'Быстрый старт';
+
+  @override
+  String get assistantQuickStartService => 'Что важнее проверить по ТО';
+
+  @override
+  String get assistantQuickStartServicePrompt =>
+      'Что у меня по обслуживанию сейчас важнее всего проверить?';
+
+  @override
+  String get assistantQuickStartSymptom =>
+      'Разобрать посторонний звук или симптом';
+
+  @override
+  String get assistantQuickStartSymptomPrompt =>
+      'Есть посторонний звук в машине. Помоги разобраться, с чего начать проверку.';
+
+  @override
+  String get assistantQuickStartWorkshop => 'Подготовить вопросы для сервиса';
+
+  @override
+  String get assistantQuickStartWorkshopPrompt =>
+      'Помоги подготовить короткий список вопросов и проверок для визита в сервис.';
+
+  @override
+  String assistantChatEmptyHistory(int percent) {
+    return 'История обслуживания заполнена на $percent%.';
+  }
+
+  @override
+  String get assistantChatEmptyHistoryUnknown =>
+      'Чем полнее история обслуживания, тем точнее подсказки агента.';
+
+  @override
+  String get assistantChatEmptyHistoryCta => 'Дополнить историю';
+
+  @override
+  String get assistantChatEmptyIntro =>
+      'Можно выбрать одну из тем ниже — или просто напишите свой вопрос в поле сообщения.';
+
+  @override
+  String get assistantChatEmptyTopicsLabel => 'Темы на выбор:';
+
+  @override
+  String get assistantChatEmptyOwnHint =>
+      'Не обязательно выбирать из списка — опишите свою ситуацию своими словами.';
+
+  @override
+  String assistantTokensSpent(int amount) {
+    return '−$amount ток.';
+  }
+
+  @override
+  String get agentNoteForget => 'Забыть';
+
+  @override
+  String get agentNoteForgetDone => 'Заметка удалена';
+
+  @override
+  String get assistantWelcomeTitle => 'Знакомство';
+
+  @override
+  String assistantWelcomeMessage(String vehicle) {
+    return 'Здравствуйте! Я ваш помощник по $vehicle. Чем могу помочь — симптом, обслуживание или просто разобраться с машиной?';
+  }
+
+  @override
+  String get ownerSkillQuizTitle => 'Пару простых вопросов';
+
+  @override
+  String get ownerSkillQuizHint =>
+      'Это поможет объяснять понятнее — без лишней техники.';
+
+  @override
+  String get ownerSkillQ1 => 'Насколько вы разбираетесь в машинах?';
+
+  @override
+  String get ownerSkillQ1Novice => 'Почти не разбираюсь';
+
+  @override
+  String get ownerSkillQ1Basic => 'Знаю основы';
+
+  @override
+  String get ownerSkillQ1Confident => 'Хорошо разбираюсь';
+
+  @override
+  String get ownerSkillQ2 =>
+      'Если что-то не так, вы сами заглянете под капот или к колёсам?';
+
+  @override
+  String get ownerSkillQ2Never => 'Нет, только сервис';
+
+  @override
+  String get ownerSkillQ2Sometimes => 'Иногда простое';
+
+  @override
+  String get ownerSkillQ2Yes => 'Да, могу проверить';
+
+  @override
+  String get ownerSkillQ3 => 'Что вам ближе?';
+
+  @override
+  String get ownerSkillQ3Simple => 'Объясняйте максимально просто';
+
+  @override
+  String get ownerSkillQ3Detailed => 'Можно чуть подробнее';
+
+  @override
+  String get agentProfileTitle => 'Профиль агента';
+
+  @override
+  String get agentProfileSaved => 'Настройки сохранены';
+
+  @override
+  String agentFuelLevel(String amount) {
+    return 'AI-токены: $amount';
+  }
+
+  @override
+  String get agentFuelLiters => 'Остаток AI-токенов без лимита накопления';
+
+  @override
+  String get agentTokensBalanceLabel => 'AI-токены';
+
+  @override
+  String get agentTokensAdd => 'Добавить';
+
+  @override
+  String get agentTokensTapHint => 'Нажмите — как расходуются';
+
+  @override
+  String get agentTokensGuideTitle => 'Как расходуются AI-токены';
+
+  @override
+  String get agentTokensGuideIntro =>
+      'Каждый ответ ассистента тратит AI-токены с вашего баланса. Ниже — ориентиры (примерно):';
+
+  @override
+  String agentTokensGuideOneReply(int amount) {
+    return 'Один ответ ≈ $amount ток.';
+  }
+
+  @override
+  String agentTokensGuideShort(int amount) {
+    return 'Короткий диалог (2–3 ответа) ≈ $amount ток.';
+  }
+
+  @override
+  String agentTokensGuideMedium(int amount) {
+    return 'Обычный диалог (8–10 ответов) ≈ $amount ток.';
+  }
+
+  @override
+  String agentTokensGuideLong(int amount) {
+    return 'Длинный разбор (20+ ответов) ≈ $amount ток.';
+  }
+
+  @override
+  String get agentTokensGuideSeeUsage => 'Смотреть расход';
+
+  @override
+  String agentApproxReplies(int count) {
+    return 'Хватит примерно на $count ответов';
+  }
+
+  @override
+  String get assistantChatGuideTitle => 'Важно знать';
+
+  @override
+  String get assistantChatGuideAction => 'Инструкция';
+
+  @override
+  String get assistantChatGuideBody =>
+      '• Ассистент опирается на данные вашей машины и настройки.\n• Важное из разговора он может отметить для себя — это помогает в следующих ответах.\n• Очень длинный диалог ухудшает качество: лучше начать новую тему по новому вопросу.\n• Это подсказки нейросети, а не диагноз и не замена сервису — решения за вами.';
+
+  @override
+  String get agentEnergyLowTitle => 'AI-токенов осталось мало';
+
+  @override
+  String get agentEnergyLowBanner =>
+      'Токенов для ответов осталось немного — скоро ответы могут прекратиться. Лучше заранее докупить AI-токены.';
+
+  @override
+  String get agentEnergyLowAction => 'Купить токены';
+
+  @override
+  String get agentEnergyUnitShort => 'ток.';
+
+  @override
+  String get agentUsageTitle => 'Расход AI-токенов';
+
+  @override
+  String get agentUsageToday => 'Сегодня';
+
+  @override
+  String get agentUsageWeek => '7 дней';
+
+  @override
+  String get agentUsageAll => 'Всего';
+
+  @override
+  String agentUsageFuel(String liters) {
+    return 'Потрачено: $liters AI-токенов';
+  }
+
+  @override
+  String agentUsageTokens(int count) {
+    return 'Токены модели: $count';
+  }
+
+  @override
+  String get agentUsageEstimate =>
+      'Токены модели: оценка (провайдер не вернул usage)';
+
+  @override
+  String agentUsageCost(String amount, String currency) {
+    return 'Оценка стоимости: $amount $currency';
+  }
+
+  @override
+  String get agentUsageWeekChart => 'Последние 7 дней';
+
+  @override
+  String get agentUsageLegendSpent => 'Потрачено';
+
+  @override
+  String get agentUsageLegendRefuel => 'Куплено';
+
+  @override
+  String agentUsageCompactSpent(String amount) {
+    return '−$amount';
+  }
+
+  @override
+  String agentUsageCompactRefuel(String amount) {
+    return '+$amount';
+  }
+
+  @override
+  String get agentHowItAnswers => 'Как отвечает';
+
+  @override
+  String get agentHowItAnswersHint =>
+      'Слайдеры влияют на стиль. Безопасность и ваш уровень знаний важнее.';
+
+  @override
+  String get agentSelectOption => 'Выберите вариант';
+
+  @override
+  String get agentSliderSimplicity => 'Простота языка';
+
+  @override
+  String get agentSliderSimplicityLow => 'Проще';
+
+  @override
+  String get agentSliderSimplicityHigh => 'Техничнее';
+
+  @override
+  String get agentSliderVerbosity => 'Краткость';
+
+  @override
+  String get agentSliderVerbosityLow => 'Коротко';
+
+  @override
+  String get agentSliderVerbosityHigh => 'Подробнее';
+
+  @override
+  String get agentSliderDirectness => 'Прямота';
+
+  @override
+  String get agentSliderDirectnessLow => 'Мягче';
+
+  @override
+  String get agentSliderDirectnessHigh => 'Прямее';
+
+  @override
+  String get agentSliderInitiative => 'Инициативность';
+
+  @override
+  String get agentSliderInitiativeLow => 'Ждёт';
+
+  @override
+  String get agentSliderInitiativeHigh => 'Сам уточняет';
+
+  @override
+  String get agentCustomInstructions => 'Ваши инструкции агенту';
+
+  @override
+  String get agentCustomInstructionsHint =>
+      'Например: всегда обращайся по имени, не предлагай СТО сразу…';
+
+  @override
+  String get agentNotesTitle => 'Что агент отметил для себя';
+
+  @override
+  String get agentNotesHint =>
+      'Это не настройки и не анкеты — агент сам подчеркнул важное из разговора с вами. Здесь только то, что он запомнил сверх уже заполненных данных.';
+
+  @override
+  String get agentNotesUser => 'О вас — из диалога';
+
+  @override
+  String get agentNotesVehicle => 'О машине — из диалога';
+
+  @override
+  String get agentNotesEmpty =>
+      'Пока ничего не отметил. Появится, когда в разговоре всплывут важные детали.';
+
+  @override
+  String get agentRefuelTitle => 'Купить AI-токены';
+
+  @override
+  String get agentRefuelHint =>
+      'Покупка токенов для ответов ассистента. Оплата скоро — сейчас доступна демо-покупка.';
+
+  @override
+  String agentRefuelPackage(String label) {
+    return 'Пакет $label';
+  }
+
+  @override
+  String get agentPaymentSoon => 'оплата скоро';
+
+  @override
+  String get agentRefuelStubDone => 'Демо-токены добавлены на баланс';
+
+  @override
+  String get agentFuelEmptyTitle => 'AI-токены закончились';
+
+  @override
+  String get agentFuelEmptyBody =>
+      'Извините за неудобство.\n\nПомощник работает на нейросети: каждый ответ тратит AI-токены, поэтому бесплатно без ограничений мы продолжать не можем.\n\nКупите токены в профиле агента — и сразу продолжим разговор.';
+
+  @override
+  String get agentFuelEmptyBanner =>
+      'AI-токены закончились — ответы временно недоступны';
+
+  @override
+  String get agentFuelEmptyRefuel => 'Купить токены';
+
+  @override
+  String get agentFuelEmptyLater => 'Позже';
+
+  @override
+  String get agentOwnerSkillTitle => 'Ваш уровень в технике';
+
+  @override
+  String get agentOwnerSkillHint =>
+      'Так ассистент проще подберёт слова и не будет просить сложные проверки.';
+
+  @override
+  String get agentOwnerSkillBand => 'Насколько разбираетесь в машинах';
+
+  @override
+  String get agentOwnerSkillHandsOn =>
+      'Готовы сами заглянуть под капот / к колёсам';
+
+  @override
+  String get agentOwnerSkillBandNeverTools => 'Никогда не держал отвертку';
+
+  @override
+  String get agentOwnerSkillBandScared => 'Боюсь что-то трогать';
+
+  @override
+  String get agentOwnerSkillBandNovice => 'Почти не разбираюсь';
+
+  @override
+  String get agentOwnerSkillBandBasic => 'Знаю основы';
+
+  @override
+  String get agentOwnerSkillBandCurious => 'Любитель: читаю и смотрю';
+
+  @override
+  String get agentOwnerSkillBandConfident => 'Хорошо разбираюсь';
+
+  @override
+  String get agentOwnerSkillBandAdvanced => 'Многое делаю сам';
+
+  @override
+  String get agentOwnerSkillBandPro => 'Механик / сотрудник сервиса';
+
+  @override
+  String get agentOwnerSkillHandsNever => 'Нет, только сервис';
+
+  @override
+  String get agentOwnerSkillHandsOutside => 'Только снаружи (колёса, уровни)';
+
+  @override
+  String get agentOwnerSkillHandsSometimes => 'Иногда простое';
+
+  @override
+  String get agentOwnerSkillHandsOften => 'Часто сам заглядываю';
+
+  @override
+  String get agentOwnerSkillHandsAlways => 'Да, спокойно под капотом';
+
+  @override
+  String get agentOwnerSkillHandsYes => 'Да, могу проверить';
+
+  @override
+  String get agentPrefsLiveHint =>
+      'Слайдеры и инструкции уже влияют на ответы ассистента.';
+
+  @override
+  String get assistantFillHistoryManual => 'Заполнить историю вручную';
+
+  @override
+  String get assistantTopicsActive => 'Активные';
+
+  @override
+  String get assistantTopicsArchive => 'Архив';
+
+  @override
+  String get assistantArchiveEmpty => 'В архиве пока пусто.';
+
+  @override
   String get assistantEmptyThread => 'Пустой диалог';
 
   @override
   String get assistantDeleteTopic => 'Удалить тему';
 
   @override
+  String get assistantDeleteTopicConfirmTitle => 'Удалить чат?';
+
+  @override
+  String get assistantDeleteTopicConfirmBody =>
+      'Чат исчезнет навсегда. Это нельзя отменить.';
+
+  @override
+  String get assistantDeleteTopicConfirmAction => 'Удалить';
+
+  @override
+  String get assistantRenameTopic => 'Переименовать';
+
+  @override
+  String get assistantRenameHint => 'Название темы';
+
+  @override
+  String get assistantTopicResolved => 'Решено';
+
+  @override
+  String get assistantMarkResolved => 'Отметить решённым';
+
+  @override
+  String get assistantMarkActive => 'Вернуть в активные';
+
+  @override
+  String get assistantArchiveTopic => 'В архив';
+
+  @override
+  String get assistantRestoreTopic => 'Из архива';
+
+  @override
   String get assistantThreadMissing => 'Этот диалог не найден.';
 
   @override
   String get assistantKeyMissing =>
-      'Ключ DeepSeek не задан. Запустите приложение с --dart-define=DEEPSEEK_API_KEY=…';
+      'AI настраивается на сервере. Проверьте админку и ключ в .env.';
+
+  @override
+  String get assistantNeedsVehicle =>
+      'Для ответа AI выберите или добавьте автомобиль.';
+
+  @override
+  String get cancel => 'Отмена';
+
+  @override
+  String get odometerPickerTitle => 'Пробег';
+
+  @override
+  String get odometerPickerHint => 'Прокрутите каждую цифру, как на одометре.';
+
+  @override
+  String get odometerPickerSelected => 'Выбрано';
+
+  @override
+  String get odometerPickerConfirm => 'Готово';
 
   @override
   String get journalLoading => 'Загружаем записи обслуживания…';
@@ -845,8 +1625,105 @@ class AppLocalizationsRu extends AppLocalizations {
   String get odometerDynamics => 'Динамика по сохранённым точкам одометра';
 
   @override
+  String get analyticsMileageEmpty =>
+      'Пока нет сохранённых точек пробега. Обновите пробег — они появятся на графике.';
+
+  @override
   String get fuelConsumptionFuture =>
       'Расход топлива появится только при достаточном количестве качественных данных.';
+
+  @override
+  String get uiKitTitle => 'Компоненты UI';
+
+  @override
+  String get uiKitMoreDetail =>
+      'Справочник кнопок, полей и панелей для новых экранов';
+
+  @override
+  String get uiKitIntro =>
+      'Используйте эти компоненты как образец при сборке новых окон — так интерфейс останется единым.';
+
+  @override
+  String get uiKitSectionPanels => 'Панели';
+
+  @override
+  String get uiKitPanelDefault => 'AutomotivePanel — обычная панель контента';
+
+  @override
+  String get uiKitPanelEmphasized =>
+      'AutomotivePanel emphasized — акцент слева';
+
+  @override
+  String get uiKitSectionHeaders => 'Заголовки';
+
+  @override
+  String get uiKitSectionHeaderExample => 'Заголовок секции';
+
+  @override
+  String get uiKitSectionButtons => 'Кнопки';
+
+  @override
+  String get uiKitPrimaryButton => 'Filled / основная';
+
+  @override
+  String get uiKitTonalButton => 'Tonal / вторичная';
+
+  @override
+  String get uiKitOutlinedButton => 'Outlined';
+
+  @override
+  String get uiKitTextButton => 'Text';
+
+  @override
+  String get uiKitDisabledButton => 'Disabled';
+
+  @override
+  String get uiKitSectionInputs => 'Поля ввода';
+
+  @override
+  String get uiKitInputLabel => 'Подпись поля';
+
+  @override
+  String get uiKitInputHint => 'Подсказка';
+
+  @override
+  String get uiKitInputErrorLabel => 'Поле с ошибкой';
+
+  @override
+  String get uiKitInputError => 'Пример текста ошибки';
+
+  @override
+  String get uiKitDropdownLabel => 'Выпадающий список';
+
+  @override
+  String get uiKitSwitchLabel => 'Переключатель';
+
+  @override
+  String get uiKitSectionStatus => 'Статус и индикаторы';
+
+  @override
+  String get uiKitStatusLabel => 'STATUS RAIL';
+
+  @override
+  String get uiKitStatusValue => 'В норме';
+
+  @override
+  String get uiKitGaugeLabel => 'Индикатор расходника';
+
+  @override
+  String get uiKitSectionPreview => 'Превью без авто';
+
+  @override
+  String get uiKitPreviewGate => 'Сообщение, когда автомобиль ещё не выбран';
+
+  @override
+  String get uiKitPreviewTileTitle => 'Превью-строка';
+
+  @override
+  String get uiKitPreviewTileDetail => 'Неактивный пример записи';
+
+  @override
+  String get uiKitSectionColors => 'Цвета темы';
 
   @override
   String structureWithoutData(String title, String detail) {
@@ -1392,7 +2269,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String historyProgress(int current, int total) {
-    return 'Пункт $current из $total';
+    return '$current/$total';
   }
 
   @override
@@ -1478,7 +2355,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get setMileage => 'Указать пробег';
 
   @override
-  String get currentMileage => 'Текущий пробег';
+  String get currentMileage => 'Актуальный пробег';
 
   @override
   String get mileageDecreaseNotAllowed =>
@@ -1611,6 +2488,32 @@ class AppLocalizationsRu extends AppLocalizations {
       'Нужна история или фактическая проверка.';
 
   @override
+  String get howSoonLabel => 'Как скоро';
+
+  @override
+  String howSoonDays(int days) {
+    return '$days дн.';
+  }
+
+  @override
+  String howSoonKm(int km) {
+    return '$km км';
+  }
+
+  @override
+  String howSoonOverdueDays(int days) {
+    return 'просрочено $days дн.';
+  }
+
+  @override
+  String howSoonOverdueKm(int km) {
+    return 'просрочено $km км';
+  }
+
+  @override
+  String get historyMileageOnly => 'по пробегу';
+
+  @override
   String iconCategorySemantics(String label) {
     return 'Категория: $label';
   }
@@ -1619,7 +2522,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get serviceTimelineEmpty => 'Записей обслуживания пока нет';
 
   @override
-  String get performed => 'Произвёл';
+  String get performed => 'Отметить';
 
   @override
   String get preliminaryEstimate => 'Предварительная оценка';

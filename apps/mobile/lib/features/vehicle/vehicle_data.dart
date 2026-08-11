@@ -63,6 +63,29 @@ class DioVehicleRepository implements VehicleRepository {
   }
 
   @override
+  Future<Vehicle> update(
+    String vehicleId,
+    VehicleDraft draft, {
+    required int version,
+    required String locale,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/vehicles/$vehicleId',
+        data: {...draft.toJson(), 'version': version},
+        options: await _options(locale, mutation: true),
+      );
+      return Vehicle.fromJson(_map(response.data));
+    } on DioException catch (error) {
+      throw _failure(error);
+    } on FormatException {
+      throw const VehicleFailure(code: 'UNEXPECTED_RESPONSE');
+    } on TypeError {
+      throw const VehicleFailure(code: 'UNEXPECTED_RESPONSE');
+    }
+  }
+
+  @override
   Future<MileageConfirmation> updateMileage(
     String vehicleId, {
     required int value,

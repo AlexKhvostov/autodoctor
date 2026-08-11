@@ -176,11 +176,137 @@ abstract class AppLocalizations {
   /// **'Service history is {percent}% complete. Refine — about 3 min'**
   String historyCompletenessBanner(int percent);
 
+  /// No description provided for @historyCompletenessBannerShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% complete'**
+  String historyCompletenessBannerShort(int percent);
+
   /// No description provided for @historyCompletenessCta.
   ///
   /// In en, this message translates to:
   /// **'Refine history'**
   String get historyCompletenessCta;
+
+  /// No description provided for @historyCompletenessCtaShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Refine'**
+  String get historyCompletenessCtaShort;
+
+  /// No description provided for @historyCompletenessFill.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in'**
+  String get historyCompletenessFill;
+
+  /// No description provided for @historyCompletenessCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get historyCompletenessCollapse;
+
+  /// No description provided for @historyCompletenessAlarmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add service history details'**
+  String get historyCompletenessAlarmTitle;
+
+  /// No description provided for @garageAddBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding a car is unavailable'**
+  String get garageAddBlocked;
+
+  /// No description provided for @profileStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your activity'**
+  String get profileStatsTitle;
+
+  /// No description provided for @profileStatsVehicles.
+  ///
+  /// In en, this message translates to:
+  /// **'Cars'**
+  String get profileStatsVehicles;
+
+  /// No description provided for @profileStatsActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get profileStatsActions;
+
+  /// No description provided for @profileStatsChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get profileStatsChats;
+
+  /// No description provided for @journalColDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get journalColDate;
+
+  /// No description provided for @journalColEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get journalColEvent;
+
+  /// No description provided for @journalColType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get journalColType;
+
+  /// No description provided for @journalEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal entry'**
+  String get journalEditTitle;
+
+  /// No description provided for @journalIconsLegendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Work type icons'**
+  String get journalIconsLegendTitle;
+
+  /// No description provided for @journalIconsLegendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Each entry shows the maintenance node icon (oil, filters, brakes, inspection, etc.). Tap an entry to open that node’s card.'**
+  String get journalIconsLegendBody;
+
+  /// No description provided for @journalOpenNodeMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching state node found for this entry yet'**
+  String get journalOpenNodeMissing;
+
+  /// No description provided for @journalLegendOil.
+  ///
+  /// In en, this message translates to:
+  /// **'Oil / filters'**
+  String get journalLegendOil;
+
+  /// No description provided for @journalLegendBrakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Brakes'**
+  String get journalLegendBrakes;
+
+  /// No description provided for @journalLegendInspect.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspection'**
+  String get journalLegendInspect;
+
+  /// No description provided for @journalLegendOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other work'**
+  String get journalLegendOther;
 
   /// No description provided for @openState.
   ///
@@ -212,11 +338,29 @@ abstract class AppLocalizations {
   /// **'Needs data'**
   String get stateNeedsData;
 
+  /// No description provided for @stateNeedsDataUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Required — fill in'**
+  String get stateNeedsDataUrgent;
+
+  /// No description provided for @stateNeedsDataBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'no data'**
+  String get stateNeedsDataBadge;
+
   /// No description provided for @stateUsedPercent.
   ///
   /// In en, this message translates to:
   /// **'Used {percent}%'**
   String stateUsedPercent(int percent);
+
+  /// No description provided for @stateUsedPercentShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String stateUsedPercentShort(int percent);
 
   /// No description provided for @stateWearRemaining.
   ///
@@ -233,14 +377,62 @@ abstract class AppLocalizations {
   /// No description provided for @stateTriggerTime.
   ///
   /// In en, this message translates to:
-  /// **'time'**
+  /// **'By time'**
   String get stateTriggerTime;
 
   /// No description provided for @stateTriggerMileage.
   ///
   /// In en, this message translates to:
-  /// **'mileage'**
+  /// **'By mileage'**
   String get stateTriggerMileage;
+
+  /// No description provided for @stateTriggerTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The interval is currently limited by the calendar: the due date comes before the mileage limit.'**
+  String get stateTriggerTimeHint;
+
+  /// No description provided for @stateTriggerMileageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The interval is currently limited by mileage: the odometer limit comes before the calendar date.'**
+  String get stateTriggerMileageHint;
+
+  /// No description provided for @stateWearCaptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Wear from the latest estimate. 0% is like new, 100% means replace soon.'**
+  String get stateWearCaptionHint;
+
+  /// No description provided for @stateCurrentFactsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Node summary: how much life is used and what currently limits the interval (time or mileage).'**
+  String get stateCurrentFactsInfo;
+
+  /// No description provided for @stateUpdateSectionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Log a service or check: date, mileage, wear and cost. Data stays with your vehicle.'**
+  String get stateUpdateSectionInfo;
+
+  /// No description provided for @stateServiceHistoryInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent records for this node. You can edit or delete them.'**
+  String get stateServiceHistoryInfo;
+
+  /// No description provided for @mileageTimelineInconsistentLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the values: a later entry already has lower mileage. Date and mileage should increase together.'**
+  String get mileageTimelineInconsistentLater;
+
+  /// No description provided for @mileageTimelineInconsistentEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the values: an earlier entry already has higher mileage. Date and mileage should increase together.'**
+  String get mileageTimelineInconsistentEarlier;
 
   /// No description provided for @stateScaleCaption.
   ///
@@ -259,6 +451,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'service unknown'**
   String get stateLastServiceUnknownShort;
+
+  /// No description provided for @stateNextDueShort.
+  ///
+  /// In en, this message translates to:
+  /// **'next {label}'**
+  String stateNextDueShort(String label);
+
+  /// No description provided for @stateNextDueUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'due date unknown'**
+  String get stateNextDueUnknown;
+
+  /// No description provided for @intervalEveryKm.
+  ///
+  /// In en, this message translates to:
+  /// **'every {value} km'**
+  String intervalEveryKm(int value);
+
+  /// No description provided for @intervalEveryDays.
+  ///
+  /// In en, this message translates to:
+  /// **'every {value} days'**
+  String intervalEveryDays(int value);
+
+  /// No description provided for @intervalEveryYear.
+  ///
+  /// In en, this message translates to:
+  /// **'once a year'**
+  String get intervalEveryYear;
+
+  /// No description provided for @planPastLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get planPastLabel;
+
+  /// No description provided for @planFutureLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get planFutureLabel;
 
   /// No description provided for @stateUpdateSection.
   ///
@@ -293,14 +527,20 @@ abstract class AppLocalizations {
   /// No description provided for @stateLaborCost.
   ///
   /// In en, this message translates to:
-  /// **'Labor cost'**
+  /// **'Labor'**
   String get stateLaborCost;
 
   /// No description provided for @statePartsCost.
   ///
   /// In en, this message translates to:
-  /// **'Parts cost'**
+  /// **'Parts'**
   String get statePartsCost;
+
+  /// No description provided for @stateCostSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get stateCostSection;
 
   /// No description provided for @stateUpdateDate.
   ///
@@ -446,6 +686,90 @@ abstract class AppLocalizations {
   /// **'Finish later'**
   String get historyFinishLater;
 
+  /// No description provided for @historySkipQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get historySkipQuestion;
+
+  /// No description provided for @historyAnswerLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer later'**
+  String get historyAnswerLater;
+
+  /// No description provided for @historyIntroGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get historyIntroGotIt;
+
+  /// No description provided for @historyWizardFriendlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer as you remember. If unsure, choose “I don’t know” or “Answer later”.'**
+  String get historyWizardFriendlyHint;
+
+  /// No description provided for @historyWizardIntroDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'We use these answers to calculate a personal maintenance plan: due dates and remaining life for your vehicle. The information stays in your app and is never shared with third parties.'**
+  String get historyWizardIntroDetail;
+
+  /// No description provided for @historyLastServicePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'When was it last serviced or replaced?'**
+  String get historyLastServicePrompt;
+
+  /// No description provided for @historyChooseAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an option'**
+  String get historyChooseAnswer;
+
+  /// No description provided for @historyDoneKnownShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I remember when'**
+  String get historyDoneKnownShort;
+
+  /// No description provided for @historyDoneKnownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a date or mileage'**
+  String get historyDoneKnownHint;
+
+  /// No description provided for @historyUnknownShort.
+  ///
+  /// In en, this message translates to:
+  /// **'I don’t remember / don’t know'**
+  String get historyUnknownShort;
+
+  /// No description provided for @historyUnknownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'That’s fine — you can update later'**
+  String get historyUnknownHint;
+
+  /// No description provided for @historyNeverHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This work hasn’t been done yet'**
+  String get historyNeverHint;
+
+  /// No description provided for @historyNotApplicableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not relevant for this car'**
+  String get historyNotApplicableHint;
+
+  /// No description provided for @historyKnownDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When was it?'**
+  String get historyKnownDetailsTitle;
+
   /// No description provided for @historyNever.
   ///
   /// In en, this message translates to:
@@ -461,8 +785,14 @@ abstract class AppLocalizations {
   /// No description provided for @historyWearToggle.
   ///
   /// In en, this message translates to:
-  /// **'Enter wear / remaining'**
+  /// **'Specify wear'**
   String get historyWearToggle;
+
+  /// No description provided for @historyWearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Wear of 80% means 20% remaining.'**
+  String get historyWearHint;
 
   /// No description provided for @historyRemainingPercent.
   ///
@@ -590,6 +920,96 @@ abstract class AppLocalizations {
   /// **'Garage is empty'**
   String get garageEmpty;
 
+  /// No description provided for @garageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Garage'**
+  String get garageTitle;
+
+  /// No description provided for @garageSecondCarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Second car'**
+  String get garageSecondCarTitle;
+
+  /// No description provided for @garageSecondCarLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding a second car unlocks after subscription'**
+  String get garageSecondCarLocked;
+
+  /// No description provided for @garageOneCarHint.
+  ///
+  /// In en, this message translates to:
+  /// **'We currently support one car. The second slot is reserved for subscription.'**
+  String get garageOneCarHint;
+
+  /// No description provided for @garageOpenAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get garageOpenAnalytics;
+
+  /// No description provided for @garageOpenNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get garageOpenNotes;
+
+  /// No description provided for @garageSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get garageSelect;
+
+  /// No description provided for @garageSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get garageSelected;
+
+  /// No description provided for @vehiclePassport.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle passport'**
+  String get vehiclePassport;
+
+  /// No description provided for @passportIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get passportIdentity;
+
+  /// No description provided for @passportPowertrain.
+  ///
+  /// In en, this message translates to:
+  /// **'Powertrain'**
+  String get passportPowertrain;
+
+  /// No description provided for @passportUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get passportUsage;
+
+  /// No description provided for @passportSections.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections'**
+  String get passportSections;
+
+  /// No description provided for @garageVehicleNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle notes'**
+  String get garageVehicleNotes;
+
+  /// No description provided for @garageVehicleNotesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved notes for this car yet.'**
+  String get garageVehicleNotesEmpty;
+
   /// No description provided for @addVehicleSemantics.
   ///
   /// In en, this message translates to:
@@ -643,6 +1063,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign-in and synchronization will be available in later stages.'**
   String get guestProfileFuture;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @profileGuestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You are in guest mode. Sign in with Google to keep your name, preferences, and chats across devices.'**
+  String get profileGuestHint;
+
+  /// No description provided for @signInWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Google'**
+  String get signInWithGoogle;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOut;
+
+  /// No description provided for @profileSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get profileSignedIn;
+
+  /// No description provided for @profileSignedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed out'**
+  String get profileSignedOut;
+
+  /// No description provided for @profileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load profile'**
+  String get profileError;
 
   /// No description provided for @addEvent.
   ///
@@ -1484,6 +1946,828 @@ abstract class AppLocalizations {
   /// **'No chats yet. Tap “New chat” to start.'**
   String get assistantTopicsEmpty;
 
+  /// No description provided for @assistantEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats yet'**
+  String get assistantEmptyTitle;
+
+  /// No description provided for @assistantEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a chat — the assistant replies with your car and preferences in mind.'**
+  String get assistantEmptySubtitle;
+
+  /// No description provided for @assistantEmptyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a chat'**
+  String get assistantEmptyCta;
+
+  /// No description provided for @agentIntroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A smart helper for your car'**
+  String get agentIntroSubtitle;
+
+  /// No description provided for @agentIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Knows your car data, remembers what matters from chats, and answers in your style — it can advise on service, help with a symptom, consumable due dates, a pre-trip check, and questions for the workshop.'**
+  String get agentIntroBody;
+
+  /// No description provided for @agentIntroExamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Knows your car data, remembers what matters from chats, and answers in your style — it can advise on service, help with a symptom, consumable due dates, a pre-trip check, and questions for the workshop.'**
+  String get agentIntroExamples;
+
+  /// No description provided for @assistantQuickStartsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to start'**
+  String get assistantQuickStartsHint;
+
+  /// No description provided for @agentIntroTipCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle context'**
+  String get agentIntroTipCar;
+
+  /// No description provided for @agentIntroTipMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat memory'**
+  String get agentIntroTipMemory;
+
+  /// No description provided for @agentIntroTipEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tokens for replies'**
+  String get agentIntroTipEnergy;
+
+  /// No description provided for @agentIntroOpenProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile & settings'**
+  String get agentIntroOpenProfile;
+
+  /// No description provided for @agentIntroCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get agentIntroCollapse;
+
+  /// No description provided for @agentIntroExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get agentIntroExpand;
+
+  /// No description provided for @agentIntroChatsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your chats'**
+  String get agentIntroChatsLabel;
+
+  /// No description provided for @agentIntroRepliesLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {count} replies'**
+  String agentIntroRepliesLeft(int count);
+
+  /// No description provided for @agentTypicalReplyCost.
+  ///
+  /// In en, this message translates to:
+  /// **'typical question ≈ {amount} tok.'**
+  String agentTypicalReplyCost(int amount);
+
+  /// No description provided for @assistantQuickStartsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick start'**
+  String get assistantQuickStartsLabel;
+
+  /// No description provided for @assistantQuickStartService.
+  ///
+  /// In en, this message translates to:
+  /// **'What matters most for service now'**
+  String get assistantQuickStartService;
+
+  /// No description provided for @assistantQuickStartServicePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I check for maintenance right now?'**
+  String get assistantQuickStartServicePrompt;
+
+  /// No description provided for @assistantQuickStartSymptom.
+  ///
+  /// In en, this message translates to:
+  /// **'Figure out an unusual sound or symptom'**
+  String get assistantQuickStartSymptom;
+
+  /// No description provided for @assistantQuickStartSymptomPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'There’s an unusual sound in the car. Help me figure out what to check first.'**
+  String get assistantQuickStartSymptomPrompt;
+
+  /// No description provided for @assistantQuickStartWorkshop.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare questions for the workshop'**
+  String get assistantQuickStartWorkshop;
+
+  /// No description provided for @assistantQuickStartWorkshopPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Help me prepare a short list of questions and checks for a workshop visit.'**
+  String get assistantQuickStartWorkshopPrompt;
+
+  /// No description provided for @assistantChatEmptyHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Service history is {percent}% complete.'**
+  String assistantChatEmptyHistory(int percent);
+
+  /// No description provided for @assistantChatEmptyHistoryUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The more complete the service history, the more precise the helper’s tips.'**
+  String get assistantChatEmptyHistoryUnknown;
+
+  /// No description provided for @assistantChatEmptyHistoryCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add more history'**
+  String get assistantChatEmptyHistoryCta;
+
+  /// No description provided for @assistantChatEmptyIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'You can pick one of the topics below — or just type your own question in the message field.'**
+  String get assistantChatEmptyIntro;
+
+  /// No description provided for @assistantChatEmptyTopicsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested topics:'**
+  String get assistantChatEmptyTopicsLabel;
+
+  /// No description provided for @assistantChatEmptyOwnHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You don’t have to pick from the list — describe your situation in your own words.'**
+  String get assistantChatEmptyOwnHint;
+
+  /// No description provided for @assistantTokensSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'−{amount} tok.'**
+  String assistantTokensSpent(int amount);
+
+  /// No description provided for @agentNoteForget.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get agentNoteForget;
+
+  /// No description provided for @agentNoteForgetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Note removed'**
+  String get agentNoteForgetDone;
+
+  /// No description provided for @assistantWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting to know you'**
+  String get assistantWelcomeTitle;
+
+  /// No description provided for @assistantWelcomeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello! I’m your helper for {vehicle}. How can I help — a symptom, service, or just figuring out the car?'**
+  String assistantWelcomeMessage(String vehicle);
+
+  /// No description provided for @ownerSkillQuizTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A couple of simple questions'**
+  String get ownerSkillQuizTitle;
+
+  /// No description provided for @ownerSkillQuizHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This helps me explain more clearly — without unnecessary jargon.'**
+  String get ownerSkillQuizHint;
+
+  /// No description provided for @ownerSkillQ1.
+  ///
+  /// In en, this message translates to:
+  /// **'How familiar are you with cars?'**
+  String get ownerSkillQ1;
+
+  /// No description provided for @ownerSkillQ1Novice.
+  ///
+  /// In en, this message translates to:
+  /// **'I barely know cars'**
+  String get ownerSkillQ1Novice;
+
+  /// No description provided for @ownerSkillQ1Basic.
+  ///
+  /// In en, this message translates to:
+  /// **'I know the basics'**
+  String get ownerSkillQ1Basic;
+
+  /// No description provided for @ownerSkillQ1Confident.
+  ///
+  /// In en, this message translates to:
+  /// **'I’m quite confident'**
+  String get ownerSkillQ1Confident;
+
+  /// No description provided for @ownerSkillQ2.
+  ///
+  /// In en, this message translates to:
+  /// **'If something’s wrong, would you look under the hood or at the wheels yourself?'**
+  String get ownerSkillQ2;
+
+  /// No description provided for @ownerSkillQ2Never.
+  ///
+  /// In en, this message translates to:
+  /// **'No, only a workshop'**
+  String get ownerSkillQ2Never;
+
+  /// No description provided for @ownerSkillQ2Sometimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes the simple stuff'**
+  String get ownerSkillQ2Sometimes;
+
+  /// No description provided for @ownerSkillQ2Yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I can check'**
+  String get ownerSkillQ2Yes;
+
+  /// No description provided for @ownerSkillQ3.
+  ///
+  /// In en, this message translates to:
+  /// **'What suits you better?'**
+  String get ownerSkillQ3;
+
+  /// No description provided for @ownerSkillQ3Simple.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep explanations as simple as possible'**
+  String get ownerSkillQ3Simple;
+
+  /// No description provided for @ownerSkillQ3Detailed.
+  ///
+  /// In en, this message translates to:
+  /// **'A bit more detail is fine'**
+  String get ownerSkillQ3Detailed;
+
+  /// No description provided for @agentProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent profile'**
+  String get agentProfileTitle;
+
+  /// No description provided for @agentProfileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings saved'**
+  String get agentProfileSaved;
+
+  /// No description provided for @agentFuelLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tokens: {amount}'**
+  String agentFuelLevel(String amount);
+
+  /// No description provided for @agentFuelLiters.
+  ///
+  /// In en, this message translates to:
+  /// **'AI token balance with no purchase cap'**
+  String get agentFuelLiters;
+
+  /// No description provided for @agentTokensBalanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tokens'**
+  String get agentTokensBalanceLabel;
+
+  /// No description provided for @agentTokensAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get agentTokensAdd;
+
+  /// No description provided for @agentTokensTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap — how they’re spent'**
+  String get agentTokensTapHint;
+
+  /// No description provided for @agentTokensGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How AI tokens are spent'**
+  String get agentTokensGuideTitle;
+
+  /// No description provided for @agentTokensGuideIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Each assistant reply spends AI tokens from your balance. Rough guide:'**
+  String get agentTokensGuideIntro;
+
+  /// No description provided for @agentTokensGuideOneReply.
+  ///
+  /// In en, this message translates to:
+  /// **'One reply ≈ {amount} tok.'**
+  String agentTokensGuideOneReply(int amount);
+
+  /// No description provided for @agentTokensGuideShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Short chat (2–3 replies) ≈ {amount} tok.'**
+  String agentTokensGuideShort(int amount);
+
+  /// No description provided for @agentTokensGuideMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Typical chat (8–10 replies) ≈ {amount} tok.'**
+  String agentTokensGuideMedium(int amount);
+
+  /// No description provided for @agentTokensGuideLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Long deep-dive (20+ replies) ≈ {amount} tok.'**
+  String agentTokensGuideLong(int amount);
+
+  /// No description provided for @agentTokensGuideSeeUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'View usage'**
+  String get agentTokensGuideSeeUsage;
+
+  /// No description provided for @agentApproxReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'About {count} replies left'**
+  String agentApproxReplies(int count);
+
+  /// No description provided for @assistantChatGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Good to know'**
+  String get assistantChatGuideTitle;
+
+  /// No description provided for @assistantChatGuideAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get assistantChatGuideAction;
+
+  /// No description provided for @assistantChatGuideBody.
+  ///
+  /// In en, this message translates to:
+  /// **'• The assistant uses your car data and preferences.\n• It may note important details from the chat for later replies.\n• Very long threads hurt quality — start a new chat for a new topic.\n• This is LLM guidance, not a diagnosis or a substitute for a workshop — decisions are yours.'**
+  String get assistantChatGuideBody;
+
+  /// No description provided for @agentEnergyLowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tokens are running low'**
+  String get agentEnergyLowTitle;
+
+  /// No description provided for @agentEnergyLowBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Few tokens left for replies — answers may stop soon. Better to buy more AI tokens in advance.'**
+  String get agentEnergyLowBanner;
+
+  /// No description provided for @agentEnergyLowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy tokens'**
+  String get agentEnergyLowAction;
+
+  /// No description provided for @agentEnergyUnitShort.
+  ///
+  /// In en, this message translates to:
+  /// **'tok.'**
+  String get agentEnergyUnitShort;
+
+  /// No description provided for @agentUsageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI token usage'**
+  String get agentUsageTitle;
+
+  /// No description provided for @agentUsageToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get agentUsageToday;
+
+  /// No description provided for @agentUsageWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get agentUsageWeek;
+
+  /// No description provided for @agentUsageAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get agentUsageAll;
+
+  /// No description provided for @agentUsageFuel.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent: {liters} AI tokens'**
+  String agentUsageFuel(String liters);
+
+  /// No description provided for @agentUsageTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Model tokens: {count}'**
+  String agentUsageTokens(int count);
+
+  /// No description provided for @agentUsageEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Model tokens: estimate (provider did not return usage)'**
+  String get agentUsageEstimate;
+
+  /// No description provided for @agentUsageCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated cost: {amount} {currency}'**
+  String agentUsageCost(String amount, String currency);
+
+  /// No description provided for @agentUsageWeekChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get agentUsageWeekChart;
+
+  /// No description provided for @agentUsageLegendSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent'**
+  String get agentUsageLegendSpent;
+
+  /// No description provided for @agentUsageLegendRefuel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bought'**
+  String get agentUsageLegendRefuel;
+
+  /// No description provided for @agentUsageCompactSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'−{amount}'**
+  String agentUsageCompactSpent(String amount);
+
+  /// No description provided for @agentUsageCompactRefuel.
+  ///
+  /// In en, this message translates to:
+  /// **'+{amount}'**
+  String agentUsageCompactRefuel(String amount);
+
+  /// No description provided for @agentHowItAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'How it answers'**
+  String get agentHowItAnswers;
+
+  /// No description provided for @agentHowItAnswersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sliders affect style. Safety and your skill level always win.'**
+  String get agentHowItAnswersHint;
+
+  /// No description provided for @agentSelectOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an option'**
+  String get agentSelectOption;
+
+  /// No description provided for @agentSliderSimplicity.
+  ///
+  /// In en, this message translates to:
+  /// **'Language simplicity'**
+  String get agentSliderSimplicity;
+
+  /// No description provided for @agentSliderSimplicityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Simpler'**
+  String get agentSliderSimplicityLow;
+
+  /// No description provided for @agentSliderSimplicityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'More technical'**
+  String get agentSliderSimplicityHigh;
+
+  /// No description provided for @agentSliderVerbosity.
+  ///
+  /// In en, this message translates to:
+  /// **'Brevity'**
+  String get agentSliderVerbosity;
+
+  /// No description provided for @agentSliderVerbosityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Short'**
+  String get agentSliderVerbosityLow;
+
+  /// No description provided for @agentSliderVerbosityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'More detail'**
+  String get agentSliderVerbosityHigh;
+
+  /// No description provided for @agentSliderDirectness.
+  ///
+  /// In en, this message translates to:
+  /// **'Directness'**
+  String get agentSliderDirectness;
+
+  /// No description provided for @agentSliderDirectnessLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Softer'**
+  String get agentSliderDirectnessLow;
+
+  /// No description provided for @agentSliderDirectnessHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'More direct'**
+  String get agentSliderDirectnessHigh;
+
+  /// No description provided for @agentSliderInitiative.
+  ///
+  /// In en, this message translates to:
+  /// **'Initiative'**
+  String get agentSliderInitiative;
+
+  /// No description provided for @agentSliderInitiativeLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Waits'**
+  String get agentSliderInitiativeLow;
+
+  /// No description provided for @agentSliderInitiativeHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks more'**
+  String get agentSliderInitiativeHigh;
+
+  /// No description provided for @agentCustomInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Your instructions for the agent'**
+  String get agentCustomInstructions;
+
+  /// No description provided for @agentCustomInstructionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'E.g. always use my name, don’t suggest a workshop first…'**
+  String get agentCustomInstructionsHint;
+
+  /// No description provided for @agentNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What the agent noted for itself'**
+  String get agentNotesTitle;
+
+  /// No description provided for @agentNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Not settings or forms — the agent picked this up from talking with you. Only extras beyond data you already entered.'**
+  String get agentNotesHint;
+
+  /// No description provided for @agentNotesUser.
+  ///
+  /// In en, this message translates to:
+  /// **'About you — from chat'**
+  String get agentNotesUser;
+
+  /// No description provided for @agentNotesVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'About the car — from chat'**
+  String get agentNotesVehicle;
+
+  /// No description provided for @agentNotesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing noted yet. It will appear when important details come up in conversation.'**
+  String get agentNotesEmpty;
+
+  /// No description provided for @agentRefuelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy AI tokens'**
+  String get agentRefuelTitle;
+
+  /// No description provided for @agentRefuelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase tokens for assistant replies. Payments soon — a demo top-up is available now.'**
+  String get agentRefuelHint;
+
+  /// No description provided for @agentRefuelPackage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack {label}'**
+  String agentRefuelPackage(String label);
+
+  /// No description provided for @agentPaymentSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'payment soon'**
+  String get agentPaymentSoon;
+
+  /// No description provided for @agentRefuelStubDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo AI tokens added to your balance'**
+  String get agentRefuelStubDone;
+
+  /// No description provided for @agentFuelEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tokens ran out'**
+  String get agentFuelEmptyTitle;
+
+  /// No description provided for @agentFuelEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorry for the inconvenience.\n\nThe assistant runs on a neural network — every reply spends AI tokens, so we can’t keep going for free without limits.\n\nBuy tokens in the agent profile, and we’ll continue right away.'**
+  String get agentFuelEmptyBody;
+
+  /// No description provided for @agentFuelEmptyBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'AI tokens ran out — replies are paused for now'**
+  String get agentFuelEmptyBanner;
+
+  /// No description provided for @agentFuelEmptyRefuel.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy tokens'**
+  String get agentFuelEmptyRefuel;
+
+  /// No description provided for @agentFuelEmptyLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get agentFuelEmptyLater;
+
+  /// No description provided for @agentOwnerSkillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your technical level'**
+  String get agentOwnerSkillTitle;
+
+  /// No description provided for @agentOwnerSkillHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This helps the assistant choose simpler wording and safer checks.'**
+  String get agentOwnerSkillHint;
+
+  /// No description provided for @agentOwnerSkillBand.
+  ///
+  /// In en, this message translates to:
+  /// **'How familiar are you with cars'**
+  String get agentOwnerSkillBand;
+
+  /// No description provided for @agentOwnerSkillHandsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you look under the hood / at the wheels yourself'**
+  String get agentOwnerSkillHandsOn;
+
+  /// No description provided for @agentOwnerSkillBandNeverTools.
+  ///
+  /// In en, this message translates to:
+  /// **'I’ve never held a screwdriver'**
+  String get agentOwnerSkillBandNeverTools;
+
+  /// No description provided for @agentOwnerSkillBandScared.
+  ///
+  /// In en, this message translates to:
+  /// **'I’m afraid to touch anything'**
+  String get agentOwnerSkillBandScared;
+
+  /// No description provided for @agentOwnerSkillBandNovice.
+  ///
+  /// In en, this message translates to:
+  /// **'I barely know cars'**
+  String get agentOwnerSkillBandNovice;
+
+  /// No description provided for @agentOwnerSkillBandBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'I know the basics'**
+  String get agentOwnerSkillBandBasic;
+
+  /// No description provided for @agentOwnerSkillBandCurious.
+  ///
+  /// In en, this message translates to:
+  /// **'Hobbyist — I read and watch'**
+  String get agentOwnerSkillBandCurious;
+
+  /// No description provided for @agentOwnerSkillBandConfident.
+  ///
+  /// In en, this message translates to:
+  /// **'I’m quite confident'**
+  String get agentOwnerSkillBandConfident;
+
+  /// No description provided for @agentOwnerSkillBandAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'I do a lot myself'**
+  String get agentOwnerSkillBandAdvanced;
+
+  /// No description provided for @agentOwnerSkillBandPro.
+  ///
+  /// In en, this message translates to:
+  /// **'Mechanic / workshop staff'**
+  String get agentOwnerSkillBandPro;
+
+  /// No description provided for @agentOwnerSkillHandsNever.
+  ///
+  /// In en, this message translates to:
+  /// **'No, only a workshop'**
+  String get agentOwnerSkillHandsNever;
+
+  /// No description provided for @agentOwnerSkillHandsOutside.
+  ///
+  /// In en, this message translates to:
+  /// **'Only outside (wheels, levels)'**
+  String get agentOwnerSkillHandsOutside;
+
+  /// No description provided for @agentOwnerSkillHandsSometimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes the simple stuff'**
+  String get agentOwnerSkillHandsSometimes;
+
+  /// No description provided for @agentOwnerSkillHandsOften.
+  ///
+  /// In en, this message translates to:
+  /// **'I often check myself'**
+  String get agentOwnerSkillHandsOften;
+
+  /// No description provided for @agentOwnerSkillHandsAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I’m fine under the hood'**
+  String get agentOwnerSkillHandsAlways;
+
+  /// No description provided for @agentOwnerSkillHandsYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, I can check'**
+  String get agentOwnerSkillHandsYes;
+
+  /// No description provided for @agentPrefsLiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sliders and instructions already affect assistant replies.'**
+  String get agentPrefsLiveHint;
+
+  /// No description provided for @assistantFillHistoryManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill history manually'**
+  String get assistantFillHistoryManual;
+
+  /// No description provided for @assistantTopicsActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get assistantTopicsActive;
+
+  /// No description provided for @assistantTopicsArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get assistantTopicsArchive;
+
+  /// No description provided for @assistantArchiveEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive is empty.'**
+  String get assistantArchiveEmpty;
+
   /// No description provided for @assistantEmptyThread.
   ///
   /// In en, this message translates to:
@@ -1496,6 +2780,66 @@ abstract class AppLocalizations {
   /// **'Delete topic'**
   String get assistantDeleteTopic;
 
+  /// No description provided for @assistantDeleteTopicConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this chat?'**
+  String get assistantDeleteTopicConfirmTitle;
+
+  /// No description provided for @assistantDeleteTopicConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat will be gone forever. This can’t be undone.'**
+  String get assistantDeleteTopicConfirmBody;
+
+  /// No description provided for @assistantDeleteTopicConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get assistantDeleteTopicConfirmAction;
+
+  /// No description provided for @assistantRenameTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get assistantRenameTopic;
+
+  /// No description provided for @assistantRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic title'**
+  String get assistantRenameHint;
+
+  /// No description provided for @assistantTopicResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get assistantTopicResolved;
+
+  /// No description provided for @assistantMarkResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark resolved'**
+  String get assistantMarkResolved;
+
+  /// No description provided for @assistantMarkActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark active'**
+  String get assistantMarkActive;
+
+  /// No description provided for @assistantArchiveTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get assistantArchiveTopic;
+
+  /// No description provided for @assistantRestoreTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get assistantRestoreTopic;
+
   /// No description provided for @assistantThreadMissing.
   ///
   /// In en, this message translates to:
@@ -1505,8 +2849,44 @@ abstract class AppLocalizations {
   /// No description provided for @assistantKeyMissing.
   ///
   /// In en, this message translates to:
-  /// **'DeepSeek key is missing. Run with --dart-define=DEEPSEEK_API_KEY=…'**
+  /// **'AI is configured on the server. Check admin and the .env key.'**
   String get assistantKeyMissing;
+
+  /// No description provided for @assistantNeedsVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select or add a vehicle for AI replies.'**
+  String get assistantNeedsVehicle;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @odometerPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mileage'**
+  String get odometerPickerTitle;
+
+  /// No description provided for @odometerPickerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll each digit like an odometer.'**
+  String get odometerPickerHint;
+
+  /// No description provided for @odometerPickerSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get odometerPickerSelected;
+
+  /// No description provided for @odometerPickerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get odometerPickerConfirm;
 
   /// No description provided for @journalLoading.
   ///
@@ -1604,11 +2984,197 @@ abstract class AppLocalizations {
   /// **'Dynamics based on saved odometer readings'**
   String get odometerDynamics;
 
+  /// No description provided for @analyticsMileageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved mileage points yet. Update mileage to see them on the chart.'**
+  String get analyticsMileageEmpty;
+
   /// No description provided for @fuelConsumptionFuture.
   ///
   /// In en, this message translates to:
   /// **'Fuel consumption will appear only when enough high-quality data is available.'**
   String get fuelConsumptionFuture;
+
+  /// No description provided for @uiKitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'UI components'**
+  String get uiKitTitle;
+
+  /// No description provided for @uiKitMoreDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Buttons, fields, and panels reference for new screens'**
+  String get uiKitMoreDetail;
+
+  /// No description provided for @uiKitIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Use these components as the reference when building new screens so the UI stays consistent.'**
+  String get uiKitIntro;
+
+  /// No description provided for @uiKitSectionPanels.
+  ///
+  /// In en, this message translates to:
+  /// **'Panels'**
+  String get uiKitSectionPanels;
+
+  /// No description provided for @uiKitPanelDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'AutomotivePanel — default content panel'**
+  String get uiKitPanelDefault;
+
+  /// No description provided for @uiKitPanelEmphasized.
+  ///
+  /// In en, this message translates to:
+  /// **'AutomotivePanel emphasized — left accent'**
+  String get uiKitPanelEmphasized;
+
+  /// No description provided for @uiKitSectionHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Headers'**
+  String get uiKitSectionHeaders;
+
+  /// No description provided for @uiKitSectionHeaderExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Section header'**
+  String get uiKitSectionHeaderExample;
+
+  /// No description provided for @uiKitSectionButtons.
+  ///
+  /// In en, this message translates to:
+  /// **'Buttons'**
+  String get uiKitSectionButtons;
+
+  /// No description provided for @uiKitPrimaryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Filled / primary'**
+  String get uiKitPrimaryButton;
+
+  /// No description provided for @uiKitTonalButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Tonal / secondary'**
+  String get uiKitTonalButton;
+
+  /// No description provided for @uiKitOutlinedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Outlined'**
+  String get uiKitOutlinedButton;
+
+  /// No description provided for @uiKitTextButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get uiKitTextButton;
+
+  /// No description provided for @uiKitDisabledButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get uiKitDisabledButton;
+
+  /// No description provided for @uiKitSectionInputs.
+  ///
+  /// In en, this message translates to:
+  /// **'Inputs'**
+  String get uiKitSectionInputs;
+
+  /// No description provided for @uiKitInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Field label'**
+  String get uiKitInputLabel;
+
+  /// No description provided for @uiKitInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hint'**
+  String get uiKitInputHint;
+
+  /// No description provided for @uiKitInputErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Field with error'**
+  String get uiKitInputErrorLabel;
+
+  /// No description provided for @uiKitInputError.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample error text'**
+  String get uiKitInputError;
+
+  /// No description provided for @uiKitDropdownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropdown'**
+  String get uiKitDropdownLabel;
+
+  /// No description provided for @uiKitSwitchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get uiKitSwitchLabel;
+
+  /// No description provided for @uiKitSectionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status and gauges'**
+  String get uiKitSectionStatus;
+
+  /// No description provided for @uiKitStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'STATUS RAIL'**
+  String get uiKitStatusLabel;
+
+  /// No description provided for @uiKitStatusValue.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get uiKitStatusValue;
+
+  /// No description provided for @uiKitGaugeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumable gauge'**
+  String get uiKitGaugeLabel;
+
+  /// No description provided for @uiKitSectionPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'No-car preview'**
+  String get uiKitSectionPreview;
+
+  /// No description provided for @uiKitPreviewGate.
+  ///
+  /// In en, this message translates to:
+  /// **'Message shown when no vehicle is selected'**
+  String get uiKitPreviewGate;
+
+  /// No description provided for @uiKitPreviewTileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview row'**
+  String get uiKitPreviewTileTitle;
+
+  /// No description provided for @uiKitPreviewTileDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive sample entry'**
+  String get uiKitPreviewTileDetail;
+
+  /// No description provided for @uiKitSectionColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme colors'**
+  String get uiKitSectionColors;
 
   /// No description provided for @structureWithoutData.
   ///
@@ -2591,7 +4157,7 @@ abstract class AppLocalizations {
   /// No description provided for @historyProgress.
   ///
   /// In en, this message translates to:
-  /// **'Item {current} of {total}'**
+  /// **'{current}/{total}'**
   String historyProgress(int current, int total);
 
   /// No description provided for @historyDoneKnown.
@@ -2729,7 +4295,7 @@ abstract class AppLocalizations {
   /// No description provided for @currentMileage.
   ///
   /// In en, this message translates to:
-  /// **'Current mileage'**
+  /// **'Actual mileage'**
   String get currentMileage;
 
   /// No description provided for @mileageDecreaseNotAllowed.
@@ -2960,6 +4526,42 @@ abstract class AppLocalizations {
   /// **'More history or an inspection is needed.'**
   String get basisMissingDataExplanation;
 
+  /// No description provided for @howSoonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How soon'**
+  String get howSoonLabel;
+
+  /// No description provided for @howSoonDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d'**
+  String howSoonDays(int days);
+
+  /// No description provided for @howSoonKm.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String howSoonKm(int km);
+
+  /// No description provided for @howSoonOverdueDays.
+  ///
+  /// In en, this message translates to:
+  /// **'overdue {days} d'**
+  String howSoonOverdueDays(int days);
+
+  /// No description provided for @howSoonOverdueKm.
+  ///
+  /// In en, this message translates to:
+  /// **'overdue {km} km'**
+  String howSoonOverdueKm(int km);
+
+  /// No description provided for @historyMileageOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'by mileage'**
+  String get historyMileageOnly;
+
   /// No description provided for @iconCategorySemantics.
   ///
   /// In en, this message translates to:
@@ -2975,7 +4577,7 @@ abstract class AppLocalizations {
   /// No description provided for @performed.
   ///
   /// In en, this message translates to:
-  /// **'Performed'**
+  /// **'Mark done'**
   String get performed;
 
   /// No description provided for @preliminaryEstimate.

@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:autodoctor/app/locale_controller.dart';
 import 'package:autodoctor/app/router.dart';
+import 'package:autodoctor/features/assistant/assistant.dart';
+import 'package:autodoctor/features/assistant/assistant_api.dart';
 import 'package:autodoctor/features/assistant/assistant_store.dart';
+import 'package:autodoctor/features/guest_bootstrap/guest_bootstrap.dart';
 import 'package:autodoctor/features/maintenance/maintenance.dart';
 import 'package:autodoctor/features/maintenance/maintenance_controller.dart';
 import 'package:autodoctor/features/vehicle/vehicle.dart';
@@ -21,7 +24,8 @@ void main() {
 
     expect(find.byKey(const Key('header-active-vehicle')), findsOneWidget);
     await tester.tap(find.byKey(const Key('notifications-bell')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Уведомления · Volkswagen Golf'), findsOneWidget);
     expect(find.text('Новых уведомлений нет'), findsOneWidget);
@@ -32,9 +36,19 @@ void main() {
   testWidgets('active AI shows topics list and opens new chat', (tester) async {
     final router = await _pumpActiveApp(tester);
     router.go('/assistant');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    // Wait until assistant load finishes (empty state or topic list).
+    for (var i = 0; i < 20; i++) {
+      if (find.byKey(const Key('assistant-topics-empty')).evaluate().isNotEmpty ||
+          find.byKey(const Key('assistant-topics-list')).evaluate().isNotEmpty) {
+        break;
+      }
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
-    expect(find.text('Выбранный автомобиль · Volkswagen Golf'), findsOneWidget);
+    expect(find.text('AI-ассистент'), findsOneWidget);
+    expect(find.text('Выбранный автомобиль · Volkswagen Golf'), findsNothing);
     expect(find.byKey(const Key('assistant-new-chat')), findsOneWidget);
     expect(find.byKey(const Key('assistant-topics-empty')), findsOneWidget);
     expect(find.text('AI-ассистент пока не подключён'), findsNothing);
@@ -42,7 +56,8 @@ void main() {
     _expectNoNoCarOrDemo();
 
     await tester.tap(find.byKey(const Key('assistant-new-chat')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byKey(const Key('assistant-chat-input')), findsOneWidget);
     expect(find.byKey(const Key('assistant-chat-send')), findsOneWidget);
     expect(
@@ -78,10 +93,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Аналитика · Volkswagen Golf'), findsOneWidget);
-    expect(
-      find.text('Подготавливаем аналитику по подтверждённым записям…'),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('analytics-mileage-chart')), findsOneWidget);
     _expectNoNoCarOrDemo();
 
     router.go('/more');
@@ -177,6 +189,7 @@ Future<GoRouter> _pumpActiveApp(
         assistantThreadStoreProvider.overrideWithValue(
           InMemoryAssistantThreadStore(),
         ),
+        assistantApiClientProvider.overrideWithValue(_FakeAssistantApi()),
         maintenanceRepositoryProvider.overrideWithValue(
           repository ?? _MaintenanceRepository(),
         ),
@@ -190,7 +203,11 @@ Future<GoRouter> _pumpActiveApp(
     ),
   );
   if (settle) {
-    await tester.pumpAndSettle();
+    // Finite pumps: progress indicators / short UI animations can hang settle.
+    await tester.pump();
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
   } else {
     await tester.pump();
     await tester.pump();
@@ -229,6 +246,12 @@ class _MaintenanceRepository implements MaintenanceRepository {
     observationCount: 0,
     estimateLabel: 'Estimate',
   );
+
+  @override
+  Future<MileageObservationList> getMileageObservations(
+    String vehicleId, {
+    required String locale,
+  }) async => const MileageObservationList(items: []);
 
   @override
   Future<ConditionObservationList> getConditionObservations(
@@ -320,6 +343,50 @@ class _MaintenanceRepository implements MaintenanceRepository {
     required String locale,
     required List<HistoryAnswerWrite> answers,
   }) async {}
+}
+
+class _FakeAssistantApi extends AssistantApiClient {
+  _FakeAssistantApi() : super(_NoopTokenStore());
+
+  @override
+  Future<List<ChatThread>> listThreads({
+    required String vehicleId,
+    required String locale,
+    String status = 'active',
+  }) async => const [];
+
+  @override
+  Future<ChatThread> getThread({
+    required String vehicleId,
+    required String threadId,
+    required String locale,
+  }) async => ChatThread(
+    id: threadId,
+    title: 'Новый чат',
+    updatedAt: DateTime(2026, 7, 30),
+    messages: const [],
+  );
+
+  @override
+  Future<AssistantReply> sendMessage({
+    required String vehicleId,
+    required String message,
+    required String locale,
+    String? threadId,
+    bool suggestTitle = false,
+    List<ChatMessage> history = const [],
+  }) async => const AssistantReply(reply: 'ok');
+}
+
+class _NoopTokenStore implements SessionTokenStore {
+  @override
+  Future<String?> read() async => 'test-token';
+
+  @override
+  Future<void> write(String token) async {}
+
+  @override
+  Future<void> clear() async {}
 }
 
 const _vehicle = Vehicle(

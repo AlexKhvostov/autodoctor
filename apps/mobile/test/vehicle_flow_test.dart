@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:autodoctor/app/auto_doctor_app.dart';
 import 'package:autodoctor/app/locale_controller.dart';
 import 'package:autodoctor/app/router.dart';
+import 'package:autodoctor/features/assistant/assistant_store.dart';
 import 'package:autodoctor/features/guest_bootstrap/guest_bootstrap.dart';
 import 'package:autodoctor/features/guest_bootstrap/guest_bootstrap_controller.dart';
 import 'package:autodoctor/features/maintenance/maintenance.dart';
@@ -42,19 +43,16 @@ void main() {
       final repository = FakeVehicleRepository();
       await _pumpVehicleForm(tester, vehicleRepository: repository);
 
+      await _pickSuggestion(tester, 'vehicle-make-select', 'Volkswagen');
       expect(_continueButton(tester).onPressed, isNull);
-      await _select(tester, 'vehicle-make-select', 'Volkswagen');
+      await _pickSuggestion(tester, 'vehicle-model-select', 'Golf');
       expect(_continueButton(tester).onPressed, isNull);
-      await _select(tester, 'vehicle-model-select', 'Golf');
+      await _selectDropdown(tester, 'vehicle-year-select', '2020');
       expect(_continueButton(tester).onPressed, isNull);
-      await _select(tester, 'vehicle-year-select', '2020');
-      expect(_continueButton(tester).onPressed, isNull);
-      await _select(tester, 'vehicle-fuel-select', 'Бензин');
-      expect(_continueButton(tester).onPressed, isNull);
-      await tester.enterText(
-        find.byKey(const Key('vehicle-engine-displacement-input')),
-        '1600',
-      );
+      await _selectDropdown(tester, 'vehicle-fuel-select', 'Бензин');
+      // Slider defaults to 1.6 L for non-electric — form becomes complete.
+      expect(_continueButton(tester).onPressed, isNotNull);
+      await _setDisplacementLiters(tester, 1.6);
       await tester.pump();
       expect(_continueButton(tester).onPressed, isNotNull);
 
@@ -70,94 +68,33 @@ void main() {
     },
   );
 
-  testWidgets('six makes plus Other expose exact dependent models', (
+  testWidgets('catalog search suggests make and dependent models', (
     tester,
   ) async {
     await _pumpVehicleForm(tester);
 
-    expect(_dropdownTextLabels(tester, 'vehicle-make-select'), const [
-      'Volkswagen',
-      'Peugeot',
-      'Mitsubishi',
-      'BMW',
-      'Mercedes-Benz',
-      'Mazda',
-      'Другое',
-    ]);
+    await tester.tap(find.byKey(const Key('vehicle-make-select')));
+    await tester.enterText(
+      find.byKey(const Key('vehicle-make-select')),
+      'Volk',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Volkswagen'), findsWidgets);
 
-    const expectedModels = <String, List<String>>{
-      'Volkswagen': [
-        'Polo',
-        'Golf',
-        'Passat',
-        'Tiguan',
-        'Touareg',
-        'Jetta',
-        'Transporter',
-      ],
-      'Peugeot': [
-        '206',
-        '207',
-        '208',
-        '307',
-        '308',
-        '3008',
-        '5008',
-        '508',
-        'Partner',
-      ],
-      'Mitsubishi': [
-        'Colt',
-        'Lancer',
-        'Galant',
-        'ASX',
-        'Outlander',
-        'Eclipse Cross',
-        'Pajero',
-        'Pajero Sport',
-      ],
-      'BMW': [
-        '1 Series',
-        '3 Series',
-        '5 Series',
-        '7 Series',
-        'X1',
-        'X3',
-        'X5',
-        'X6',
-      ],
-      'Mercedes-Benz': [
-        'A-Class',
-        'C-Class',
-        'E-Class',
-        'S-Class',
-        'CLA',
-        'GLA',
-        'GLC',
-        'GLE',
-        'Vito',
-        'Sprinter',
-      ],
-      'Mazda': [
-        'Mazda2',
-        'Mazda3',
-        'Mazda6',
-        'CX-3',
-        'CX-5',
-        'CX-7',
-        'CX-9',
-        'MX-5',
-      ],
-    };
+    await _pickSuggestion(tester, 'vehicle-make-select', 'Volkswagen');
+    await tester.tap(find.byKey(const Key('vehicle-model-select')));
+    await tester.enterText(find.byKey(const Key('vehicle-model-select')), 'Go');
+    await tester.pumpAndSettle();
+    expect(find.text('Golf'), findsWidgets);
 
-    for (final entry in expectedModels.entries) {
-      await _select(tester, 'vehicle-make-select', entry.key);
-      expect(
-        _dropdownTextLabels(tester, 'vehicle-model-select'),
-        [...entry.value, 'Другая модель'],
-        reason: 'Unexpected models for ${entry.key}',
-      );
-    }
+    await _pickSuggestion(tester, 'vehicle-model-select', 'Golf');
+    expect(
+      tester
+          .widget<TextFormField>(find.byKey(const Key('vehicle-model-select')))
+          .controller!
+          .text,
+      'Golf',
+    );
   });
 
   testWidgets('switching make clears model and disables Continue', (
@@ -167,65 +104,53 @@ void main() {
     await _fillRequiredProfile(tester);
     expect(_continueButton(tester).onPressed, isNotNull);
 
-    await _select(tester, 'vehicle-make-select', 'Mazda');
+    await _pickSuggestion(tester, 'vehicle-make-select', 'Mazda');
     expect(_continueButton(tester).onPressed, isNull);
     expect(
       tester
-          .state<FormFieldState<dynamic>>(
-            find.byKey(const Key('vehicle-model-select')),
-          )
-          .value,
-      isNull,
+          .widget<TextFormField>(find.byKey(const Key('vehicle-model-select')))
+          .controller!
+          .text,
+      isEmpty,
     );
   });
 
   testWidgets(
-    'Other make requires manual make and manual model and normalizes',
+    'unknown make allows free-text make and model and normalizes',
     (tester) async {
       final repository = FakeVehicleRepository();
       await _pumpVehicleForm(tester, vehicleRepository: repository);
 
-      await _select(tester, 'vehicle-make-select', 'Другое');
-      expect(find.byKey(const Key('vehicle-make-other-input')), findsOneWidget);
-      expect(find.byKey(const Key('vehicle-model-select')), findsNothing);
-      expect(
-        find.byKey(const Key('vehicle-model-other-input')),
-        findsOneWidget,
-      );
-      expect(_continueButton(tester).onPressed, isNull);
-
       await tester.enterText(
-        find.byKey(const Key('vehicle-make-other-input')),
+        find.byKey(const Key('vehicle-make-select')),
         '  Saab   Automobile  ',
       );
+      await tester.pump();
       await tester.enterText(
-        find.byKey(const Key('vehicle-model-other-input')),
+        find.byKey(const Key('vehicle-model-select')),
         '  9-3   Aero  ',
       );
+      await tester.pump();
       await _fillYearFuelAndDisplacement(tester);
       await _continueToConfirm(tester);
       await _createVehicle(tester);
 
       expect(repository.lastDraft?.make, 'Saab Automobile');
       expect(repository.lastDraft?.model, '9-3 Aero');
+      expect(repository.lastDraft?.engineDisplacementCc, 1600);
     },
   );
 
-  testWidgets('Other model under known make shows only manual model input', (
-    tester,
-  ) async {
+  testWidgets('custom model under known make is accepted', (tester) async {
     final repository = FakeVehicleRepository();
     await _pumpVehicleForm(tester, vehicleRepository: repository);
 
-    await _select(tester, 'vehicle-make-select', 'Volkswagen');
-    await _select(tester, 'vehicle-model-select', 'Другая модель');
-    expect(find.byKey(const Key('vehicle-make-other-input')), findsNothing);
-    expect(find.byKey(const Key('vehicle-model-other-input')), findsOneWidget);
-
+    await _pickSuggestion(tester, 'vehicle-make-select', 'Volkswagen');
     await tester.enterText(
-      find.byKey(const Key('vehicle-model-other-input')),
+      find.byKey(const Key('vehicle-model-select')),
       '  Golf   Variant  ',
     );
+    await tester.pump();
     await _fillYearFuelAndDisplacement(tester);
     await _continueToConfirm(tester);
     await _createVehicle(tester);
@@ -282,12 +207,9 @@ void main() {
       find.byKey(const Key('vehicle-engine-displacement-input')),
       findsOneWidget,
     );
-    expect(_continueButton(tester).onPressed, isNull);
-    await tester.enterText(
-      find.byKey(const Key('vehicle-engine-displacement-input')),
-      '1998',
-    );
-    await tester.pump();
+    // Default liters is set; continue already available.
+    expect(_continueButton(tester).onPressed, isNotNull);
+    await _setDisplacementLiters(tester, 2.0);
     expect(_continueButton(tester).onPressed, isNotNull);
   });
 
@@ -354,10 +276,16 @@ void main() {
       find.byKey(const Key('vin-input')),
       'wvwzzz1jzxw000001',
     );
+    await tester.ensureVisible(find.byKey(const Key('vehicle-mileage-input')));
+    await tester.tap(find.byKey(const Key('vehicle-mileage-input')));
+    await tester.pumpAndSettle();
     await tester.enterText(
-      find.byKey(const Key('vehicle-mileage-input')),
+      find.byKey(const Key('odometer-picker-test-input')),
       '50000',
     );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('odometer-picker-confirm')));
+    await tester.pumpAndSettle();
     await _select(tester, 'vehicle-transmission-select', 'Автоматическая');
 
     await _continueToConfirm(tester);
@@ -375,28 +303,16 @@ void main() {
     expect(repository.lastDraft?.transmissionGears, isNull);
   });
 
-  testWidgets('create to first plan and roadmap works without VIN or mileage', (
-    tester,
-  ) async {
+  testWidgets('create opens welcome AI chat', (tester) async {
     final repository = FakeVehicleRepository();
     await _pumpVehicleForm(tester, vehicleRepository: repository);
     await _fillRequiredProfile(tester);
     await _continueToConfirm(tester);
     await _createVehicle(tester);
 
-    expect(_path(tester), '/plan/first');
-    expect(find.textContaining('Volkswagen Golf'), findsWidgets);
-    expect(find.text('Пунктов обслуживания: 1'), findsOneWidget);
-    expect(find.byKey(const Key('first-plan-continue')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('first-plan-continue')));
-    await tester.pumpAndSettle();
-    expect(_path(tester), '/roadmap');
-    expect(find.byKey(const Key('header-active-vehicle')), findsOneWidget);
-    expect(find.text('Volkswagen Golf'), findsOneWidget);
-    expect(find.textContaining('null'), findsNothing);
-    expect(find.byKey(const Key('real-timeline')), findsOneWidget);
-    expect(find.text('Моторное масло'), findsWidgets);
+    expect(_path(tester).startsWith('/ai/chat/'), isTrue);
+    expect(find.byKey(const Key('assistant-chat-input')), findsOneWidget);
+    expect(find.byKey(const Key('assistant-fill-history')), findsOneWidget);
   });
 
   testWidgets('submit shows loading and API error retries exactly once', (
@@ -431,7 +347,7 @@ void main() {
     repository.createHandler = (_) async => fakeMinimalVehicle;
     await _createVehicle(tester);
     expect(repository.createCalls, 2);
-    expect(_path(tester), '/plan/first');
+    expect(_path(tester).startsWith('/ai/chat/'), isTrue);
   });
 
   testWidgets('back controls and direct route guards do not dead-end', (
@@ -481,11 +397,9 @@ void main() {
     expect(find.byKey(const Key('confirm-vehicle')), findsOneWidget);
 
     await _createVehicle(tester);
-    expect(find.byKey(const Key('first-plan-continue')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('first-plan-continue')));
-    await tester.pumpAndSettle();
-    expect(_path(tester), '/roadmap');
-    expect(find.byKey(const Key('roadmap-quick-add')), findsOneWidget);
+    expect(_path(tester).startsWith('/ai/chat/'), isTrue);
+    expect(find.byKey(const Key('assistant-chat-input')), findsOneWidget);
+    expect(find.byKey(const Key('assistant-fill-history')), findsOneWidget);
   });
 
   testWidgets('corrected vehicle flow fits 360x640', (tester) async {
@@ -517,14 +431,12 @@ void main() {
       (tester) async {
         await _pumpVehicleForm(tester, locale: localeCase.$1);
         expect(find.text(localeCase.$2[0]), findsOneWidget);
-        expect(_dropdownLabel(tester, 'vehicle-make-select'), localeCase.$2[1]);
+        expect(find.text(localeCase.$2[1]), findsWidgets);
+        expect(find.text(localeCase.$2[2]), findsWidgets);
+        expect(find.text(localeCase.$2[3]), findsWidgets);
+        expect(find.text(localeCase.$2[4]), findsWidgets);
         await _select(tester, 'vehicle-make-select', 'Volkswagen');
-        expect(
-          _dropdownLabel(tester, 'vehicle-model-select'),
-          localeCase.$2[2],
-        );
-        expect(_dropdownLabel(tester, 'vehicle-year-select'), localeCase.$2[3]);
-        expect(_dropdownLabel(tester, 'vehicle-fuel-select'), localeCase.$2[4]);
+        expect(find.byKey(const Key('vehicle-model-select')), findsOneWidget);
       },
     );
   }
@@ -576,6 +488,9 @@ Future<void> _pumpApp(
         maintenanceRepositoryProvider.overrideWithValue(
           maintenanceRepository ?? FakeMaintenanceRepository(),
         ),
+        assistantThreadStoreProvider.overrideWithValue(
+          InMemoryAssistantThreadStore(),
+        ),
       ],
       child: const AutoDoctorApp(),
     ),
@@ -608,18 +523,61 @@ Future<void> _openVehicleFormThroughConsents(WidgetTester tester) async {
 }
 
 Future<void> _fillRequiredProfile(WidgetTester tester) async {
-  await _select(tester, 'vehicle-make-select', 'Volkswagen');
-  await _select(tester, 'vehicle-model-select', 'Golf');
+  await _pickSuggestion(tester, 'vehicle-make-select', 'Volkswagen');
+  await _pickSuggestion(tester, 'vehicle-model-select', 'Golf');
   await _fillYearFuelAndDisplacement(tester);
 }
 
 Future<void> _fillYearFuelAndDisplacement(WidgetTester tester) async {
-  await _select(tester, 'vehicle-year-select', '2020');
-  await _select(tester, 'vehicle-fuel-select', 'Бензин');
-  await tester.enterText(
-    find.byKey(const Key('vehicle-engine-displacement-input')),
-    '1600',
-  );
+  await _selectDropdown(tester, 'vehicle-year-select', '2020');
+  await _selectDropdown(tester, 'vehicle-fuel-select', 'Бензин');
+  await _setDisplacementLiters(tester, 1.6);
+}
+
+Future<void> _pickSuggestion(
+  WidgetTester tester,
+  String key,
+  String label,
+) async {
+  final field = find.byKey(Key(key));
+  await tester.ensureVisible(field);
+  await tester.tap(field);
+  await tester.pump();
+  await tester.enterText(field, label);
+  await tester.pumpAndSettle();
+  final option = find.text(label).last;
+  await tester.tap(option);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectDropdown(
+  WidgetTester tester,
+  String key,
+  String label,
+) async {
+  final field = find.byKey(Key(key));
+  await tester.ensureVisible(field);
+  await tester.tap(field);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
+/// Legacy alias used by older tests that still mean dropdown.
+Future<void> _select(WidgetTester tester, String key, String label) async {
+  if (key == 'vehicle-make-select' || key == 'vehicle-model-select') {
+    await _pickSuggestion(tester, key, label);
+    return;
+  }
+  await _selectDropdown(tester, key, label);
+}
+
+Future<void> _setDisplacementLiters(WidgetTester tester, double liters) async {
+  final finder = find.byKey(const Key('vehicle-engine-displacement-input'));
+  await tester.ensureVisible(finder);
+  await tester.pump();
+  final slider = tester.widget<Slider>(finder);
+  slider.onChanged!(liters);
   await tester.pump();
 }
 
@@ -634,15 +592,6 @@ Future<void> _continueToConfirm(WidgetTester tester) async {
 Future<void> _createVehicle(WidgetTester tester) async {
   await tester.ensureVisible(find.byKey(const Key('confirm-vehicle')));
   await tester.tap(find.byKey(const Key('confirm-vehicle')));
-  await tester.pumpAndSettle();
-}
-
-Future<void> _select(WidgetTester tester, String key, String label) async {
-  final field = find.byKey(Key(key));
-  await tester.ensureVisible(field);
-  await tester.tap(field);
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(label).last);
   await tester.pumpAndSettle();
 }
 
@@ -719,6 +668,7 @@ class FakeGuestRepository implements GuestBootstrapRepository {
   }) async => const CreatedGuestSession(
     session: GuestSession(id: 'session-1', status: 'active'),
     token: 'test-token',
+    guestProfileId: 'profile-1',
   );
 
   @override
@@ -768,6 +718,14 @@ class FakeVehicleRepository implements VehicleRepository {
   Future<List<Vehicle>> list({required String locale}) async => vehicles;
 
   @override
+  Future<Vehicle> update(
+    String vehicleId,
+    VehicleDraft draft, {
+    required int version,
+    required String locale,
+  }) async => fakeMinimalVehicle.copyWith(version: version + 1);
+
+  @override
   Future<MileageConfirmation> updateMileage(
     String vehicleId, {
     required int value,
@@ -797,6 +755,12 @@ class FakeMaintenanceRepository implements MaintenanceRepository {
     observationCount: 0,
     estimateLabel: 'Estimate',
   );
+
+  @override
+  Future<MileageObservationList> getMileageObservations(
+    String vehicleId, {
+    required String locale,
+  }) async => const MileageObservationList(items: []);
 
   @override
   Future<ConditionObservationList> getConditionObservations(

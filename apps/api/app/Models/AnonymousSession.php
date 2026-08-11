@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AnonymousSession extends Model
@@ -11,6 +12,7 @@ class AnonymousSession extends Model
     use HasUuids;
 
     protected $fillable = [
+        'guest_profile_id',
         'token_hash',
         'status',
         'locale',
@@ -30,6 +32,11 @@ class AnonymousSession extends Model
             'expires_at' => 'immutable_datetime',
             'version' => 'integer',
         ];
+    }
+
+    public function guestProfile(): BelongsTo
+    {
+        return $this->belongsTo(GuestProfile::class);
     }
 
     public function consents(): HasMany

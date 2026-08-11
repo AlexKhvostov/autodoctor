@@ -10,8 +10,11 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n.dart';
 import '../../maintenance/maintenance.dart';
 import '../../maintenance/maintenance_controller.dart';
+import '../../maintenance/presentation/mileage_trend_chart.dart';
+import '../../maintenance/presentation/state_screen.dart';
+import '../../maintenance/presentation/work_node_icons.dart';
+import '../../vehicle/vehicle.dart';
 import '../../vehicle/vehicle_controller.dart';
-import 'browse_shell.dart';
 
 class RoadmapPreviewScreen extends ConsumerStatefulWidget {
   const RoadmapPreviewScreen({super.key});
@@ -1025,7 +1028,6 @@ class JournalScreen extends ConsumerStatefulWidget {
 }
 
 class _JournalScreenState extends ConsumerState<JournalScreen> {
-  int _selectedFilter = 0;
   String? _requestedKey;
 
   void _ensure(String vehicleId, String locale, {bool force = false}) {
@@ -1051,185 +1053,358 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       _requestedKey = null;
     }
     final maintenance = ref.watch(maintenanceControllerProvider);
-    final filters = [
-      context.l10n.filterAll,
-      context.l10n.filterService,
-      context.l10n.filterFuel,
-      context.l10n.filterOther,
-    ];
-    return _PreviewPage(
-      title: context.l10n.navJournal,
-      action: IconButton.filledTonal(
-        key: const Key('journal-quick-add'),
-        tooltip: context.l10n.addEvent,
-        onPressed: () => showQuickAddPreview(context),
-        icon: const Icon(Icons.add),
-      ),
-      gateMessage: context.l10n.journalGate,
-      previewChild: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainer,
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  for (final (index, filter) in filters.indexed)
-                    InkWell(
-                      borderRadius: BorderRadius.circular(5),
-                      onTap: () => setState(() => _selectedFilter = index),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _selectedFilter == index
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          filter,
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                fontWeight: _selectedFilter == index
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                        ),
-                      ),
+    final colors = Theme.of(context).colorScheme;
+
+    if (vehicle == null) {
+      return _PreviewPage(
+        title: context.l10n.navJournal,
+        gateMessage: context.l10n.journalGate,
+        previewChild: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(context.l10n.journalDemoDisclaimer),
+            const SizedBox(height: 4),
+            PreviewListTile(
+              icon: Icons.car_repair_outlined,
+              title: context.l10n.journalServiceTitle,
+              subtitle: context.l10n.journalServiceSubtitle,
+            ),
+            PreviewListTile(
+              icon: Icons.local_gas_station_outlined,
+              title: context.l10n.journalFuelTitle,
+              subtitle: context.l10n.journalFuelSubtitle,
+            ),
+            PreviewListTile(
+              icon: Icons.receipt_long_outlined,
+              title: context.l10n.journalExpenseTitle,
+              subtitle: context.l10n.journalExpenseSubtitle,
+            ),
+          ],
+        ),
+        vehicleChild: const SizedBox.shrink(),
+      );
+    }
+
+    return Column(
+      key: const Key('journal-vehicle-content'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: colors.surfaceContainerLowest,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.l10n.navJournal,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                ],
-              ),
+                  ),
+                ),
+                IconButton(
+                  key: const Key('journal-info'),
+                  tooltip: context.l10n.journalIconsLegendTitle,
+                  onPressed: () => _showJournalLegend(context),
+                  icon: Icon(Icons.info_outline, color: colors.primary),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(context.l10n.journalDemoDisclaimer),
-          const SizedBox(height: 4),
-          PreviewListTile(
-            icon: Icons.car_repair_outlined,
-            title: context.l10n.journalServiceTitle,
-            subtitle: context.l10n.journalServiceSubtitle,
+        ),
+        Expanded(
+          child: _JournalVehicleList(
+            vehicleId: vehicle.id,
+            locale: locale,
+            state: maintenance,
+            onRetry: () {
+              _requestedKey = null;
+              _ensure(vehicle.id, locale, force: true);
+            },
           ),
-          PreviewListTile(
-            icon: Icons.local_gas_station_outlined,
-            title: context.l10n.journalFuelTitle,
-            subtitle: context.l10n.journalFuelSubtitle,
-          ),
-          PreviewListTile(
-            icon: Icons.receipt_long_outlined,
-            title: context.l10n.journalExpenseTitle,
-            subtitle: context.l10n.journalExpenseSubtitle,
-          ),
-        ],
-      ),
-      vehicleChild: vehicle == null
-          ? const SizedBox.shrink()
-          : _JournalVehicleContent(
-              vehicleId: vehicle.id,
-              vehicleMake: vehicle.make,
-              vehicleModel: vehicle.model,
-              locale: locale,
-              state: maintenance,
-              onRetry: () {
-                _requestedKey = null;
-                _ensure(vehicle.id, locale, force: true);
-              },
-            ),
+        ),
+      ],
     );
   }
 }
 
-class _JournalVehicleContent extends StatelessWidget {
-  const _JournalVehicleContent({
+void _showJournalLegend(BuildContext context) {
+  final colors = Theme.of(context).colorScheme;
+  final items = [
+    (Icons.oil_barrel, context.l10n.journalLegendOil),
+    (Icons.album_outlined, context.l10n.journalLegendBrakes),
+    (Icons.manage_search_outlined, context.l10n.journalLegendInspect),
+    (Icons.build_outlined, context.l10n.journalLegendOther),
+  ];
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(context.l10n.journalIconsLegendTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(context.l10n.journalIconsLegendBody),
+          const SizedBox(height: 12),
+          for (final (icon, label) in items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(icon, size: 18, color: colors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(label)),
+                ],
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(context.l10n.understood),
+        ),
+      ],
+    ),
+  );
+}
+
+class _JournalVehicleList extends ConsumerWidget {
+  const _JournalVehicleList({
     required this.vehicleId,
-    required this.vehicleMake,
-    required this.vehicleModel,
     required this.locale,
     required this.state,
     required this.onRetry,
   });
 
   final String vehicleId;
-  final String vehicleMake;
-  final String vehicleModel;
   final String locale;
   final MaintenanceState state;
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final matches = state.matches(vehicleId, locale);
     final stage = matches ? state.roadmapStage : MaintenanceLoadStage.loading;
     final records = matches ? state.serviceRecords?.items : null;
-    return Column(
-      key: const Key('journal-vehicle-content'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          context.l10n.journalForVehicle(vehicleMake, vehicleModel),
-          style: Theme.of(context).textTheme.titleMedium,
+    final colors = Theme.of(context).colorScheme;
+
+    if (stage == MaintenanceLoadStage.loading ||
+        stage == MaintenanceLoadStage.idle) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 8),
+            Text(context.l10n.journalLoading),
+          ],
         ),
-        const SizedBox(height: 12),
-        if (stage == MaintenanceLoadStage.loading ||
-            stage == MaintenanceLoadStage.idle)
-          Center(
-            child: Column(
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 8),
-                Text(context.l10n.journalLoading),
-              ],
-            ),
-          )
-        else if (stage == MaintenanceLoadStage.error)
-          AutomotivePanel(
-            child: Column(
-              children: [
-                Text(context.l10n.journalLoadError),
-                TextButton(
-                  key: const Key('journal-retry'),
-                  onPressed: onRetry,
-                  child: Text(context.l10n.retry),
-                ),
-              ],
-            ),
-          )
-        else if (records == null || records.isEmpty)
-          AutomotivePanel(child: Text(context.l10n.serviceTimelineEmpty))
-        else
-          for (final record in records)
-            PreviewListTile(
+      );
+    }
+    if (stage == MaintenanceLoadStage.error) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: AutomotivePanel(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(context.l10n.journalLoadError),
+              TextButton(
+                key: const Key('journal-retry'),
+                onPressed: onRetry,
+                child: Text(context.l10n.retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (records == null || records.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: AutomotivePanel(child: Text(context.l10n.serviceTimelineEmpty)),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+      itemCount: records.length,
+      itemBuilder: (context, index) {
+        final record = records[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: colors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
               key: Key('journal-service-${record.id}'),
-              icon: Icons.car_repair_outlined,
-              title:
-                  record.title ??
-                  record.items.map((item) => item.title).join(', '),
-              subtitle: [
-                _journalDate(record.serviceDate),
-                if (record.mileage != null)
-                  '${record.mileage} ${record.mileageUnit ?? 'km'}',
-              ].join(' · '),
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _openJournalNode(context, ref, record),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colors.primaryContainer.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        _journalRecordIcon(record),
+                        color: colors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            record.title ??
+                                record.items
+                                    .map((item) => item.title)
+                                    .join(', '),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            [
+                              _journalDate(record.serviceDate),
+                              if (record.mileage != null)
+                                '${record.mileage} ${record.mileageUnit ?? 'km'}',
+                            ].join(' · '),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
+                  ],
+                ),
+              ),
             ),
-      ],
+          ),
+        );
+      },
     );
   }
+}
+
+Future<void> _openJournalNode(
+  BuildContext context,
+  WidgetRef ref,
+  ServiceRecord record,
+) async {
+  final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
+  if (vehicle == null) return;
+
+  final workCode = record.items.isNotEmpty ? record.items.first.workCode : '';
+  final consumables =
+      ref.read(maintenanceControllerProvider).consumables?.items ??
+      const <Consumable>[];
+  final match = consumables
+      .where(
+        (item) =>
+            item.workCode == workCode ||
+            item.id.replaceAll('-', '_') == workCode ||
+            (workCode.isEmpty &&
+                record.title != null &&
+                item.title == record.title),
+      )
+      .firstOrNull;
+
+  if (match != null) {
+    await showStateDetailSheet(
+      context: context,
+      ref: ref,
+      vehicle: vehicle,
+      item: match,
+      forecast: ref.read(maintenanceControllerProvider).mileageForecast,
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(context.l10n.journalOpenNodeMissing)),
+  );
+}
+
+IconData _journalRecordIcon(ServiceRecord record) {
+  final code = record.items.isNotEmpty ? record.items.first.workCode : null;
+  return workNodeIcon(code, fallbackId: record.id);
 }
 
 String _journalDate(DateTime value) =>
     '${value.day.toString().padLeft(2, '0')}.'
     '${value.month.toString().padLeft(2, '0')}.${value.year}';
+
+List<MileageObservation> _mergedMileagePoints({
+  required Vehicle vehicle,
+  required List<MileageObservation> observations,
+  required List<ServiceRecord> records,
+}) {
+  final byKey = <String, MileageObservation>{};
+  void put(MileageObservation item) {
+    final day = DateTime(
+      item.observedAt.year,
+      item.observedAt.month,
+      item.observedAt.day,
+    );
+    final key = '${day.toIso8601String()}|${item.valueKm}';
+    byKey.putIfAbsent(key, () => item);
+  }
+
+  for (final item in observations) {
+    put(item);
+  }
+  for (final record in records) {
+    if (record.mileage == null) continue;
+    final unit = record.mileageUnit ?? 'km';
+    final value = record.mileage!;
+    put(
+      MileageObservation(
+        id: 'service-${record.id}',
+        vehicleId: vehicle.id,
+        value: value,
+        unit: unit,
+        observedAt: record.serviceDate,
+        source: 'service_record',
+      ),
+    );
+  }
+  if (vehicle.mileage != null) {
+    put(
+      MileageObservation(
+        id: 'vehicle-current',
+        vehicleId: vehicle.id,
+        value: vehicle.mileage!,
+        unit: vehicle.mileageUnit ?? 'km',
+        observedAt: DateTime.now(),
+        source: 'vehicle',
+      ),
+    );
+  }
+  final merged = byKey.values.toList();
+  merged.sort((a, b) => a.observedAt.compareTo(b.observedAt));
+  return merged;
+}
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -1264,33 +1439,58 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       _requestedKey = null;
     }
     final state = ref.watch(maintenanceControllerProvider);
-    final matches = vehicle != null && state.matches(vehicle.id, locale);
+    final activeVehicle = vehicle;
+    final matches =
+        activeVehicle != null && state.matches(activeVehicle.id, locale);
     final stage = matches ? state.roadmapStage : MaintenanceLoadStage.loading;
-    final records = matches ? state.serviceRecords?.items : null;
+    final observations = activeVehicle == null || !matches
+        ? const <MileageObservation>[]
+        : _mergedMileagePoints(
+            vehicle: activeVehicle,
+            observations:
+                state.mileageObservations?.items ??
+                const <MileageObservation>[],
+            records:
+                state.serviceRecords?.items ?? const <ServiceRecord>[],
+          );
     return _PreviewPage(
       title: context.l10n.navAnalytics,
       gateMessage: context.l10n.analyticsGate,
+      action: IconButton(
+        key: const Key('analytics-exit'),
+        tooltip: context.l10n.close,
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/more');
+          }
+        },
+        icon: const Icon(Icons.close),
+      ),
       previewChild: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(context.l10n.analyticsEmpty),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           _AnalyticsSkeleton(
             icon: Icons.payments_outlined,
             title: context.l10n.confirmedAmounts,
             detail: context.l10n.currentMonthYear,
           ),
+          const SizedBox(height: 16),
           _AnalyticsSkeleton(
             icon: Icons.donut_small_outlined,
             title: context.l10n.expenseCategories,
             detail: context.l10n.confirmedDistribution,
           ),
+          const SizedBox(height: 16),
           _AnalyticsSkeleton(
             icon: Icons.show_chart,
             title: context.l10n.confirmedMileage,
             detail: context.l10n.odometerDynamics,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 16),
           Text(context.l10n.fuelConsumptionFuture),
         ],
       ),
@@ -1304,19 +1504,29 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   context.l10n.analyticsForVehicle(vehicle.make, vehicle.model),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 12),
-                AutomotivePanel(
-                  child: Text(
-                    stage == MaintenanceLoadStage.loading ||
-                            stage == MaintenanceLoadStage.idle
-                        ? context.l10n.analyticsPreparing
-                        : stage == MaintenanceLoadStage.error
-                        ? context.l10n.analyticsLoadError
-                        : records == null || records.isEmpty
-                        ? context.l10n.analyticsNoData
-                        : context.l10n.analyticsPreparing,
+                const SizedBox(height: 20),
+                if (stage == MaintenanceLoadStage.loading ||
+                    stage == MaintenanceLoadStage.idle)
+                  AutomotivePanel(child: Text(context.l10n.analyticsPreparing))
+                else if (stage == MaintenanceLoadStage.error)
+                  AutomotivePanel(child: Text(context.l10n.analyticsLoadError))
+                else ...[
+                  MileageTrendChart(observations: observations),
+                  const SizedBox(height: 20),
+                  _AnalyticsSkeleton(
+                    icon: Icons.payments_outlined,
+                    title: context.l10n.confirmedAmounts,
+                    detail: context.l10n.currentMonthYear,
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _AnalyticsSkeleton(
+                    icon: Icons.donut_small_outlined,
+                    title: context.l10n.expenseCategories,
+                    detail: context.l10n.confirmedDistribution,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(context.l10n.fuelConsumptionFuture),
+                ],
               ],
             ),
     );
@@ -1513,6 +1723,13 @@ class MoreScreen extends ConsumerWidget {
           title: context.l10n.moreAnalytics,
           detail: context.l10n.moreAnalyticsDetail,
           onTap: () => context.push('/analytics'),
+        ),
+        _ControlRow(
+          key: const Key('more-ui-kit'),
+          icon: Icons.widgets_outlined,
+          title: context.l10n.uiKitTitle,
+          detail: context.l10n.uiKitMoreDetail,
+          onTap: () => context.push('/dev/ui-kit'),
         ),
         _ControlRow(
           key: const Key('language-settings'),
