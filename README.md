@@ -49,8 +49,9 @@ php artisan migrate
 php artisan test
 ```
 
-API health-check: `GET /api/v1/health`.
-Filament Admin: `/admin`.
+API health-check: `GET /api/v1/health` (в `checks` — база и AI).
+Filament Admin пилота: [https://api-dev.autodoctor.by/admin](https://api-dev.autodoctor.by/admin)  
+логин по умолчанию `admin@autodoctor.local` / `password` (см. [laravel-cloud-pilot.md](docs/laravel-cloud-pilot.md)).
 
 Laravel Cloud подключается к этому репозиторию с Application directory `apps/api`.
 

@@ -6,45 +6,58 @@
 
 ## Что уже работает (проверка 2026-08-26)
 
-- `GET /api/v1/health` → `ok`
-- анонимная сессия с `guest_profile_id`
-- согласия, профиль агента, пустой гараж
-- админка `/admin` открывается
+- `GET /api/v1/health` → `ok`, в `checks` видны база и состояние AI (конфиг, enabled, ключ есть/нет, без самого секрета)
+- анонимная сессия, гараж, план ТО после сида `MaintenanceV2Seeder`
+- Google: ключи в **Custom environment variables** Cloud (не копировать весь `.env`)
+- AI-чат отвечает, если в БД активна конфигурация (`AiConfigSeeder`) и задан `AI_ABACUS_API_KEY`
+- админка Filament: [https://api-dev.autodoctor.by/admin](https://api-dev.autodoctor.by/admin)
 
-## Что ещё сломано без действий в Cloud
+## Админка (чаты, промпты, конфиг AI)
 
-1. Добавление машины отвечает `PLAN_PREPARING`: в PostgreSQL нет опубликованного регламента `by-pilot-baseline-2` (13 правил).
-2. Вход Google отвечает `GOOGLE_AUTH_NOT_CONFIGURED`: нет `GOOGLE_CLIENT_ID` в переменных окружения Cloud.
-3. AI не заговорит без `AI_ABACUS_API_KEY` или `AI_DEEPSEEK_API_KEY`.
+Локально и на пилоте после создания пользователя:
 
-## Команда в Laravel Cloud (один раз после деплоя)
+- Email: `admin@autodoctor.local`
+- Password: `password` (тестовый; смените после входа)
 
-В консоли приложения → Commands:
+Полный `php artisan db:seed` на Cloud **не запускайте**: он ещё создаёт `test@example.com`. Если входа нет, в Commands:
 
 ```bash
-php artisan autodoctor:prepare-pilot
+php artisan tinker --execute="App\Models\User::query()->updateOrCreate(['email'=>'admin@autodoctor.local'],['name'=>'AutoDoctor Admin','password'=>'password','is_admin'=>true]);"
 ```
 
-Она применяет миграции и сиды ТО + AI. Полный `DatabaseSeeder` не запускайте: он создаёт тестовых пользователей с паролем `password`.
+Разделы: Assistant Threads, AI Prompt Versions, AI Config Versions.
 
-На деплое оставьте `php artisan migrate --force`.
+## Команды в Laravel Cloud
+
+После деплоя на каждом релизе достаточно:
+
+```bash
+php artisan migrate --force
+```
+
+Один раз для регламента ТО и AI-конфига (если чат пишет «временно отключён» — нет строки конфига в БД):
+
+```bash
+php artisan db:seed --class=MaintenanceV2Seeder --force
+php artisan db:seed --class=AiConfigSeeder --force
+```
+
+Или одной командой: `php artisan autodoctor:prepare-pilot`.
+
+Диагностика с телефона: **Ещё → Разработка** — статус API и кнопка «Проверить AI». Пилотный APK: `0.1.0+23`, адрес API из Firebase Remote Config.
 
 ## Переменные окружения Cloud
 
-Скопируйте значения из локального `apps/api/.env`, в git их нет.
+Скопируйте значения из локального `apps/api/.env`, в git их нет. Не перезаписывайте Injected `DB_*` / `APP_KEY` Cloud.
 
-Обязательно:
+Нужны:
 
-- `APP_KEY`
 - `APP_URL=https://api-dev.autodoctor.by`
 - `APP_ENV=production`
 - `APP_DEBUG=false`
 - `VIN_HASH_KEY`
-- PostgreSQL — обычно Cloud подставляет сам
 - `GOOGLE_CLIENT_ID` — тот же Web Client ID, что в APK (`GOOGLE_SERVER_CLIENT_ID`)
-- `GOOGLE_ANDROID_CLIENT_ID` — Android OAuth client
+- `GOOGLE_ANDROID_CLIENT_ID`
 - `AI_ABACUS_API_KEY` и/или `AI_DEEPSEEK_API_KEY`
 
 Очереди: включите worker, `QUEUE_CONNECTION` как в Cloud (обычно database или redis).
-
-После смены env Cloud перезапускает приложение. Затем проверьте с телефона APK `0.1.0+21` (адрес из Firebase Remote Config).

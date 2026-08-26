@@ -37,11 +37,18 @@ php artisan db:seed --class=AiConfigSeeder
 php artisan db:seed
 ```
 
-Логин админки по умолчанию после полного seed:
+Логин админки по умолчанию после создания пользователя:
 
-- URL: `http://localhost:8000/admin`
+- Локально: `http://localhost:8000/admin`
+- Пилот: `https://api-dev.autodoctor.by/admin`
 - Email: `admin@autodoctor.local`
 - Password: `password`
+
+На Cloud полный `php artisan db:seed` не запускайте. Если пользователя нет:
+
+```bash
+php artisan tinker --execute="App\Models\User::query()->updateOrCreate(['email'=>'admin@autodoctor.local'],['name'=>'AutoDoctor Admin','password'=>'password','is_admin'=>true]);"
+```
 
 Смените пароль после первого входа.
 

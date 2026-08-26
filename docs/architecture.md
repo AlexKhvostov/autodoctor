@@ -55,7 +55,7 @@ Laravel Cloud, Frankfurt
 - Размещение: Laravel Cloud Starter, EU Central Frankfurt.
 - Домен и почта: Hostland.
 - Firebase проект `autodoctor-by` (Spark): Analytics и Remote Config. Android package `by.autodoctor.autodoctor`.
-- Адрес API для пилотного APK: Remote Config ключ `api_base_url`; ручной выбор в «Ещё → Сервер API» сильнее RC.
+- Адрес API для пилотного APK: Remote Config ключ `api_base_url`; ручной выбор в **Ещё → Разработка → Сервер API** сильнее RC.
 
 ## Документы проектирования
 
