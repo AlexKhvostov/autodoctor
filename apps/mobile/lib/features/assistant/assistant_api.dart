@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/api_endpoint.dart';
 import '../guest_bootstrap/guest_bootstrap.dart';
 import '../guest_bootstrap/guest_bootstrap_controller.dart';
-import '../guest_bootstrap/guest_bootstrap_data.dart';
 import 'assistant.dart';
 
 class AssistantApiException implements Exception {
@@ -31,17 +31,17 @@ class AssistantReply {
 }
 
 class AssistantApiClient {
-  AssistantApiClient(this._tokenStore, {Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: apiBaseUrl,
-              connectTimeout: const Duration(seconds: 15),
-              receiveTimeout: const Duration(seconds: 90),
-              headers: {'Accept': 'application/json'},
-            ),
-          );
+  AssistantApiClient(
+    this._tokenStore, {
+    Dio? dio,
+    String? baseUrl,
+  }) : _dio =
+           dio ??
+           createApiDio(
+             baseUrl: baseUrl ?? compiledApiBaseUrl(),
+             connectTimeout: const Duration(seconds: 15),
+             receiveTimeout: const Duration(seconds: 90),
+           );
 
   final SessionTokenStore _tokenStore;
   final Dio _dio;
@@ -61,13 +61,13 @@ class AssistantApiClient {
   }
 
   Future<List<ChatThread>> listThreads({
-    required String vehicleId,
+    String? vehicleId,
     required String locale,
     String status = 'active',
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/vehicles/$vehicleId/assistant/threads',
+        '/assistant/threads',
         queryParameters: {'status': status},
         options: Options(headers: await _authHeaders(locale)),
       );
@@ -83,13 +83,13 @@ class AssistantApiClient {
   }
 
   Future<ChatThread> getThread({
-    required String vehicleId,
+    String? vehicleId,
     required String threadId,
     required String locale,
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/vehicles/$vehicleId/assistant/threads/$threadId',
+        '/assistant/threads/$threadId',
         options: Options(headers: await _authHeaders(locale)),
       );
       final data = response.data;
@@ -106,7 +106,7 @@ class AssistantApiClient {
   }
 
   Future<ChatThread> updateThread({
-    required String vehicleId,
+    String? vehicleId,
     required String threadId,
     required String locale,
     String? title,
@@ -114,7 +114,7 @@ class AssistantApiClient {
   }) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
-        '/vehicles/$vehicleId/assistant/threads/$threadId',
+        '/assistant/threads/$threadId',
         data: {
           if (title != null) 'title': title,
           if (status != null) 'status': status.name,
@@ -135,13 +135,13 @@ class AssistantApiClient {
   }
 
   Future<void> deleteThread({
-    required String vehicleId,
+    String? vehicleId,
     required String threadId,
     required String locale,
   }) async {
     try {
       await _dio.delete<void>(
-        '/vehicles/$vehicleId/assistant/threads/$threadId',
+        '/assistant/threads/$threadId',
         options: Options(headers: await _authHeaders(locale)),
       );
     } on DioException catch (error) {
@@ -150,7 +150,7 @@ class AssistantApiClient {
   }
 
   Future<AssistantReply> sendMessage({
-    required String vehicleId,
+    String? vehicleId,
     required String message,
     required String locale,
     String? threadId,
@@ -159,10 +159,11 @@ class AssistantApiClient {
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/vehicles/$vehicleId/assistant/messages',
+        '/assistant/messages',
         data: {
           'message': message,
           'thread_id': ?threadId,
+          if (vehicleId != null && vehicleId.isNotEmpty) 'vehicle_id': vehicleId,
           'suggest_title': suggestTitle,
           'history': [
             for (final item in history)
@@ -222,5 +223,8 @@ class AssistantApiClient {
 }
 
 final assistantApiClientProvider = Provider<AssistantApiClient>((ref) {
-  return AssistantApiClient(ref.watch(sessionTokenStoreProvider));
+  return AssistantApiClient(
+    ref.watch(sessionTokenStoreProvider),
+    baseUrl: ref.watch(apiBaseUrlProvider),
+  );
 });

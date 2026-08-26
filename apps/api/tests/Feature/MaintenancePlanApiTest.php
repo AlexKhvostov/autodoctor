@@ -198,6 +198,11 @@ class MaintenancePlanApiTest extends TestCase
         $this->assertSame('confirmed', $oil['presentation']['basis']);
         $this->assertArrayNotHasKey('status', $oil['presentation']);
         $this->assertArrayNotHasKey('importance', $oil['presentation']);
+        $oilCount = collect($timeline->json('items'))
+            ->where('type', 'plan_item')
+            ->where(fn ($item) => ($item['plan_item']['work_code'] ?? null) === 'engine_oil')
+            ->count();
+        $this->assertGreaterThanOrEqual(4, $oilCount);
     }
 
     public function test_all_items_resolved_removes_only_history_warning_and_localizes_current_history(): void

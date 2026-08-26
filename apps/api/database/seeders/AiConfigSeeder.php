@@ -10,12 +10,20 @@ class AiConfigSeeder extends Seeder
 {
     public function run(): void
     {
-        $promptPath = base_path('../../prompts/ai-chat-system.md');
-        if (! is_file($promptPath)) {
-            $promptPath = base_path('../prompts/ai-chat-system.md');
+        $candidates = [
+            resource_path('prompts/ai-chat-system.md'),
+            base_path('../../prompts/ai-chat-system.md'),
+            base_path('../prompts/ai-chat-system.md'),
+        ];
+        $promptPath = null;
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                $promptPath = $candidate;
+                break;
+            }
         }
 
-        $raw = is_file($promptPath)
+        $raw = $promptPath !== null
             ? (string) file_get_contents($promptPath)
             : $this->fallbackPrompt();
 

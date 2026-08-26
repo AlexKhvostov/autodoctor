@@ -78,31 +78,14 @@ class AssistantController extends Notifier<AssistantState> {
 
   Future<void> load() async {
     state = state.copyWith(loading: true, clearError: true);
-    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
-    if (vehicle == null) {
-      final local = await _store.load();
-      state = state.copyWith(
-        threads: local
-            .where((t) => !t.isArchived)
-            .toList(growable: false),
-        archivedThreads: local
-            .where((t) => t.isArchived)
-            .toList(growable: false),
-        loading: false,
-      );
-      return;
-    }
-
     try {
       final api = ref.read(assistantApiClientProvider);
-      final locale = 'ru';
+      const locale = 'ru';
       final active = await api.listThreads(
-        vehicleId: vehicle.id,
         locale: locale,
         status: 'active',
       );
       final archived = await api.listThreads(
-        vehicleId: vehicle.id,
         locale: locale,
         status: 'archived',
       );
@@ -167,15 +150,13 @@ class AssistantController extends Notifier<AssistantState> {
   }
 
   Future<void> openThread(String threadId, {required String locale}) async {
-    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
     final existing = state.threadById(threadId);
-    if (vehicle == null || existing == null) return;
+    if (existing == null) return;
     if (existing.messages.isNotEmpty) return;
     try {
       final full = await ref
           .read(assistantApiClientProvider)
           .getThread(
-            vehicleId: vehicle.id,
             threadId: threadId,
             locale: locale,
           );
@@ -193,27 +174,13 @@ class AssistantController extends Notifier<AssistantState> {
   }) async {
     final trimmed = title.trim();
     if (trimmed.isEmpty) return;
-    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
     final local = state.threadById(threadId);
     if (local == null) return;
-
-    if (vehicle == null) {
-      _replaceThread(
-        local.copyWith(
-          title: trimmed,
-          titleSource: ChatTitleSource.user,
-          updatedAt: DateTime.now(),
-        ),
-      );
-      await _persistAll();
-      return;
-    }
 
     try {
       final updated = await ref
           .read(assistantApiClientProvider)
           .updateThread(
-            vehicleId: vehicle.id,
             threadId: threadId,
             locale: locale,
             title: trimmed,
@@ -232,33 +199,13 @@ class AssistantController extends Notifier<AssistantState> {
     ChatThreadStatus status, {
     required String locale,
   }) async {
-    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
     final local = state.threadById(threadId);
     if (local == null) return;
-
-    if (vehicle == null) {
-      final updated = local.copyWith(
-        status: status,
-        updatedAt: DateTime.now(),
-        clearResolvedAt: status == ChatThreadStatus.active,
-        clearArchivedAt: status != ChatThreadStatus.archived,
-        resolvedAt: status == ChatThreadStatus.resolved
-            ? DateTime.now()
-            : local.resolvedAt,
-        archivedAt: status == ChatThreadStatus.archived
-            ? DateTime.now()
-            : local.archivedAt,
-      );
-      _applyStatusMove(updated);
-      await _persistAll();
-      return;
-    }
 
     try {
       final updated = await ref
           .read(assistantApiClientProvider)
           .updateThread(
-            vehicleId: vehicle.id,
             threadId: threadId,
             locale: locale,
             status: status,
@@ -271,21 +218,13 @@ class AssistantController extends Notifier<AssistantState> {
   }
 
   Future<void> deleteThread(String threadId, {required String locale}) async {
-    final vehicle = ref.read(vehicleSetupControllerProvider).activeVehicle;
     final local = state.threadById(threadId);
     if (local == null) return;
-
-    if (vehicle == null) {
-      _removeThread(threadId);
-      await _persistAll();
-      return;
-    }
 
     try {
       await ref
           .read(assistantApiClientProvider)
           .deleteThread(
-            vehicleId: vehicle.id,
             threadId: threadId,
             locale: locale,
           );
@@ -316,14 +255,6 @@ class AssistantController extends Notifier<AssistantState> {
     final thread = state.threadById(threadId);
     if (thread == null) return;
 
-    if (vehicle == null) {
-      state = state.copyWith(
-        sending: false,
-        error: 'Для ответа AI нужен выбранный автомобиль.',
-      );
-      return;
-    }
-
     final isFirstMessage = thread.messages.isEmpty;
     final allowAutoTitle = _allowsAutoTitle(thread);
     final userMessage = ChatMessage(
@@ -351,7 +282,7 @@ class AssistantController extends Notifier<AssistantState> {
       final result = await ref
           .read(assistantApiClientProvider)
           .sendMessage(
-            vehicleId: vehicle.id,
+            vehicleId: vehicle?.id,
             message: trimmed,
             locale: locale,
             threadId: threadId,

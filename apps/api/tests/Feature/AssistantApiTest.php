@@ -877,6 +877,45 @@ class AssistantApiTest extends TestCase
             ->assertJsonCount(0, 'items');
     }
 
+    public function test_assistant_message_works_without_a_vehicle(): void
+    {
+        Http::fake([
+            'routellm.abacus.ai/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => 'Могу помочь выбрать автомобиль.']],
+                ],
+            ], 200),
+        ]);
+
+        $headers = $this->sessionHeaders();
+        $threadId = (string) Str::uuid();
+
+        $this->withHeaders($headers)
+            ->postJson('/api/v1/assistant/messages', [
+                'message' => 'Какую машину лучше взять в городе?',
+                'thread_id' => $threadId,
+            ])
+            ->assertOk()
+            ->assertJsonPath('reply', 'Могу помочь выбрать автомобиль.')
+            ->assertJsonPath('thread_id', $threadId);
+
+        $this->assertDatabaseHas('assistant_threads', [
+            'id' => $threadId,
+            'vehicle_id' => null,
+        ]);
+
+        $recorded = Http::recorded();
+        $this->assertNotEmpty($recorded);
+        $payload = json_decode($recorded[0][0]->body(), true, flags: JSON_THROW_ON_ERROR);
+        $system = (string) data_get($payload, 'messages.0.content');
+        $this->assertStringContainsString('автомобиль ещё не выбран', $system);
+
+        $this->withHeaders($headers)
+            ->getJson('/api/v1/assistant/threads')
+            ->assertOk()
+            ->assertJsonPath('items.0.id', $threadId);
+    }
+
     private function sessionHeaders(): array
     {
         $response = $this->withHeader('Idempotency-Key', (string) Str::uuid())

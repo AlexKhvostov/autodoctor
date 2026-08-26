@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/api_endpoint.dart';
 import '../guest_bootstrap/guest_bootstrap.dart';
 import '../guest_bootstrap/guest_bootstrap_controller.dart';
-import '../guest_bootstrap/guest_bootstrap_data.dart';
 
 class AgentProfileApiException implements Exception {
   const AgentProfileApiException(this.message, {this.code});
@@ -397,17 +397,16 @@ class AgentProfile {
 }
 
 class AgentProfileApiClient {
-  AgentProfileApiClient(this._tokenStore, {Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: apiBaseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 20),
-              headers: {'Accept': 'application/json'},
-            ),
-          );
+  AgentProfileApiClient(
+    this._tokenStore, {
+    Dio? dio,
+    String? baseUrl,
+  }) : _dio =
+           dio ??
+           createApiDio(
+             baseUrl: baseUrl ?? compiledApiBaseUrl(),
+             receiveTimeout: const Duration(seconds: 20),
+           );
 
   final SessionTokenStore _tokenStore;
   final Dio _dio;
@@ -562,5 +561,8 @@ class AgentProfileApiClient {
 }
 
 final agentProfileApiClientProvider = Provider<AgentProfileApiClient>((ref) {
-  return AgentProfileApiClient(ref.watch(sessionTokenStoreProvider));
+  return AgentProfileApiClient(
+    ref.watch(sessionTokenStoreProvider),
+    baseUrl: ref.watch(apiBaseUrlProvider),
+  );
 });

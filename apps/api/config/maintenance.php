@@ -8,6 +8,11 @@ return [
         'mileage_km' => 1500,
         'days' => 30,
     ],
+    'timeline_horizon' => [
+        'years' => 5,
+        'mileage_km' => 120000,
+        'max_per_item' => 16,
+    ],
     'consumable_thresholds' => [
         'warning_at' => 0.8,
         'danger_at' => 1.0,

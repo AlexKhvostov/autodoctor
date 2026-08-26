@@ -48,6 +48,11 @@ GoRouter buildRouter() {
                 const MaterialPage<void>(child: AnalyticsScreen()),
           ),
           GoRoute(
+            path: '/dev',
+            pageBuilder: (context, state) =>
+                const MaterialPage<void>(child: DevelopmentScreen()),
+          ),
+          GoRoute(
             path: '/dev/ui-kit',
             pageBuilder: (context, state) =>
                 const MaterialPage<void>(child: ComponentCatalogScreen()),

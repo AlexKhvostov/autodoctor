@@ -421,6 +421,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moreAnalyticsDetail => 'Confirmed amounts, categories, mileage';
 
   @override
+  String get moreDevelopment => 'Development';
+
+  @override
+  String get moreDevelopmentDetail => 'API server, UI kit, and other tools';
+
+  @override
+  String get developmentTitle => 'Development';
+
+  @override
+  String get developmentIntro =>
+      'Internal tools. This screen will be hidden in the production app.';
+
+  @override
   String get close => 'Close';
 
   @override
@@ -1783,6 +1796,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectedLanguage => 'Selected';
+
+  @override
+  String get apiServer => 'API server';
+
+  @override
+  String get apiServerPickerTitle => 'Choose API server';
+
+  @override
+  String get apiServerHint =>
+      'For testers. Switch servers without rebuilding the APK. Each server has its own database: garage, chats, and Google login do not carry over.';
+
+  @override
+  String get apiServerFirebase => 'Firebase Remote Config';
+
+  @override
+  String get apiServerFirebaseDetail =>
+      'Address for all testers. Change it in Firebase Console, not in the APK.';
+
+  @override
+  String get apiServerTunnel => 'Custom URL';
+
+  @override
+  String get apiServerTunnelDetail =>
+      'Paste any address: Cloudflare tunnel, LAN, or another host.';
+
+  @override
+  String get apiServerDev => 'API Dev';
+
+  @override
+  String get apiServerProd => 'API Prod';
+
+  @override
+  String get apiServerTunnelField => 'API address';
+
+  @override
+  String get apiServerTunnelHint =>
+      'https://….trycloudflare.com or http://192.168.x.x:8000';
+
+  @override
+  String get apiServerTunnelInvalid =>
+      'Enter a URL starting with https:// or http://';
+
+  @override
+  String get apiServerSwitchWarning =>
+      'The other server is a different database. The session and Google sign-in will be reset. Vehicles from the previous server will not appear here.';
+
+  @override
+  String get apiServerApply => 'Switch';
+
+  @override
+  String apiServerSwitched(String url) {
+    return 'API switched to $url';
+  }
 
   @override
   String get garageSetupStep1 => 'Garage setup · step 01';

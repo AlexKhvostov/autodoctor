@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/api_endpoint.dart';
 import '../../app/locale_controller.dart';
 import 'guest_bootstrap.dart';
 import 'guest_bootstrap_data.dart';
@@ -17,6 +18,7 @@ final guestBootstrapRepositoryProvider = Provider<GuestBootstrapRepository>(
     ref.watch(sessionTokenStoreProvider),
     ref.watch(guestProfileIdStoreProvider),
     locale: ref.watch(activeLocaleProvider).languageCode,
+    baseUrl: ref.watch(apiBaseUrlProvider),
   ),
 );
 
@@ -220,5 +222,17 @@ class GuestBootstrapController extends Notifier<GuestBootstrapState> {
 
   void reset() {
     state = const GuestBootstrapState();
+  }
+
+  Future<void> reconnectAfterApiChange({
+    required String locale,
+    required String platform,
+  }) async {
+    _sessionReady = false;
+    _recreatedInvalidToken = false;
+    _locale = locale;
+    _platform = platform;
+    state = const GuestBootstrapState();
+    await _load();
   }
 }

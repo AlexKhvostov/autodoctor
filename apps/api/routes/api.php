@@ -65,6 +65,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/vehicles/{vehicle}/history-answers', [HistoryAnswerController::class, 'store']);
         Route::get('/vehicles/{vehicle}/ai-notes', [VehicleAiNoteController::class, 'index']);
         Route::delete('/vehicles/{vehicle}/ai-notes/{note}', [VehicleAiNoteController::class, 'destroy']);
+        Route::post('/assistant/messages', [AssistantController::class, 'storeProfileMessage']);
+        Route::get('/assistant/threads', [AssistantController::class, 'indexAll']);
+        Route::get('/assistant/threads/{thread}', [AssistantController::class, 'showOwned']);
+        Route::patch('/assistant/threads/{thread}', [AssistantController::class, 'updateOwned']);
+        Route::delete('/assistant/threads/{thread}', [AssistantController::class, 'destroyOwned']);
         Route::post('/vehicles/{vehicle}/assistant/messages', [AssistantController::class, 'storeMessage']);
         Route::get('/vehicles/{vehicle}/assistant/threads', [AssistantController::class, 'index']);
         Route::get('/vehicles/{vehicle}/assistant/threads/{thread}', [AssistantController::class, 'show']);

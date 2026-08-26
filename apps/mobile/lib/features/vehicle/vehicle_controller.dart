@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/api_endpoint.dart';
 import '../../app/locale_controller.dart';
 import '../guest_bootstrap/guest_bootstrap_controller.dart';
 import '../maintenance/maintenance_controller.dart';
@@ -7,7 +8,10 @@ import 'vehicle.dart';
 import 'vehicle_data.dart';
 
 final vehicleRepositoryProvider = Provider<VehicleRepository>(
-  (ref) => DioVehicleRepository(ref.watch(sessionTokenStoreProvider)),
+  (ref) => DioVehicleRepository(
+    ref.watch(sessionTokenStoreProvider),
+    baseUrl: ref.watch(apiBaseUrlProvider),
+  ),
 );
 
 enum VehicleLoadStage { idle, loading, ready, error }
@@ -79,6 +83,10 @@ class VehicleSetupController extends Notifier<VehicleSetupState> {
     if (state.vehicles.any((vehicle) => vehicle.id == vehicleId)) {
       state = state.copyWith(activeVehicleId: vehicleId);
     }
+  }
+
+  void resetLocal() {
+    state = const VehicleSetupState();
   }
 
   Future<void> load({bool force = false}) async {

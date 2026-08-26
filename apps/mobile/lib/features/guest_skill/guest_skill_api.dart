@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/api_endpoint.dart';
 import '../guest_bootstrap/guest_bootstrap.dart';
 import '../guest_bootstrap/guest_bootstrap_controller.dart';
-import '../guest_bootstrap/guest_bootstrap_data.dart';
 
 class GuestSkillApiException implements Exception {
   const GuestSkillApiException(this.message, {this.code});
@@ -45,17 +45,11 @@ class GuestSkillProfile {
 }
 
 class GuestSkillApiClient {
-  GuestSkillApiClient(this._tokenStore, {Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: apiBaseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 15),
-              headers: {'Accept': 'application/json'},
-            ),
-          );
+  GuestSkillApiClient(
+    this._tokenStore, {
+    Dio? dio,
+    String? baseUrl,
+  }) : _dio = dio ?? createApiDio(baseUrl: baseUrl ?? compiledApiBaseUrl());
 
   final SessionTokenStore _tokenStore;
   final Dio _dio;
@@ -130,5 +124,8 @@ class GuestSkillApiClient {
 }
 
 final guestSkillApiClientProvider = Provider<GuestSkillApiClient>((ref) {
-  return GuestSkillApiClient(ref.watch(sessionTokenStoreProvider));
+  return GuestSkillApiClient(
+    ref.watch(sessionTokenStoreProvider),
+    baseUrl: ref.watch(apiBaseUrlProvider),
+  );
 });

@@ -16,7 +16,7 @@ class AssistantThreadPersister
      */
     public function persistTurn(
         AnonymousSession $session,
-        Vehicle $vehicle,
+        ?Vehicle $vehicle,
         string $userMessage,
         string $assistantReply,
         ?string $threadId,
@@ -28,38 +28,48 @@ class AssistantThreadPersister
         $profile = $this->resolveProfile($session);
         $id = filled($threadId) ? (string) $threadId : (string) Str::uuid();
         $now = now();
+        $incomingVehicleId = $vehicle?->id;
 
         $thread = AssistantThread::query()->firstOrNew(['id' => $id]);
         if (! $thread->exists) {
             $thread->guest_profile_id = $profile->id;
-            $thread->vehicle_id = $vehicle->id;
+            $thread->vehicle_id = $incomingVehicleId;
             $thread->anonymous_session_id = $session->id;
             $thread->title = $suggestedTitle ?: $this->fallbackTitle($userMessage);
             $thread->title_source = AssistantThread::TITLE_SOURCE_AUTO;
             $thread->status = AssistantThread::STATUS_ACTIVE;
         } else {
-            if ($thread->guest_profile_id !== $profile->id || $thread->vehicle_id !== $vehicle->id) {
+            $threadVehicleId = $thread->vehicle_id;
+            $vehicleConflict = $threadVehicleId !== null
+                && $incomingVehicleId !== null
+                && $threadVehicleId !== $incomingVehicleId;
+            if ($thread->guest_profile_id !== $profile->id || $vehicleConflict) {
                 // Client reused a foreign thread id — start a fresh thread.
                 $id = (string) Str::uuid();
                 $thread = new AssistantThread([
                     'id' => $id,
                     'guest_profile_id' => $profile->id,
-                    'vehicle_id' => $vehicle->id,
+                    'vehicle_id' => $incomingVehicleId,
                     'anonymous_session_id' => $session->id,
                     'title' => $suggestedTitle ?: $this->fallbackTitle($userMessage),
                     'title_source' => AssistantThread::TITLE_SOURCE_AUTO,
                     'status' => AssistantThread::STATUS_ACTIVE,
                 ]);
-            } elseif (! $thread->isTitleLockedByUser() || $this->isPlaceholderTitle($thread->title)) {
-                if (filled($suggestedTitle)) {
-                    $thread->title = $suggestedTitle;
-                    $thread->title_source = AssistantThread::TITLE_SOURCE_AUTO;
-                } elseif (! filled($thread->title) || $this->isPlaceholderTitle($thread->title)) {
-                    $thread->title = $this->fallbackTitle($userMessage);
-                    $thread->title_source = AssistantThread::TITLE_SOURCE_AUTO;
+            } else {
+                if ($threadVehicleId === null && $incomingVehicleId !== null) {
+                    $thread->vehicle_id = $incomingVehicleId;
                 }
+                if (! $thread->isTitleLockedByUser() || $this->isPlaceholderTitle($thread->title)) {
+                    if (filled($suggestedTitle)) {
+                        $thread->title = $suggestedTitle;
+                        $thread->title_source = AssistantThread::TITLE_SOURCE_AUTO;
+                    } elseif (! filled($thread->title) || $this->isPlaceholderTitle($thread->title)) {
+                        $thread->title = $this->fallbackTitle($userMessage);
+                        $thread->title_source = AssistantThread::TITLE_SOURCE_AUTO;
+                    }
+                }
+                $thread->anonymous_session_id = $session->id;
             }
-            $thread->anonymous_session_id = $session->id;
         }
 
         $thread->last_message_at = $now;

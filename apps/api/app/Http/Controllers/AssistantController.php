@@ -100,6 +100,135 @@ class AssistantController extends Controller
         return response()->json(null, 204);
     }
 
+    public function indexAll(Request $request): JsonResponse
+    {
+        $session = $this->session($request);
+        $profile = $this->ensureProfile($session);
+        $data = $request->validate([
+            'status' => ['sometimes', 'string', Rule::in(['active', 'archived', 'all'])],
+        ]);
+
+        $status = $data['status'] ?? 'active';
+        $query = AssistantThread::query()
+            ->where('guest_profile_id', $profile->id)
+            ->withCount('messages')
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('created_at');
+
+        if ($status === 'archived') {
+            $query->where('status', AssistantThread::STATUS_ARCHIVED);
+        } elseif ($status === 'active') {
+            $query->whereIn('status', [
+                AssistantThread::STATUS_ACTIVE,
+                AssistantThread::STATUS_RESOLVED,
+            ]);
+        }
+
+        $items = $query->limit(100)->get();
+
+        return response()->json([
+            'items' => AssistantThreadResource::collection($items)->resolve(),
+        ]);
+    }
+
+    public function showOwned(Request $request, string $thread): JsonResponse
+    {
+        $model = $this->ownedProfileThread($request, $thread);
+        $model->load(['messages']);
+        $model->loadCount('messages');
+
+        return response()->json((new AssistantThreadResource($model))->resolve());
+    }
+
+    public function updateOwned(Request $request, string $thread): JsonResponse
+    {
+        $model = $this->ownedProfileThread($request, $thread);
+        $data = $request->validate([
+            'title' => ['sometimes', 'string', 'min:1', 'max:120'],
+            'status' => ['sometimes', 'string', Rule::in([
+                AssistantThread::STATUS_ACTIVE,
+                AssistantThread::STATUS_RESOLVED,
+                AssistantThread::STATUS_ARCHIVED,
+            ])],
+        ]);
+
+        if (array_key_exists('title', $data)) {
+            $model->title = trim($data['title']);
+            $model->title_source = AssistantThread::TITLE_SOURCE_USER;
+        }
+
+        if (array_key_exists('status', $data)) {
+            $model->applyStatus($data['status']);
+        }
+
+        $model->save();
+        $model->loadCount('messages');
+
+        return response()->json((new AssistantThreadResource($model))->resolve());
+    }
+
+    public function destroyOwned(Request $request, string $thread): JsonResponse
+    {
+        $model = $this->ownedProfileThread($request, $thread);
+        $model->messages()->delete();
+        $model->delete();
+
+        return response()->json(null, 204);
+    }
+
+    public function storeProfileMessage(Request $request): JsonResponse
+    {
+        $session = $this->session($request);
+        $data = $request->validate([
+            'message' => ['required', 'string', 'min:1', 'max:4000'],
+            'vehicle_id' => ['sometimes', 'nullable', 'uuid'],
+            'thread_id' => ['sometimes', 'nullable', 'uuid'],
+            'suggest_title' => ['sometimes', 'boolean'],
+            'history' => ['sometimes', 'array', 'max:40'],
+            'history.*.role' => ['required_with:history', 'in:user,assistant'],
+            'history.*.content' => ['required_with:history', 'string', 'max:4000'],
+        ]);
+
+        $vehicle = $this->resolveOptionalVehicle($session, $data);
+        $result = $this->assistant->reply(
+            $session,
+            $vehicle,
+            $data['message'],
+            $data['history'] ?? [],
+            (bool) ($data['suggest_title'] ?? false),
+        );
+
+        $persisted = $this->threads->persistTurn(
+            $session,
+            $vehicle,
+            trim($data['message']),
+            $result['reply'],
+            $data['thread_id'] ?? null,
+            $result['title'],
+            $result['provider'],
+            $result['model'],
+            $result['prompt_version'],
+        );
+
+        $issueIds = array_map(
+            static fn (array $row): string => $row['id'],
+            $result['issues_saved'],
+        );
+        $this->assistant->attachIssuesToThread($issueIds, $persisted['thread_id']);
+
+        return response()->json([
+            'reply' => $result['reply'],
+            'provider' => $result['provider'],
+            'model' => $result['model'],
+            'prompt_version' => $result['prompt_version'],
+            'thread_id' => $persisted['thread_id'],
+            'title' => $result['title'] ?? $persisted['title'],
+            'notes_saved' => $result['notes_saved'],
+            'issues_saved' => $result['issues_saved'],
+            'tokens_spent' => (int) ($result['tokens_spent'] ?? 0),
+        ]);
+    }
+
     public function storeMessage(Request $request, string $vehicle): JsonResponse
     {
         $session = $this->session($request);
@@ -151,6 +280,44 @@ class AssistantController extends Controller
             'issues_saved' => $result['issues_saved'],
             'tokens_spent' => (int) ($result['tokens_spent'] ?? 0),
         ]);
+    }
+
+    private function ownedProfileThread(Request $request, string $threadId): AssistantThread
+    {
+        $profile = $this->ensureProfile($this->session($request));
+        $thread = AssistantThread::query()
+            ->whereKey($threadId)
+            ->where('guest_profile_id', $profile->id)
+            ->first();
+
+        if ($thread === null) {
+            throw new ApiException('ASSISTANT_THREAD_NOT_FOUND', 'Dialogue not found.', 404);
+        }
+
+        return $thread;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveOptionalVehicle(AnonymousSession $session, array $data): ?\App\Models\Vehicle
+    {
+        if (filled($data['vehicle_id'] ?? null)) {
+            return $this->vehicles->owned($session, (string) $data['vehicle_id']);
+        }
+
+        if (filled($data['thread_id'] ?? null)) {
+            $profile = $this->ensureProfile($session);
+            $thread = AssistantThread::query()
+                ->whereKey($data['thread_id'])
+                ->where('guest_profile_id', $profile->id)
+                ->first();
+            if ($thread?->vehicle_id) {
+                return $this->vehicles->owned($session, $thread->vehicle_id);
+            }
+        }
+
+        return null;
     }
 
     private function ownedThread(Request $request, string $vehicle, string $threadId): AssistantThread

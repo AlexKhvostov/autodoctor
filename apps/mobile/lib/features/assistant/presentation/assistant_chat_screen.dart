@@ -262,6 +262,33 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   ),
                 ),
               ),
+            if (state.error != null &&
+                state.error!.isNotEmpty &&
+                !state.isFuelEmpty)
+              Material(
+                color: colors.errorContainer.withValues(alpha: 0.7),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          state.error!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colors.onErrorContainer),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: context.l10n.close,
+                        onPressed: () => ref
+                            .read(assistantControllerProvider.notifier)
+                            .clearError(),
+                        icon: const Icon(Icons.close, size: 18),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (showLowEnergy)
               Material(
                 color: const Color(0xFFFFF1E6),

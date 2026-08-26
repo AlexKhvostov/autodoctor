@@ -78,6 +78,28 @@ class VehicleUserDossierBuilder
         return implode("\n", $lines);
     }
 
+    public function buildWithoutVehicle(GuestProfile $profile): string
+    {
+        $profile->loadMissing(['aiNotes', 'user', 'skillProfile', 'agentPreference']);
+
+        $lines = [];
+        $lines[] = '### Досье AutoDoctor (автомобиль ещё не выбран)';
+        $lines = array_merge($lines, $this->userSection($profile));
+        $lines = array_merge($lines, $this->skillSection($profile));
+        $lines = array_merge($lines, $this->agentPreferencesSection($profile));
+        $lines = array_merge($lines, $this->notesSection(
+            'Заметки о пользователе',
+            $profile->aiNotes,
+            'пока нет (по умолчанию обращение «вы»).',
+        ));
+        $lines[] = '## Автомобиль';
+        $lines[] = 'Не выбран. Помоги подобрать марку/модель/год, VIN или понять, какие данные нужны, чтобы завести машину в AutoDoctor.';
+        $lines[] = 'Не выдумывай регламент конкретной машины, пока её нет в записях. Можно сравнивать типичные варианты и спрашивать уточнения.';
+        $lines[] = 'Подсказка: опирайся на досье целиком; не говори «не знаю», если поле есть (даже как «не задано»). Говори «в ваших записях».';
+
+        return implode("\n", $lines);
+    }
+
     /**
      * @return list<string>
      */

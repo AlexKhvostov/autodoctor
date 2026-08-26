@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Services\TimelineHorizonExpander;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -49,34 +51,45 @@ class VehicleTimelineResource extends JsonResource
                     ],
                 ];
             });
-        $planItems = $snapshot->items->where('status', '!=', 'not_applicable')->map(function ($item) use ($request): array {
-            $planItem = (new MaintenanceItemResource($item))->resolve($request);
-            $conditionBased = $item->rule->rule_kind === 'condition_based';
-            $confirmed = $planItem['history_state']['answer'] === 'done_known'
-                || ($item->explanation['latest_observation'] ?? null) !== null;
+        $expander = app(TimelineHorizonExpander::class);
+        $asOf = CarbonImmutable::today();
+        $currentMileage = $vehicle->current_mileage;
+        $planItems = $snapshot->items->where('status', '!=', 'not_applicable')
+            ->flatMap(function ($item) use ($request, $expander, $asOf, $currentMileage): array {
+                $planItem = (new MaintenanceItemResource($item))->resolve($request);
+                $conditionBased = $item->rule->rule_kind === 'condition_based';
+                $confirmed = $planItem['history_state']['answer'] === 'done_known'
+                    || ($item->explanation['latest_observation'] ?? null) !== null;
 
-            return [
-                'type' => 'plan_item',
-                'plan_item' => $planItem,
-                'presentation' => [
-                    'title' => $planItem['title'],
-                    'temporal' => $planItem['due']['date'] === null ? null : [
-                        'kind' => 'moment',
-                        'at' => $planItem['due']['date'],
+                $row = [
+                    'type' => 'plan_item',
+                    'plan_item' => $planItem,
+                    'presentation' => [
+                        'title' => $planItem['title'],
+                        'temporal' => $planItem['due']['date'] === null ? null : [
+                            'kind' => 'moment',
+                            'at' => $planItem['due']['date'],
+                        ],
+                        'mileage' => $planItem['due']['mileage'],
+                        'primary_category' => $conditionBased ? 'inspection' : 'maintenance_repair',
+                        'action_level' => $this->actionLevel([
+                            $item->status,
+                            $item->urgency,
+                            $item->rule->criticality,
+                            $planItem['presentation_importance'],
+                            $planItem['requires_check_now'] ? 'requires_check_now' : null,
+                        ]),
+                        'basis' => $confirmed ? 'confirmed' : 'missing_data',
                     ],
-                    'mileage' => $planItem['due']['mileage'],
-                    'primary_category' => $conditionBased ? 'inspection' : 'maintenance_repair',
-                    'action_level' => $this->actionLevel([
-                        $item->status,
-                        $item->urgency,
-                        $item->rule->criticality,
-                        $planItem['presentation_importance'],
-                        $planItem['requires_check_now'] ? 'requires_check_now' : null,
-                    ]),
-                    'basis' => $confirmed ? 'confirmed' : 'missing_data',
-                ],
-            ];
-        });
+                ];
+
+                return $expander->expand(
+                    $row,
+                    (string) $item->rule->rule_kind,
+                    $currentMileage,
+                    $asOf,
+                );
+            });
 
         return [
             'vehicle_id' => $vehicle->id,

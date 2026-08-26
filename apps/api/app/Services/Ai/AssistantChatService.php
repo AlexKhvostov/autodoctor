@@ -38,7 +38,7 @@ class AssistantChatService
      */
     public function reply(
         AnonymousSession $session,
-        Vehicle $vehicle,
+        ?Vehicle $vehicle,
         string $message,
         array $history = [],
         bool $suggestTitle = false,
@@ -64,10 +64,13 @@ class AssistantChatService
         $userTurn = $this->userTurnNumber($history);
         $profile = $this->resolveGuestProfile($session);
         $this->agents->assertHasFuel($profile);
+        $dossier = $vehicle === null
+            ? $this->dossier->buildWithoutVehicle($profile)
+            : $this->dossier->build($profile, $vehicle);
         $system = $prompt->body
             ."\n\n## Контекст пользователя и автомобиля (данные AutoDoctor)\n"
-            .$this->dossier->build($profile, $vehicle)
-            ."\n\n## Текущий шаг диалога\n".$this->stageHint($userTurn);
+            .$dossier
+            ."\n\n## Текущий шаг диалога\n".$this->stageHint($userTurn, $vehicle !== null);
 
         $messages = [
             ['role' => 'system', 'content' => $system],
@@ -186,13 +189,17 @@ class AssistantChatService
         return $priorUser + 1;
     }
 
-    private function stageHint(int $userTurn): string
+    private function stageHint(int $userTurn, bool $hasVehicle): string
     {
         $base = match (true) {
             $userTurn <= 1 => 'Шаг 1 (первая жалоба): коротко подтверди понимание. Задай 1–3 наводящих вопроса и/или безопасные проверки. Не выдавай длинный список причин, текст для СТО и все блоки сразу. Срочность — одной короткой фразой, если уже ясно.',
             $userTurn === 2 => 'Шаг 2: по ответам локализуй. Дай 2–4 тезиса вероятных причин с доп. симптомами для исключения. При необходимости 1–2 уточнения. Предложи помощь со СТО мягко («могу помочь сформулировать обращение»), но полный текст — только если уже достаточно данных или пользователь просит.',
             default => 'Шаг 3+: обсуждай уже суженный круг. Реагируй на ответы/проверки пользователя. Если сужать больше нечем — вероятные причины тезисно + СТО + предложи/дай текст обращения к СТО. По-прежнему без простыни и без лишних блоков.',
         };
+
+        if (! $hasVehicle) {
+            $base .= ' Машины в гараже нет: можно помочь выбрать автомобиль, объяснить какие поля нужны, сравнить типичные варианты. Не отказывай в разговоре из‑за отсутствия авто.';
+        }
 
         return $base.' Если в досье есть открытые/наблюдаемые кейсы жалоб — учитывай их; при уместности (особенно если прошло несколько дней или новая жалоба может быть связана) мягко уточни статус старой проблемы.';
     }
@@ -219,10 +226,16 @@ class AssistantChatService
     private function captureDurableMemory(
         AiConfigVersion $config,
         GuestProfile $profile,
-        Vehicle $vehicle,
+        ?Vehicle $vehicle,
         string $userMessage,
         string $assistantReply,
     ): array {
+        if ($vehicle === null) {
+            return [
+                'notes_saved' => ['vehicle' => [], 'user' => []],
+                'issues_saved' => [],
+            ];
+        }
         $existingVehicle = $vehicle->aiNotes()
             ->orderByDesc('created_at')
             ->limit(40)
@@ -753,7 +766,7 @@ class AssistantChatService
         AiConfigVersion $config,
         string $message,
         GuestProfile $profile,
-        Vehicle $vehicle,
+        ?Vehicle $vehicle,
     ): ?string {
         try {
             $result = $this->llm->chat(

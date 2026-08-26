@@ -1,22 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../app/api_endpoint.dart';
 import '../guest_bootstrap/guest_bootstrap.dart';
-import '../guest_bootstrap/guest_bootstrap_data.dart';
 import 'maintenance.dart';
 
 class DioMaintenanceRepository implements MaintenanceRepository {
-  DioMaintenanceRepository(this._tokenStore, {Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: apiBaseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 15),
-              headers: {'Accept': 'application/json'},
-            ),
-          );
+  DioMaintenanceRepository(
+    this._tokenStore, {
+    Dio? dio,
+    String? baseUrl,
+  }) : _dio = dio ?? createApiDio(baseUrl: baseUrl ?? compiledApiBaseUrl());
 
   final SessionTokenStore _tokenStore;
   final Dio _dio;

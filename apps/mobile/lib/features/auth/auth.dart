@@ -6,8 +6,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../guest_bootstrap/guest_bootstrap.dart';
 import '../guest_bootstrap/guest_bootstrap_controller.dart';
-import '../guest_bootstrap/guest_bootstrap_data.dart';
 import '../vehicle/vehicle_controller.dart';
+import '../../app/api_endpoint.dart';
 
 const _googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
@@ -92,17 +92,17 @@ class SecureAuthTokenStore implements AuthTokenStore {
 }
 
 class AuthApiClient {
-  AuthApiClient(this._tokenStore, this._profileStore, {Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: apiBaseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 20),
-              headers: {'Accept': 'application/json'},
-            ),
-          );
+  AuthApiClient(
+    this._tokenStore,
+    this._profileStore, {
+    Dio? dio,
+    String? baseUrl,
+  }) : _dio =
+           dio ??
+           createApiDio(
+             baseUrl: baseUrl ?? compiledApiBaseUrl(),
+             receiveTimeout: const Duration(seconds: 20),
+           );
 
   final AuthTokenStore _tokenStore;
   final GuestProfileIdStore _profileStore;
@@ -211,7 +211,7 @@ class AuthApiClient {
 
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout) {
-      return 'Сервер недоступен ($apiBaseUrl). '
+      return 'Сервер недоступен (${error.requestOptions.baseUrl}). '
           'Запущен ли API? В Cursor: php artisan serve --host=127.0.0.1 --port=8000';
     }
     if (status == 503) {
@@ -322,6 +322,13 @@ class AuthController extends Notifier<AsyncValue<AuthUser?>> {
     await _api.logout();
     state = const AsyncValue.data(null);
   }
+
+  Future<void> forgetLocal() async {
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
+    state = const AsyncValue.data(null);
+  }
 }
 
 final authTokenStoreProvider = Provider<AuthTokenStore>(
@@ -332,6 +339,7 @@ final authApiClientProvider = Provider<AuthApiClient>((ref) {
   return AuthApiClient(
     ref.watch(authTokenStoreProvider),
     ref.watch(guestProfileIdStoreProvider),
+    baseUrl: ref.watch(apiBaseUrlProvider),
   );
 });
 

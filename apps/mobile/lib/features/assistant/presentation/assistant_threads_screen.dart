@@ -12,7 +12,7 @@ import '../assistant.dart';
 import '../assistant_controller.dart';
 
 final agentEnergyProvider = FutureProvider.autoDispose<AgentFuel>((ref) async {
-  final locale = ref.watch(activeLocaleProvider).languageCode;
+  final locale = ref.read(activeLocaleProvider).languageCode;
   final vehicleId = ref.watch(vehicleSetupControllerProvider).activeVehicle?.id;
   try {
     final profile = await ref

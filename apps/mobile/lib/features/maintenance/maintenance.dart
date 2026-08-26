@@ -1034,7 +1034,10 @@ bool isShowableFuturePlanItem(TimelineItem item) {
   }
   if (item.item.requiresCheckNow) return false;
   if (item.basis == PresentationBasis.missingData) return false;
-  return hasHonestDue(item.item);
+  final hasDue = item.item.due.date != null || item.item.due.mileage != null;
+  if (!hasDue) return false;
+  if (hasHonestDue(item.item)) return true;
+  return item.basis == PresentationBasis.forecast;
 }
 
 List<TimelineItem> showableFuturePlanItems(Iterable<TimelineItem> items) =>

@@ -9,7 +9,14 @@ GOOGLE_ANDROID_CLIENT_ID=
 GOOGLE_IOS_CLIENT_ID=
 ```
 
-`id_token` с телефона должен иметь `aud`, совпадающий с одним из этих Client ID.
+## Laravel Cloud (пилот `api-dev`)
+
+Те же переменные задаются в Environment Laravel Cloud, не в git.
+
+`GOOGLE_CLIENT_ID` должен совпадать с Web Client ID в сборке APK (`GOOGLE_SERVER_CLIENT_ID`).
+
+После сохранения env: `php artisan autodoctor:prepare-pilot` (регламент ТО + AI prompt). Без сида ТО добавление машины отвечает `PLAN_PREPARING`.
+
 
 ## Google Cloud Console
 

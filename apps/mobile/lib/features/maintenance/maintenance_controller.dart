@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/api_endpoint.dart';
 import '../guest_bootstrap/guest_bootstrap_controller.dart';
 import 'maintenance.dart';
 import 'maintenance_data.dart';
 
 final maintenanceRepositoryProvider = Provider<MaintenanceRepository>(
-  (ref) => DioMaintenanceRepository(ref.watch(sessionTokenStoreProvider)),
+  (ref) => DioMaintenanceRepository(
+    ref.watch(sessionTokenStoreProvider),
+    baseUrl: ref.watch(apiBaseUrlProvider),
+  ),
 );
 
 enum MaintenanceLoadStage { idle, loading, ready, error }

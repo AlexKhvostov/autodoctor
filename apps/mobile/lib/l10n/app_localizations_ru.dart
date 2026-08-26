@@ -423,6 +423,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get moreAnalyticsDetail => 'Подтверждённые суммы, категории, пробег';
 
   @override
+  String get moreDevelopment => 'Разработка';
+
+  @override
+  String get moreDevelopmentDetail =>
+      'Сервер API, компоненты UI и другие инструменты';
+
+  @override
+  String get developmentTitle => 'Разработка';
+
+  @override
+  String get developmentIntro =>
+      'Внутренние инструменты. В прод-версии этот раздел спрячем.';
+
+  @override
   String get close => 'Закрыть';
 
   @override
@@ -1797,6 +1811,59 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get selectedLanguage => 'Выбрано';
+
+  @override
+  String get apiServer => 'Сервер API';
+
+  @override
+  String get apiServerPickerTitle => 'Выбор сервера API';
+
+  @override
+  String get apiServerHint =>
+      'Для тестов. Сервер можно сменить без новой сборки APK. У каждого сервера своя база: гараж, чаты и вход Google не переносятся.';
+
+  @override
+  String get apiServerFirebase => 'Firebase Remote Config';
+
+  @override
+  String get apiServerFirebaseDetail =>
+      'Общий адрес для всех тестеров. Меняется в консоли Firebase, без новой сборки.';
+
+  @override
+  String get apiServerTunnel => 'Свой адрес';
+
+  @override
+  String get apiServerTunnelDetail =>
+      'Вставьте любой URL: туннель Cloudflare, локальная сеть или другой хост.';
+
+  @override
+  String get apiServerDev => 'API Dev';
+
+  @override
+  String get apiServerProd => 'API Prod';
+
+  @override
+  String get apiServerTunnelField => 'Адрес API';
+
+  @override
+  String get apiServerTunnelHint =>
+      'https://….trycloudflare.com или http://192.168.x.x:8000';
+
+  @override
+  String get apiServerTunnelInvalid =>
+      'Укажите адрес, начинающийся с https:// или http://';
+
+  @override
+  String get apiServerSwitchWarning =>
+      'Другой сервер — это другая база. Сессия и вход Google будут сброшены. Машины с предыдущего сервера здесь не появятся.';
+
+  @override
+  String get apiServerApply => 'Переключить';
+
+  @override
+  String apiServerSwitched(String url) {
+    return 'API переключён на $url';
+  }
 
   @override
   String get garageSetupStep1 => 'Настройка гаража · шаг 01';

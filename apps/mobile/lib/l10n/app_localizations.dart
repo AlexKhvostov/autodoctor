@@ -848,6 +848,30 @@ abstract class AppLocalizations {
   /// **'Confirmed amounts, categories, mileage'**
   String get moreAnalyticsDetail;
 
+  /// No description provided for @moreDevelopment.
+  ///
+  /// In en, this message translates to:
+  /// **'Development'**
+  String get moreDevelopment;
+
+  /// No description provided for @moreDevelopmentDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'API server, UI kit, and other tools'**
+  String get moreDevelopmentDetail;
+
+  /// No description provided for @developmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Development'**
+  String get developmentTitle;
+
+  /// No description provided for @developmentIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal tools. This screen will be hidden in the production app.'**
+  String get developmentIntro;
+
   /// No description provided for @close.
   ///
   /// In en, this message translates to:
@@ -3301,6 +3325,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selected'**
   String get selectedLanguage;
+
+  /// No description provided for @apiServer.
+  ///
+  /// In en, this message translates to:
+  /// **'API server'**
+  String get apiServer;
+
+  /// No description provided for @apiServerPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose API server'**
+  String get apiServerPickerTitle;
+
+  /// No description provided for @apiServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For testers. Switch servers without rebuilding the APK. Each server has its own database: garage, chats, and Google login do not carry over.'**
+  String get apiServerHint;
+
+  /// No description provided for @apiServerFirebase.
+  ///
+  /// In en, this message translates to:
+  /// **'Firebase Remote Config'**
+  String get apiServerFirebase;
+
+  /// No description provided for @apiServerFirebaseDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Address for all testers. Change it in Firebase Console, not in the APK.'**
+  String get apiServerFirebaseDetail;
+
+  /// No description provided for @apiServerTunnel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom URL'**
+  String get apiServerTunnel;
+
+  /// No description provided for @apiServerTunnelDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste any address: Cloudflare tunnel, LAN, or another host.'**
+  String get apiServerTunnelDetail;
+
+  /// No description provided for @apiServerDev.
+  ///
+  /// In en, this message translates to:
+  /// **'API Dev'**
+  String get apiServerDev;
+
+  /// No description provided for @apiServerProd.
+  ///
+  /// In en, this message translates to:
+  /// **'API Prod'**
+  String get apiServerProd;
+
+  /// No description provided for @apiServerTunnelField.
+  ///
+  /// In en, this message translates to:
+  /// **'API address'**
+  String get apiServerTunnelField;
+
+  /// No description provided for @apiServerTunnelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://….trycloudflare.com or http://192.168.x.x:8000'**
+  String get apiServerTunnelHint;
+
+  /// No description provided for @apiServerTunnelInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a URL starting with https:// or http://'**
+  String get apiServerTunnelInvalid;
+
+  /// No description provided for @apiServerSwitchWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'The other server is a different database. The session and Google sign-in will be reset. Vehicles from the previous server will not appear here.'**
+  String get apiServerSwitchWarning;
+
+  /// No description provided for @apiServerApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get apiServerApply;
+
+  /// No description provided for @apiServerSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'API switched to {url}'**
+  String apiServerSwitched(String url);
 
   /// No description provided for @garageSetupStep1.
   ///

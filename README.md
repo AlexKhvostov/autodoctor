@@ -54,6 +54,12 @@ Filament Admin: `/admin`.
 
 Laravel Cloud подключается к этому репозиторию с Application directory `apps/api`.
 
+Публичные адреса (на 2026-08-26):
+
+- сайт: `https://autodoctor.by/` (SSL на Hostland);
+- API пилота: `https://api-dev.autodoctor.by/api/v1`;
+- аккаунт Cloud: [aleksei-xvostov](https://cloud.laravel.com/aleksei-xvostov).
+
 ## Mobile
 
 Flutter SDK закреплён через Puro в `apps/mobile/.puro.json`.

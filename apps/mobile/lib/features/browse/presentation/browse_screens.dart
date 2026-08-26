@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/api_endpoint.dart';
+import '../../../app/api_endpoint_sheet.dart';
+import '../../../app/dev_tools.dart';
 import '../../../app/locale_controller.dart';
 import '../../../app/theme.dart';
 import '../../../core/widgets/automotive_widgets.dart';
@@ -1725,19 +1728,20 @@ class MoreScreen extends ConsumerWidget {
           onTap: () => context.push('/analytics'),
         ),
         _ControlRow(
-          key: const Key('more-ui-kit'),
-          icon: Icons.widgets_outlined,
-          title: context.l10n.uiKitTitle,
-          detail: context.l10n.uiKitMoreDetail,
-          onTap: () => context.push('/dev/ui-kit'),
-        ),
-        _ControlRow(
           key: const Key('language-settings'),
           icon: Icons.settings_outlined,
           title: context.l10n.language,
           detail: context.l10n.unitsThemeLanguage,
           onTap: () => _showLanguagePicker(context, ref),
         ),
+        if (showDevMenu)
+          _ControlRow(
+            key: const Key('more-development'),
+            icon: Icons.developer_mode_outlined,
+            title: context.l10n.moreDevelopment,
+            detail: context.l10n.moreDevelopmentDetail,
+            onTap: () => context.push('/dev'),
+          ),
         _ControlRow(
           icon: Icons.feedback_outlined,
           title: context.l10n.feedback,
@@ -1768,6 +1772,53 @@ class MoreScreen extends ConsumerWidget {
       vehicleChild: hasVehicle
           ? controls(selectedVehicle: true)
           : const SizedBox.shrink(),
+    );
+  }
+}
+
+class DevelopmentScreen extends ConsumerWidget {
+  const DevelopmentScreen({super.key});
+
+  String _apiServerLabel(BuildContext context, ApiEndpointKind kind) {
+    final l10n = context.l10n;
+    return switch (kind) {
+      ApiEndpointKind.firebase => l10n.apiServerFirebase,
+      ApiEndpointKind.tunnel => l10n.apiServerTunnel,
+      ApiEndpointKind.dev => l10n.apiServerDev,
+      ApiEndpointKind.prod => l10n.apiServerProd,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final api = ref.watch(apiEndpointControllerProvider);
+    return Scaffold(
+      appBar: AppBar(title: Text(context.l10n.developmentTitle)),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+          Text(
+            context.l10n.developmentIntro,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 8),
+          _ControlRow(
+            key: const Key('api-server-settings'),
+            icon: Icons.cloud_outlined,
+            title: context.l10n.apiServer,
+            detail:
+                '${_apiServerLabel(context, api.kind)} · ${api.resolvedUrl}',
+            onTap: () => showApiEndpointSheet(context, ref),
+          ),
+          _ControlRow(
+            key: const Key('more-ui-kit'),
+            icon: Icons.widgets_outlined,
+            title: context.l10n.uiKitTitle,
+            detail: context.l10n.uiKitMoreDetail,
+            onTap: () => context.push('/dev/ui-kit'),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,23 +1,11 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../app/api_endpoint.dart';
 import 'guest_bootstrap.dart';
 
-const _configuredApiBaseUrl = String.fromEnvironment('API_BASE_URL');
-
-String get apiBaseUrl {
-  if (_configuredApiBaseUrl.isNotEmpty) {
-    return _configuredApiBaseUrl;
-  }
-  if (!kIsWeb && Platform.isAndroid) {
-    return 'http://10.0.2.2:8000/api/v1';
-  }
-  return 'http://localhost:8000/api/v1';
-}
+String get apiBaseUrl => compiledApiBaseUrl();
 
 class SecureSessionTokenStore implements SessionTokenStore {
   SecureSessionTokenStore([FlutterSecureStorage? storage])
@@ -60,21 +48,15 @@ class DioGuestBootstrapRepository implements GuestBootstrapRepository {
     this._tokenStore,
     this._profileStore, {
     required String locale,
+    String? baseUrl,
     Dio? dio,
     Uuid? uuid,
   }) : _uuid = uuid ?? const Uuid(),
        _dio =
            dio ??
-           Dio(
-             BaseOptions(
-               baseUrl: apiBaseUrl,
-               connectTimeout: const Duration(seconds: 10),
-               receiveTimeout: const Duration(seconds: 15),
-               headers: {
-                 'Accept': 'application/json',
-                 'Accept-Language': locale,
-               },
-             ),
+           createApiDio(
+             baseUrl: baseUrl ?? compiledApiBaseUrl(),
+             headers: {'Accept-Language': locale},
            );
 
   final SessionTokenStore _tokenStore;
