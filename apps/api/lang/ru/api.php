@@ -29,6 +29,8 @@ return [
         'plan_preparing' => 'План пока подготавливается. Повторите запрос.',
         'preference_version_conflict' => 'Настройка изменена другим запросом. Обновите данные и повторите попытку.',
         'ai_disabled' => 'AI-ассистент временно отключён.',
+        'ai_disabled_detail' => 'В админке есть конфигурация AI, но она выключена (enabled=false). Включите её в /admin или выполните php artisan db:seed --class=AiConfigSeeder --force.',
+        'ai_not_configured' => 'В базе нет активной конфигурации AI. Выполните php artisan db:seed --class=AiConfigSeeder --force или создайте её в /admin.',
         'ai_prompt_missing' => 'Утверждённый системный промпт не найден.',
         'ai_provider_not_configured' => 'Провайдер :provider не настроен на сервере.',
         'ai_provider_error' => 'Ошибка провайдера :provider: :detail',

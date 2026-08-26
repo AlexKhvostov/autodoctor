@@ -8,6 +8,7 @@ import '../features/assistant/presentation/assistant_threads_screen.dart';
 import '../features/browse/presentation/browse_screens.dart';
 import '../features/browse/presentation/browse_shell.dart';
 import '../features/browse/presentation/component_catalog_screen.dart';
+import '../features/browse/presentation/development_screen.dart';
 import '../features/maintenance/presentation/maintenance_screens.dart';
 import '../features/maintenance/presentation/history_wizard_screen.dart';
 import '../features/maintenance/presentation/service_record_screen.dart';

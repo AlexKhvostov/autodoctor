@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', [SystemController::class, 'health']);
     Route::get('/capabilities', [SystemController::class, 'capabilities']);
+    Route::post('/diagnostics/ai', [SystemController::class, 'probeAi'])
+        ->middleware('session.auth');
 
     Route::post('/sessions/anonymous', [SessionController::class, 'store']);
     Route::get('/consents/current', [ConsentController::class, 'current']);

@@ -43,14 +43,26 @@ class AssistantChatService
         array $history = [],
         bool $suggestTitle = false,
     ): array {
-        $config = AiConfigVersion::active();
-        if ($config === null || ! $config->enabled) {
+        $marked = AiConfigVersion::query()
+            ->with('promptVersion')
+            ->where('is_active', true)
+            ->latest('id')
+            ->first();
+        if ($marked === null) {
             throw new ApiException(
-                'AI_DISABLED',
-                __('api.errors.ai_disabled'),
+                'AI_NOT_CONFIGURED',
+                __('api.errors.ai_not_configured'),
                 503,
             );
         }
+        if (! $marked->enabled) {
+            throw new ApiException(
+                'AI_DISABLED',
+                __('api.errors.ai_disabled_detail'),
+                503,
+            );
+        }
+        $config = $marked;
 
         $prompt = $config->promptVersion;
         if ($prompt === null || ! $prompt->isApproved()) {

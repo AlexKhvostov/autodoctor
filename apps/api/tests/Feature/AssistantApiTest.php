@@ -640,7 +640,7 @@ class AssistantApiTest extends TestCase
 
     public function test_assistant_returns_disabled_when_config_off(): void
     {
-        AiConfigVersion::query()->update(['enabled' => false, 'is_active' => false]);
+        AiConfigVersion::query()->update(['enabled' => false]);
 
         $headers = $this->sessionHeaders();
         $vehicleId = $this->withHeaders($headers)

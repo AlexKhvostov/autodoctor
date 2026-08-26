@@ -437,6 +437,25 @@ class AppLocalizationsRu extends AppLocalizations {
       'Внутренние инструменты. В прод-версии этот раздел спрячем.';
 
   @override
+  String get apiStatusTitle => 'Статус API';
+
+  @override
+  String get apiStatusHint =>
+      'Показывает, живы ли сервер, база и конфигурация AI. Кнопка «Проверить AI» отправляет короткий ping провайдеру.';
+
+  @override
+  String get apiStatusLoading => 'Проверяю API…';
+
+  @override
+  String get apiStatusProbing => 'Пингую провайдера AI…';
+
+  @override
+  String get apiStatusRefresh => 'Обновить статус';
+
+  @override
+  String get apiStatusProbeAi => 'Проверить AI';
+
+  @override
   String get close => 'Закрыть';
 
   @override

@@ -872,6 +872,42 @@ abstract class AppLocalizations {
   /// **'Internal tools. This screen will be hidden in the production app.'**
   String get developmentIntro;
 
+  /// No description provided for @apiStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API status'**
+  String get apiStatusTitle;
+
+  /// No description provided for @apiStatusHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows whether the server, database, and AI config are ready. The test sends a short ping to the AI provider.'**
+  String get apiStatusHint;
+
+  /// No description provided for @apiStatusLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking API…'**
+  String get apiStatusLoading;
+
+  /// No description provided for @apiStatusProbing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinging AI provider…'**
+  String get apiStatusProbing;
+
+  /// No description provided for @apiStatusRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh status'**
+  String get apiStatusRefresh;
+
+  /// No description provided for @apiStatusProbeAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Test AI'**
+  String get apiStatusProbeAi;
+
   /// No description provided for @close.
   ///
   /// In en, this message translates to:

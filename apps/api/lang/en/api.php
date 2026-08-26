@@ -29,6 +29,8 @@ return [
         'plan_preparing' => 'The maintenance plan is being prepared. Please try again.',
         'preference_version_conflict' => 'The preference was changed by another request. Refresh it and try again.',
         'ai_disabled' => 'The AI assistant is temporarily disabled.',
+        'ai_disabled_detail' => 'An AI config row exists but it is turned off (enabled=false). Enable it in /admin or run php artisan db:seed --class=AiConfigSeeder --force.',
+        'ai_not_configured' => 'No active AI config in the database. Run php artisan db:seed --class=AiConfigSeeder --force or create it in /admin.',
         'ai_prompt_missing' => 'An approved system prompt was not found.',
         'ai_provider_not_configured' => 'Provider :provider is not configured on the server.',
         'ai_provider_error' => 'Provider :provider error: :detail',

@@ -434,6 +434,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Internal tools. This screen will be hidden in the production app.';
 
   @override
+  String get apiStatusTitle => 'API status';
+
+  @override
+  String get apiStatusHint =>
+      'Shows whether the server, database, and AI config are ready. The test sends a short ping to the AI provider.';
+
+  @override
+  String get apiStatusLoading => 'Checking API…';
+
+  @override
+  String get apiStatusProbing => 'Pinging AI provider…';
+
+  @override
+  String get apiStatusRefresh => 'Refresh status';
+
+  @override
+  String get apiStatusProbeAi => 'Test AI';
+
+  @override
   String get close => 'Close';
 
   @override
