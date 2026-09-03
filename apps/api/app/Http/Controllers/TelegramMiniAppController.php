@@ -38,8 +38,8 @@ class TelegramMiniAppController extends Controller
                 'allowed' => false,
                 'greeting' => 'AutoDoctor',
                 'subtitle' => 'Сейчас закрытый пилот. Напишите боту и нажмите «Запросить доступ».',
-                'vehicle' => null,
-                'works' => [],
+                'vehicle_card' => $snapshot->emptyVehicleCard(),
+                'works_journal' => $snapshot->emptyWorksJournal('Сначала запишите машину в чате с ботом.'),
             ]);
         }
 
