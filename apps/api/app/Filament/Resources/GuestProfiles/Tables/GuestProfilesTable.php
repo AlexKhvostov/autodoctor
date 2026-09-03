@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\GuestProfiles\Tables;
 
+use App\Filament\Resources\GuestProfiles\GuestProfileResource;
 use App\Models\GuestProfile;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -24,6 +25,10 @@ class GuestProfilesTable
                             return (string) $record->user->email;
                         }
 
+                        if (filled($record->telegram_first_name)) {
+                            return (string) $record->telegram_first_name;
+                        }
+
                         return 'Гость '.mb_substr((string) $record->id, 0, 8);
                     })
                     ->description(fn (GuestProfile $record): string => (string) ($record->user?->email ?: 'ID: '.$record->id))
@@ -36,6 +41,11 @@ class GuestProfilesTable
                             });
                     })
                     ->wrap(),
+                TextColumn::make('telegram_id')
+                    ->label('Telegram ID')
+                    ->placeholder('—')
+                    ->copyable()
+                    ->toggleable(),
                 TextColumn::make('account_type')
                     ->label('Тип')
                     ->badge()
@@ -86,6 +96,6 @@ class GuestProfilesTable
             ->recordActions([
                 ViewAction::make()->label('Открыть'),
             ])
-            ->recordUrl(fn (GuestProfile $record): string => \App\Filament\Resources\GuestProfiles\GuestProfileResource::getUrl('view', ['record' => $record]));
+            ->recordUrl(fn (GuestProfile $record): string => GuestProfileResource::getUrl('view', ['record' => $record]));
     }
 }

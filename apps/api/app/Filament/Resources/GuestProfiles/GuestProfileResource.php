@@ -17,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class GuestProfileResource extends Resource
@@ -73,6 +74,9 @@ class GuestProfileResource extends Resource
                     TextEntry::make('user.email')->label('Email')->placeholder('—')->copyable(),
                     TextEntry::make('user.name')->label('Имя')->placeholder('—'),
                     TextEntry::make('user.google_id')->label('Google ID')->placeholder('—')->copyable(),
+                    TextEntry::make('telegram_id')->label('Telegram ID')->placeholder('—')->copyable(),
+                    TextEntry::make('telegram_username')->label('Telegram username')->placeholder('—'),
+                    TextEntry::make('telegram_first_name')->label('Имя в Telegram')->placeholder('—'),
                     TextEntry::make('created_at')->label('Первый визит')->dateTime(),
                     TextEntry::make('updated_at')->label('Обновлён')->dateTime(),
                     TextEntry::make('summary')
@@ -116,7 +120,7 @@ class GuestProfileResource extends Resource
         ];
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
             ->with(['user'])

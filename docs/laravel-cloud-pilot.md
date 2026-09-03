@@ -59,5 +59,6 @@ php artisan db:seed --class=AiConfigSeeder --force
 - `GOOGLE_CLIENT_ID` — тот же Web Client ID, что в APK (`GOOGLE_SERVER_CLIENT_ID`)
 - `GOOGLE_ANDROID_CLIENT_ID`
 - `AI_ABACUS_API_KEY` и/или `AI_DEEPSEEK_API_KEY`
+- Telegram-бот `@AutoDoctorPilotBot`. Токен бота — только Cloud (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`). Белый список ведётся в админке: **Telegram → Писали боту** (галочка) и **Белый список** (убрать). Env `TELEGRAM_ALLOWLIST_IDS` — запасной вариант, не основной. После деплоя: `php artisan migrate --force`, при необходимости сидер владельца `php artisan db:seed --class=TelegramPilotAllowlistSeeder --force`, затем `php artisan telegram:set-webhook`.
 
 Очереди: включите worker, `QUEUE_CONNECTION` как в Cloud (обычно database или redis).

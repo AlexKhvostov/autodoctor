@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Database\Seeders\AiConfigSeeder;
 use Database\Seeders\MaintenanceV1Seeder;
 use Database\Seeders\MaintenanceV2Seeder;
+use Database\Seeders\TelegramPilotAllowlistSeeder;
 use Illuminate\Console\Command;
 
 class PreparePilotDataCommand extends Command
@@ -19,6 +20,7 @@ class PreparePilotDataCommand extends Command
         $this->call('db:seed', ['--class' => MaintenanceV1Seeder::class, '--force' => true]);
         $this->call('db:seed', ['--class' => MaintenanceV2Seeder::class, '--force' => true]);
         $this->call('db:seed', ['--class' => AiConfigSeeder::class, '--force' => true]);
+        $this->call('db:seed', ['--class' => TelegramPilotAllowlistSeeder::class, '--force' => true]);
         $this->info('Pilot data is ready.');
 
         return self::SUCCESS;
