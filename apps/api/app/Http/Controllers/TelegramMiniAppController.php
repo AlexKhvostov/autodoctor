@@ -36,15 +36,13 @@ class TelegramMiniAppController extends Controller
             return response()->json([
                 'ok' => true,
                 'allowed' => false,
-                'greeting' => 'AutoDoctor',
-                'subtitle' => 'Сейчас закрытый пилот. Напишите боту и нажмите «Запросить доступ».',
-                'vehicle_card' => $snapshot->emptyVehicleCard(),
-                'works_journal' => $snapshot->emptyWorksJournal('Сначала запишите машину в чате с ботом.'),
+                ...$snapshot->deniedResponse(),
             ]);
         }
 
         return response()->json([
             'ok' => true,
+            'allowed' => true,
             ...$snapshot->forTelegramUser($userId),
         ]);
     }

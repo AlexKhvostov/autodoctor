@@ -11,11 +11,9 @@
             --bg: #12110f;
             --card: #1c1a16;
             --text: #f5f0e8;
-            --muted: #b7ada0;
+            --muted: #9d9488;
             --accent: #f5b942;
             --line: rgba(245, 240, 232, 0.08);
-            --ok: #8fd694;
-            --draft: #f5b942;
         }
         * { box-sizing: border-box; }
         html, body {
@@ -24,106 +22,124 @@
             background: var(--bg);
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
         }
         .wrap {
             max-width: 420px;
             margin: 0 auto;
-            padding: 28px 20px 40px;
+            padding: 16px 14px 28px;
         }
-        .mark {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            background: var(--accent);
-            color: #1a1408;
-            display: grid;
-            place-items: center;
-            font-weight: 800;
-            font-size: 22px;
-            letter-spacing: -0.04em;
+        .app-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
-        h1 {
-            margin: 20px 0 8px;
-            font-size: 28px;
-            letter-spacing: -0.03em;
+        .app-subtitle {
+            margin: 6px 0 14px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
         }
-        .lead { color: var(--muted); line-height: 1.45; margin: 0 0 24px; }
-        .card {
+        .vehicle {
             background: var(--card);
             border: 1px solid var(--line);
-            border-radius: 18px;
-            padding: 16px 18px;
-            margin-bottom: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            overflow: hidden;
         }
-        .card-head {
+        .vehicle-head {
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 10px;
+            padding: 12px 14px;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
         }
-        .card-title {
+        .vehicle-title {
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        .vehicle-summary {
+            margin-top: 3px;
             color: var(--muted);
             font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
+            line-height: 1.3;
+        }
+        .vehicle-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
         }
         .badge {
-            font-size: 11px;
-            letter-spacing: 0.04em;
+            font-size: 10px;
             text-transform: uppercase;
-            padding: 4px 8px;
+            letter-spacing: 0.04em;
+            padding: 2px 6px;
             border-radius: 999px;
             border: 1px solid var(--line);
             color: var(--muted);
-            white-space: nowrap;
         }
-        .badge.saved { color: var(--ok); border-color: rgba(143, 214, 148, 0.25); }
-        .badge.draft { color: var(--draft); border-color: rgba(245, 185, 66, 0.25); }
+        .badge.draft { color: var(--accent); border-color: rgba(245, 185, 66, 0.25); }
+        .chevron {
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1;
+            transition: transform 0.15s ease;
+        }
+        .vehicle.open .chevron { transform: rotate(90deg); }
+        .vehicle-body {
+            display: none;
+            border-top: 1px solid var(--line);
+            padding: 0 14px 12px;
+        }
+        .vehicle.open .vehicle-body { display: block; }
+        .section { padding-top: 10px; }
+        .section-title {
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
         .field-row {
             display: flex;
             justify-content: space-between;
-            gap: 16px;
-            padding: 10px 0;
+            gap: 12px;
+            padding: 7px 0;
             border-top: 1px solid var(--line);
-            font-size: 15px;
+            line-height: 1.35;
         }
-        .field-row:first-of-type { border-top: 0; padding-top: 0; }
-        .field-label { color: var(--muted); flex: 1; }
+        .field-row:first-of-type { border-top: 0; }
+        .field-label { color: var(--muted); flex: 1.1; font-size: 13px; }
         .field-value {
-            text-align: right;
             flex: 1;
+            text-align: right;
+            font-size: 13px;
             word-break: break-word;
         }
-        .field-value.empty { color: rgba(183, 173, 160, 0.55); }
-        .work {
-            padding: 10px 0;
-            border-top: 1px solid var(--line);
-            font-size: 15px;
-            line-height: 1.4;
-        }
-        .work:first-of-type { border-top: 0; padding-top: 0; }
-        .empty-hint {
-            color: var(--muted);
-            font-size: 14px;
-            line-height: 1.45;
-            margin: 0;
-        }
+        .field-value.empty { color: rgba(157, 148, 136, 0.55); }
         .footer-hint {
-            margin-top: 18px;
+            margin-top: 10px;
             color: var(--muted);
-            font-size: 13px;
-            line-height: 1.45;
+            font-size: 11px;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
     <div class="wrap">
-        <div class="mark">AD</div>
-        <h1 id="title">AutoDoctor</h1>
-        <p class="lead" id="lead">Загружаем…</p>
-        <div id="cards"></div>
-        <p class="footer-hint">Пустые поля можно дописать боту в чате. Запись в базу — только через кнопку «Записать».</p>
+        <h1 class="app-title" id="title">AutoDoctor</h1>
+        <p class="app-subtitle" id="subtitle">Загружаем…</p>
+        <div id="vehicles"></div>
+        <p class="footer-hint">Пустые поля — «—». Дописать можно боту; в базу — через «Записать».</p>
     </div>
     <script>
         const app = window.Telegram && window.Telegram.WebApp;
@@ -137,56 +153,52 @@
             headers: { 'X-Telegram-Init-Data': initData, 'Accept': 'application/json' }
         }).then(async (response) => {
             const data = await response.json();
-            document.getElementById('title').textContent = data.greeting || 'AutoDoctor';
-            document.getElementById('lead').textContent = data.subtitle || data.error || 'Не удалось загрузить.';
-            const root = document.getElementById('cards');
+            document.getElementById('title').textContent = data.title || 'AutoDoctor';
+            document.getElementById('subtitle').textContent = data.subtitle || data.error || 'Не удалось загрузить.';
+            const root = document.getElementById('vehicles');
             root.innerHTML = '';
-
-            if (data.vehicle_card) {
-                root.insertAdjacentHTML('beforeend', renderVehicleCard(data.vehicle_card));
-            }
-            if (data.works_journal) {
-                root.insertAdjacentHTML('beforeend', renderWorksJournal(data.works_journal));
-            }
+            (data.vehicles || []).forEach((vehicle, index) => {
+                root.insertAdjacentHTML('beforeend', renderVehicle(vehicle, index));
+            });
+            root.querySelectorAll('.vehicle-head').forEach((button) => {
+                button.addEventListener('click', () => {
+                    button.closest('.vehicle').classList.toggle('open');
+                });
+            });
         }).catch(() => {
-            document.getElementById('lead').textContent = 'Не удалось загрузить данные.';
+            document.getElementById('subtitle').textContent = 'Не удалось загрузить данные.';
         });
 
-        function renderVehicleCard(card) {
-            const badgeClass = card.status === 'saved'
-                ? 'badge saved'
-                : (card.status === 'draft' ? 'badge draft' : 'badge');
-            const rows = (card.fields || []).map((field) => {
+        function renderVehicle(vehicle, index) {
+            const summary = vehicle.summary
+                ? '<div class="vehicle-summary">' + escapeHtml(vehicle.summary) + '</div>'
+                : '';
+            const badge = vehicle.status === 'draft'
+                ? '<span class="badge draft">черновик</span>'
+                : '';
+            const sections = (vehicle.sections || []).map(renderSection).join('');
+
+            return '<div class="vehicle" id="vehicle-' + index + '">' +
+                '<button class="vehicle-head" type="button" aria-expanded="false">' +
+                '<div><div class="vehicle-title">' + escapeHtml(vehicle.title || 'Автомобиль') + '</div>' +
+                summary + '</div>' +
+                '<div class="vehicle-meta">' + badge +
+                '<span class="chevron">›</span></div></button>' +
+                '<div class="vehicle-body">' + sections + '</div></div>';
+        }
+
+        function renderSection(section) {
+            const rows = (section.fields || []).map((field) => {
                 const value = field.filled ? field.value : '—';
                 const valueClass = field.filled ? 'field-value' : 'field-value empty';
                 return '<div class="field-row">' +
                     '<div class="field-label">' + escapeHtml(field.label) + '</div>' +
-                    '<div class="' + valueClass + '">' + escapeHtml(value) + '</div>' +
-                    '</div>';
+                    '<div class="' + valueClass + '">' + escapeHtml(value) + '</div></div>';
             }).join('');
 
-            return '<div class="card">' +
-                '<div class="card-head">' +
-                '<div class="card-title">Карточка авто</div>' +
-                '<div class="' + badgeClass + '">' + escapeHtml(card.status_label || '') + '</div>' +
-                '</div>' + rows + '</div>';
-        }
-
-        function renderWorksJournal(journal) {
-            const items = journal.items || [];
-            if (!items.length) {
-                return '<div class="card">' +
-                    '<div class="card-title">Журнал работ</div>' +
-                    '<p class="empty-hint" style="margin-top:12px">' +
-                    escapeHtml(journal.empty_hint || 'Пока нет записей.') +
-                    '</p></div>';
-            }
-
-            const rows = items.map((item) => {
-                return '<div class="work">' + escapeHtml(item.detail || item.title || 'Работа') + '</div>';
-            }).join('');
-
-            return '<div class="card"><div class="card-title">Журнал работ</div>' + rows + '</div>';
+            return '<div class="section">' +
+                '<div class="section-title">' + escapeHtml(section.title || '') + '</div>' +
+                rows + '</div>';
         }
 
         function escapeHtml(value) {

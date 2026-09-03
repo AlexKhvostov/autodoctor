@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\GuestProfile;
+use App\Models\HistoryAnswer;
 use App\Models\TelegramBotUser;
 use App\Models\Vehicle;
 use App\Models\VehicleConfiguration;
+use App\Models\WorkCatalogItem;
 use App\Services\Telegram\TelegramMiniAppSnapshot;
 use Database\Seeders\MaintenanceV1Seeder;
 use Database\Seeders\MaintenanceV2Seeder;
@@ -16,14 +18,20 @@ class TelegramMiniAppTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(MaintenanceV1Seeder::class);
+        $this->seed(MaintenanceV2Seeder::class);
+    }
+
     public function test_mini_app_page_is_served(): void
     {
         $this->get('/telegram/app')
             ->assertOk()
             ->assertSee('AutoDoctor', false)
             ->assertSee('telegram-web-app.js', false)
-            ->assertSee('Карточка авто', false)
-            ->assertSee('Журнал работ', false);
+            ->assertSee('vehicle-head', false);
     }
 
     public function test_state_requires_telegram_init_data(): void
@@ -31,7 +39,7 @@ class TelegramMiniAppTest extends TestCase
         $this->getJson('/telegram/app/state')->assertUnauthorized();
     }
 
-    public function test_state_returns_vehicle_checklist_with_dashes_for_new_user(): void
+    public function test_state_returns_full_vehicle_template_with_dashes_for_new_user(): void
     {
         config(['telegram.bot_token' => 'TESTTOKEN', 'telegram.allowlist_ids' => '70001']);
         GuestProfile::query()->create([
@@ -47,16 +55,16 @@ class TelegramMiniAppTest extends TestCase
             ->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('allowed', true)
-            ->assertJsonPath('greeting', '@anna')
-            ->assertJsonPath('vehicle_card.status', 'empty')
-            ->assertJsonPath('vehicle_card.fields.0.label', 'Марка')
-            ->assertJsonPath('vehicle_card.fields.0.value', null)
-            ->assertJsonPath('vehicle_card.fields.0.filled', false)
-            ->assertJsonPath('works_journal.items', [])
-            ->assertJsonPath('works_journal.empty_hint', 'Сначала запишите машину в чате с ботом.');
+            ->assertJsonPath('title', 'AutoDoctor')
+            ->assertJsonPath('vehicles.0.title', 'Автомобиль')
+            ->assertJsonPath('vehicles.0.status', 'placeholder')
+            ->assertJsonPath('vehicles.0.sections.0.fields.0.label', 'Марка')
+            ->assertJsonPath('vehicles.0.sections.0.fields.0.filled', false)
+            ->assertJsonPath('vehicles.0.sections.1.title', 'История обслуживания')
+            ->assertJsonPath('vehicles.0.sections.1.fields.0.filled', false);
     }
 
-    public function test_state_shows_draft_vehicle_fields_from_bot(): void
+    public function test_state_shows_draft_vehicle_card_from_bot(): void
     {
         config(['telegram.bot_token' => 'TESTTOKEN', 'telegram.allowlist_ids' => '70002']);
         GuestProfile::query()->create([
@@ -80,20 +88,15 @@ class TelegramMiniAppTest extends TestCase
             'user' => '{"id":70002,"first_name":"Pilot"}',
         ]))->getJson('/telegram/app/state')
             ->assertOk()
-            ->assertJsonPath('vehicle_card.status', 'draft')
-            ->assertJsonPath('vehicle_card.fields.0.value', 'Volkswagen')
-            ->assertJsonPath('vehicle_card.fields.1.value', 'Polo')
-            ->assertJsonPath('vehicle_card.fields.2.value', '2014')
-            ->assertJsonPath('vehicle_card.fields.3.value', 'бензин')
-            ->assertJsonPath('vehicle_card.fields.4.filled', true)
-            ->assertJsonPath('vehicle_card.fields.5.filled', false);
+            ->assertJsonPath('vehicles.0.title', 'Volkswagen Polo')
+            ->assertJsonPath('vehicles.0.status', 'draft')
+            ->assertJsonPath('vehicles.0.sections.0.fields.0.value', 'Volkswagen')
+            ->assertJsonPath('vehicles.0.sections.0.fields.12.filled', true)
+            ->assertJsonPath('vehicles.0.sections.0.fields.13.filled', false);
     }
 
-    public function test_snapshot_lists_saved_vehicle_and_missing_fields(): void
+    public function test_snapshot_lists_saved_vehicle_profile_and_maintenance_slots(): void
     {
-        $this->seed(MaintenanceV1Seeder::class);
-        $this->seed(MaintenanceV2Seeder::class);
-
         $profile = GuestProfile::query()->create(['telegram_id' => 70003]);
         $session = \App\Models\AnonymousSession::query()->create([
             'guest_profile_id' => $profile->id,
@@ -109,10 +112,11 @@ class TelegramMiniAppTest extends TestCase
             'make' => 'Volkswagen',
             'model' => 'Polo',
             'fuel_type' => 'petrol',
+            'transmission_type' => 'manual',
             'field_provenance' => [],
             'confirmed_at' => now(),
         ]);
-        Vehicle::query()->create([
+        $vehicle = Vehicle::query()->create([
             'anonymous_session_id' => $session->id,
             'configuration_id' => $configuration->id,
             'production_year' => 2014,
@@ -122,16 +126,25 @@ class TelegramMiniAppTest extends TestCase
             'plan_eligibility' => 'universal_type_only',
             'version' => 1,
         ]);
+        $oil = WorkCatalogItem::query()->where('code', 'engine_oil')->firstOrFail();
+        HistoryAnswer::query()->create([
+            'vehicle_id' => $vehicle->id,
+            'work_catalog_item_id' => $oil->id,
+            'answer' => 'done_known',
+            'performed_date' => '2026-03-12',
+            'performed_mileage_km' => 140000,
+            'version' => 1,
+        ]);
 
         $state = app(TelegramMiniAppSnapshot::class)->forTelegramUser(70003);
+        $card = $state['vehicles'][0];
 
-        $this->assertSame('saved', $state['vehicle_card']['status']);
-        $this->assertSame('Volkswagen', $state['vehicle_card']['fields'][0]['value']);
-        $this->assertFalse($state['vehicle_card']['fields'][5]['filled']);
-        $this->assertSame(
-            'Пока нет записанных работ. Расскажите боту, что делали с машиной.',
-            $state['works_journal']['empty_hint'],
-        );
+        $this->assertSame('Volkswagen Polo', $card['title']);
+        $this->assertSame('saved', $card['status']);
+        $this->assertSame('Volkswagen', $card['sections'][0]['fields'][0]['value']);
+        $this->assertFalse($card['sections'][0]['fields'][2]['filled']);
+        $maintenance = collect($card['sections'][1]['fields'])->firstWhere('key', 'engine_oil');
+        $this->assertSame('12.03.2026 · 140 000 км', $maintenance['value']);
     }
 
     /**

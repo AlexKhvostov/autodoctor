@@ -3,46 +3,39 @@
 namespace App\Services\Telegram;
 
 use App\Models\GuestProfile;
+use App\Models\HistoryAnswer;
 use App\Models\ServiceRecord;
 use App\Models\TelegramBotUser;
 use App\Models\Vehicle;
+use App\Models\WorkCatalogItem;
+use App\Services\PlanCalculator;
+use Illuminate\Support\Collection;
 
 class TelegramMiniAppSnapshot
 {
+    public function __construct(
+        private readonly PlanCalculator $plans,
+    ) {}
+
     /**
      * @var list<array{key: string, label: string}>
      */
-    private const VEHICLE_FIELDS = [
+    private const PROFILE_FIELDS = [
         ['key' => 'make', 'label' => 'Марка'],
         ['key' => 'model', 'label' => 'Модель'],
+        ['key' => 'generation', 'label' => 'Поколение'],
         ['key' => 'year', 'label' => 'Год выпуска'],
+        ['key' => 'first_use_date', 'label' => 'Начало эксплуатации'],
         ['key' => 'fuel', 'label' => 'Топливо'],
+        ['key' => 'engine_displacement', 'label' => 'Объём двигателя'],
+        ['key' => 'engine_code', 'label' => 'Код двигателя'],
+        ['key' => 'engine_power', 'label' => 'Мощность'],
+        ['key' => 'transmission', 'label' => 'Коробка передач'],
+        ['key' => 'drivetrain', 'label' => 'Привод'],
+        ['key' => 'market', 'label' => 'Рынок'],
         ['key' => 'mileage', 'label' => 'Пробег'],
         ['key' => 'vin', 'label' => 'VIN'],
     ];
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function emptyVehicleCard(): array
-    {
-        return [
-            'status' => 'empty',
-            'status_label' => 'Не записано',
-            'fields' => $this->formatFields([]),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function emptyWorksJournal(string $hint): array
-    {
-        return [
-            'items' => [],
-            'empty_hint' => $hint,
-        ];
-    }
 
     /**
      * @return array<string, mixed>
@@ -54,66 +47,124 @@ class TelegramMiniAppSnapshot
             ->first();
 
         if ($profile === null) {
-            return [
-                'allowed' => app(TelegramAllowlist::class)->allows($telegramUserId),
-                'greeting' => 'AutoDoctor',
-                'subtitle' => 'Журнал авто в Telegram. Расскажите боту про машину — здесь появится карточка.',
-                'vehicle_card' => $this->emptyVehicleCard(),
-                'works_journal' => $this->emptyWorksJournal('Сначала запишите машину в чате с ботом.'),
-            ];
+            return $this->response(
+                'Расскажите боту про машину — здесь появится карточка.',
+                $this->vehiclesForGuest(null, $telegramUserId),
+            );
         }
 
-        $vehicle = $profile->vehicles()->with('configuration')->orderByDesc('created_at')->first();
-        $draft = $this->pendingVehicleDraft($telegramUserId);
+        return $this->response(
+            'Нажмите на автомобиль, чтобы раскрыть все поля. Пустое — допишите боту.',
+            $this->vehiclesForGuest($profile, $telegramUserId),
+        );
+    }
 
-        if ($vehicle !== null) {
-            return [
-                'allowed' => true,
-                'greeting' => $profile->adminLabel(),
-                'subtitle' => 'Что уже собрали в чате. Пустые поля можно дописать боту.',
-                'vehicle_card' => $this->vehicleCardFromSaved($vehicle),
-                'works_journal' => $this->worksJournal($vehicle),
-            ];
-        }
+    /**
+     * @return array<string, mixed>
+     */
+    public function deniedResponse(): array
+    {
+        return $this->response(
+            'Сейчас закрытый пилот. Напишите боту и нажмите «Запросить доступ».',
+            [$this->placeholderCard()],
+        );
+    }
 
-        if ($draft !== null) {
-            return [
-                'allowed' => true,
-                'greeting' => $profile->adminLabel(),
-                'subtitle' => 'Черновик из чата. Нажмите «Записать» в боте, когда всё верно.',
-                'vehicle_card' => $this->vehicleCardFromDraft($draft),
-                'works_journal' => $this->emptyWorksJournal('Журнал откроется после записи машины.'),
-            ];
-        }
-
+    /**
+     * @param  list<array<string, mixed>>  $vehicles
+     * @return array<string, mixed>
+     */
+    private function response(string $subtitle, array $vehicles): array
+    {
         return [
-            'allowed' => true,
-            'greeting' => $profile->adminLabel(),
-            'subtitle' => 'Расскажите боту про машину — ниже видно, какие данные мы собираем.',
-            'vehicle_card' => $this->emptyVehicleCard(),
-            'works_journal' => $this->emptyWorksJournal('Сначала запишите машину в чате с ботом.'),
+            'title' => 'AutoDoctor',
+            'subtitle' => $subtitle,
+            'vehicles' => $vehicles,
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function vehiclesForGuest(?GuestProfile $profile, int $telegramUserId): array
+    {
+        $vehicles = [];
+
+        if ($profile !== null) {
+            $saved = $profile->vehicles()
+                ->with([
+                    'configuration',
+                    'historyAnswers.workCatalogItem',
+                    'serviceRecords.items.workCatalogItem',
+                ])
+                ->orderByDesc('created_at')
+                ->get();
+
+            foreach ($saved as $vehicle) {
+                $vehicles[] = $this->cardFromVehicle($vehicle);
+            }
+        }
+
+        $draft = $this->pendingVehicleDraft($telegramUserId);
+        if ($draft !== null && ! $this->draftAlreadySaved($draft, $vehicles)) {
+            array_unshift($vehicles, $this->cardFromDraft($draft));
+        }
+
+        if ($vehicles === []) {
+            return [$this->placeholderCard()];
+        }
+
+        return $vehicles;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function placeholderCard(): array
+    {
+        return [
+            'id' => null,
+            'title' => 'Автомобиль',
+            'summary' => null,
+            'status' => 'placeholder',
+            'sections' => $this->buildSections([], null),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function vehicleCardFromSaved(Vehicle $vehicle): array
+    private function cardFromVehicle(Vehicle $vehicle): array
     {
         $configuration = $vehicle->configuration;
         $vin = $vehicle->vin_ciphertext;
+        $values = [
+            'make' => $this->textValue($configuration?->make),
+            'model' => $this->textValue($configuration?->model),
+            'generation' => $this->textValue($configuration?->generation),
+            'year' => $vehicle->production_year !== null ? (string) $vehicle->production_year : null,
+            'first_use_date' => $vehicle->first_use_date?->format('d.m.Y'),
+            'fuel' => $this->fuelLabel($configuration?->fuel_type),
+            'engine_displacement' => is_numeric($configuration?->engine_displacement_cc)
+                ? (int) $configuration->engine_displacement_cc.' см³'
+                : null,
+            'engine_code' => $this->textValue($configuration?->engine_code),
+            'engine_power' => is_numeric($configuration?->engine_power_kw)
+                ? (string) $configuration->engine_power_kw.' кВт'
+                : null,
+            'transmission' => $this->transmissionLabel($configuration?->transmission_type, $configuration?->transmission_gears),
+            'drivetrain' => $this->drivetrainLabel($configuration?->drivetrain),
+            'market' => $this->textValue($configuration?->market),
+            'mileage' => $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit),
+            'vin' => is_string($vin) && $vin !== '' ? strtoupper($vin) : null,
+        ];
 
         return [
+            'id' => $vehicle->id,
+            'title' => $this->vehicleTitle($values),
+            'summary' => $this->vehicleSummary($values),
             'status' => 'saved',
-            'status_label' => 'Записано',
-            'fields' => $this->formatFields([
-                'make' => $this->textValue($configuration?->make),
-                'model' => $this->textValue($configuration?->model),
-                'year' => $vehicle->production_year !== null ? (string) $vehicle->production_year : null,
-                'fuel' => $this->fuelLabel($configuration?->fuel_type),
-                'mileage' => $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit),
-                'vin' => is_string($vin) && $vin !== '' ? strtoupper($vin) : null,
-            ]),
+            'sections' => $this->buildSections($values, $vehicle),
         ];
     }
 
@@ -121,28 +172,62 @@ class TelegramMiniAppSnapshot
      * @param  array<string, mixed>  $draft
      * @return array<string, mixed>
      */
-    private function vehicleCardFromDraft(array $draft): array
+    private function cardFromDraft(array $draft): array
     {
         $vin = strtoupper(trim((string) ($draft['vin'] ?? '')));
         if ($vin !== '' && preg_match('/^[A-HJ-NPR-Z0-9]{17}$/', $vin) !== 1) {
             $vin = '';
         }
 
+        $values = [
+            'make' => $this->textValue($draft['make'] ?? null),
+            'model' => $this->textValue($draft['model'] ?? null),
+            'generation' => null,
+            'year' => is_numeric($draft['production_year'] ?? null)
+                ? (string) (int) $draft['production_year']
+                : null,
+            'first_use_date' => null,
+            'fuel' => $this->fuelLabel(is_string($draft['fuel_type'] ?? null) ? $draft['fuel_type'] : null),
+            'engine_displacement' => is_numeric($draft['displacement_cc'] ?? null)
+                ? (int) $draft['displacement_cc'].' см³'
+                : null,
+            'engine_code' => null,
+            'engine_power' => null,
+            'transmission' => null,
+            'drivetrain' => null,
+            'market' => null,
+            'mileage' => is_numeric($draft['mileage_km'] ?? null)
+                ? $this->formatMileage((int) $draft['mileage_km'], 'km')
+                : null,
+            'vin' => $vin !== '' ? $vin : null,
+        ];
+
         return [
+            'id' => null,
+            'title' => $this->vehicleTitle($values, 'Автомобиль'),
+            'summary' => $this->vehicleSummary($values),
             'status' => 'draft',
-            'status_label' => 'Черновик',
-            'fields' => $this->formatFields([
-                'make' => $this->textValue($draft['make'] ?? null),
-                'model' => $this->textValue($draft['model'] ?? null),
-                'year' => is_numeric($draft['production_year'] ?? null)
-                    ? (string) (int) $draft['production_year']
-                    : null,
-                'fuel' => $this->fuelLabel(is_string($draft['fuel_type'] ?? null) ? $draft['fuel_type'] : null),
-                'mileage' => is_numeric($draft['mileage_km'] ?? null)
-                    ? $this->formatMileage((int) $draft['mileage_km'], 'km')
-                    : null,
-                'vin' => $vin !== '' ? $vin : null,
-            ]),
+            'sections' => $this->buildSections($values, null),
+        ];
+    }
+
+    /**
+     * @param  array<string, string|null>  $values
+     * @return list<array<string, mixed>>
+     */
+    private function buildSections(array $values, ?Vehicle $vehicle): array
+    {
+        return [
+            [
+                'key' => 'profile',
+                'title' => 'Данные автомобиля',
+                'fields' => $this->formatProfileFields($values),
+            ],
+            [
+                'key' => 'maintenance',
+                'title' => 'История обслуживания',
+                'fields' => $this->maintenanceFields($vehicle),
+            ],
         ];
     }
 
@@ -150,10 +235,10 @@ class TelegramMiniAppSnapshot
      * @param  array<string, string|null>  $values
      * @return list<array{key: string, label: string, value: ?string, filled: bool}>
      */
-    private function formatFields(array $values): array
+    private function formatProfileFields(array $values): array
     {
         $fields = [];
-        foreach (self::VEHICLE_FIELDS as $field) {
+        foreach (self::PROFILE_FIELDS as $field) {
             $value = $values[$field['key']] ?? null;
             $filled = filled($value);
             $fields[] = [
@@ -168,47 +253,165 @@ class TelegramMiniAppSnapshot
     }
 
     /**
-     * @return array<string, mixed>
+     * @return list<array{key: string, label: string, value: ?string, filled: bool}>
      */
-    private function worksJournal(Vehicle $vehicle): array
+    private function maintenanceFields(?Vehicle $vehicle): array
     {
-        $records = ServiceRecord::query()
-            ->with('items.workCatalogItem')
-            ->where('vehicle_id', $vehicle->id)
-            ->orderByDesc('service_date')
-            ->orderByDesc('created_at')
-            ->limit(8)
-            ->get();
-
-        if ($records->isEmpty()) {
-            return $this->emptyWorksJournal('Пока нет записанных работ. Расскажите боту, что делали с машиной.');
+        $catalog = WorkCatalogItem::query()->orderBy('code')->get();
+        if ($catalog->isEmpty()) {
+            return [];
         }
 
-        return [
-            'items' => $records->map(function (ServiceRecord $record): array {
-                $titles = $record->items
-                    ->map(fn ($item): string => (string) ($item->workCatalogItem->localized_name['ru'] ?? $item->workCatalogItem->code))
-                    ->filter()
-                    ->values()
-                    ->all();
-                $title = $titles !== [] ? implode(', ', $titles) : 'Работа';
-                $parts = [$record->service_date?->format('d.m.Y'), $title];
-                if (is_numeric($record->mileage_value)) {
-                    $parts[] = number_format((int) $record->mileage_value, 0, '', ' ').' км';
-                }
-                $note = trim((string) ($record->note ?? ''));
-                if ($note !== '' && $note !== $title) {
-                    $parts[] = $note;
-                }
+        $applicable = $vehicle !== null
+            ? $this->plans->applicableWorkCodes($vehicle)->all()
+            : $catalog->pluck('code')->all();
 
-                return [
-                    'date' => $record->service_date?->format('d.m.Y'),
-                    'title' => $title,
-                    'detail' => implode(' · ', array_filter($parts)),
-                ];
-            })->all(),
-            'empty_hint' => null,
-        ];
+        $answers = $vehicle !== null
+            ? $vehicle->historyAnswers->keyBy(fn (HistoryAnswer $answer) => $answer->workCatalogItem?->code)
+            : collect();
+        $latestServices = $vehicle !== null
+            ? $this->latestServicesByWorkCode($vehicle)
+            : collect();
+
+        $fields = [];
+        foreach ($catalog as $item) {
+            if (! in_array($item->code, $applicable, true)) {
+                continue;
+            }
+
+            $label = (string) ($item->localized_name['ru'] ?? $item->code);
+            $value = $this->maintenanceValue(
+                $answers->get($item->code),
+                $latestServices->get($item->code),
+            );
+            $fields[] = [
+                'key' => $item->code,
+                'label' => $label,
+                'value' => $value,
+                'filled' => filled($value),
+            ];
+        }
+
+        return $fields;
+    }
+
+    private function maintenanceValue(?HistoryAnswer $answer, ?ServiceRecord $latestService): ?string
+    {
+        if ($answer !== null) {
+            $formatted = $this->formatMaintenanceFacts(
+                $answer->performed_date?->format('d.m.Y'),
+                $answer->performed_mileage_km,
+            );
+            if ($formatted !== null) {
+                return $formatted;
+            }
+
+            return match ((string) $answer->answer) {
+                'done_unknown' => 'делали, дата неизвестна',
+                'not_done' => 'не делали',
+                'not_applicable' => 'не применимо',
+                'unknown' => 'не знаем',
+                default => null,
+            };
+        }
+
+        if ($latestService !== null) {
+            return $this->formatMaintenanceFacts(
+                $latestService->service_date?->format('d.m.Y'),
+                is_numeric($latestService->mileage_value) ? (int) $latestService->mileage_value : null,
+            );
+        }
+
+        return null;
+    }
+
+    private function formatMaintenanceFacts(?string $date, ?int $mileageKm): ?string
+    {
+        $parts = array_filter([
+            $date,
+            $mileageKm !== null ? number_format($mileageKm, 0, '', ' ').' км' : null,
+        ]);
+
+        return $parts === [] ? null : implode(' · ', $parts);
+    }
+
+    /**
+     * @return Collection<string, ServiceRecord>
+     */
+    private function latestServicesByWorkCode(Vehicle $vehicle): Collection
+    {
+        $latest = [];
+        foreach ($vehicle->serviceRecords as $record) {
+            foreach ($record->items as $item) {
+                $code = $item->workCatalogItem?->code;
+                if ($code === null) {
+                    continue;
+                }
+                if (! isset($latest[$code])) {
+                    $latest[$code] = $record;
+
+                    continue;
+                }
+                $current = $latest[$code];
+                $recordKey = ($record->service_date?->format('Y-m-d') ?? '').$record->id;
+                $currentKey = ($current->service_date?->format('Y-m-d') ?? '').$current->id;
+                if ($recordKey > $currentKey) {
+                    $latest[$code] = $record;
+                }
+            }
+        }
+
+        return collect($latest);
+    }
+
+    /**
+     * @param  array<string, string|null>  $values
+     */
+    private function vehicleTitle(array $values, string $fallback = 'Автомобиль'): string
+    {
+        $title = trim(($values['make'] ?? '').' '.($values['model'] ?? ''));
+
+        return $title !== '' ? $title : $fallback;
+    }
+
+    /**
+     * @param  array<string, string|null>  $values
+     */
+    private function vehicleSummary(array $values): ?string
+    {
+        $parts = array_filter([
+            $values['year'] ?? null,
+            $values['fuel'] ?? null,
+            $values['mileage'] ?? null,
+        ]);
+
+        return $parts === [] ? null : implode(' · ', $parts);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $vehicles
+     * @param  array<string, mixed>  $draft
+     */
+    private function draftAlreadySaved(array $draft, array $vehicles): bool
+    {
+        $draftMake = $this->textValue($draft['make'] ?? null);
+        $draftModel = $this->textValue($draft['model'] ?? null);
+        $draftYear = is_numeric($draft['production_year'] ?? null) ? (string) (int) $draft['production_year'] : null;
+
+        foreach ($vehicles as $vehicle) {
+            if (($vehicle['status'] ?? '') !== 'saved') {
+                continue;
+            }
+            $fields = collect($vehicle['sections'][0]['fields'] ?? [])->keyBy('key');
+            $sameMake = ($fields->get('make')['value'] ?? null) === $draftMake;
+            $sameModel = ($fields->get('model')['value'] ?? null) === $draftModel;
+            $sameYear = ($fields->get('year')['value'] ?? null) === $draftYear;
+            if ($draftMake !== null && $draftModel !== null && $sameMake && $sameModel && $sameYear) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -249,6 +452,35 @@ class TelegramMiniAppSnapshot
             'hybrid' => 'гибрид',
             'electric' => 'электро',
             'lpg' => 'газ',
+            'other' => 'другое',
+            default => null,
+        };
+    }
+
+    private function transmissionLabel(?string $type, ?int $gears): ?string
+    {
+        $label = match ($type) {
+            'manual' => 'механика',
+            'automatic' => 'автомат',
+            default => null,
+        };
+        if ($label === null) {
+            return null;
+        }
+        if ($gears !== null) {
+            return $label.', '.$gears.' ст.';
+        }
+
+        return $label;
+    }
+
+    private function drivetrainLabel(?string $value): ?string
+    {
+        return match ($value) {
+            'fwd' => 'передний',
+            'rwd' => 'задний',
+            'awd' => 'полный',
+            'four_wd' => '4×4',
             'other' => 'другое',
             default => null,
         };
