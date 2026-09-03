@@ -20,6 +20,8 @@ class TelegramBotUser extends Model
             'allowlisted_at' => 'datetime',
             'removed_from_allowlist_at' => 'datetime',
             'access_requested_at' => 'datetime',
+            'pending_vehicle_draft' => 'array',
+            'pending_service_record_draft' => 'array',
         ];
     }
 

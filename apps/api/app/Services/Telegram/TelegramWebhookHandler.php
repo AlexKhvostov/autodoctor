@@ -16,6 +16,7 @@ class TelegramWebhookHandler
         private readonly TelegramAccessRequestService $accessRequests,
         private readonly TelegramDialogueService $dialogue,
         private readonly TelegramVehicleCommitService $vehicleCommit,
+        private readonly TelegramServiceRecordCommitService $serviceRecordCommit,
     ) {}
 
     public function handle(array $payload): void
@@ -82,6 +83,29 @@ class TelegramWebhookHandler
             return;
         }
 
+        if ($update->isSaveServiceRecord()) {
+            if ($update->callbackQueryId) {
+                $this->bot->answerCallbackQuery($update->callbackQueryId);
+            }
+            if (! $this->allowlist->allows($update->telegramUserId)) {
+                return;
+            }
+            $profile = $this->rememberProfile($update);
+            try {
+                $text = $this->serviceRecordCommit->commit($profile);
+            } catch (ApiException $exception) {
+                $text = $exception->getMessage() !== ''
+                    ? $exception->getMessage()
+                    : (string) config('telegram.messages.ai_unavailable');
+            } catch (Throwable $exception) {
+                Log::error('telegram.save_service_record_failed', ['message' => $exception->getMessage()]);
+                $text = (string) config('telegram.messages.ai_unavailable');
+            }
+            $this->bot->sendMessage($update->chatId, $text);
+
+            return;
+        }
+
         if ($update->isCallback) {
             if ($update->callbackQueryId) {
                 $this->bot->answerCallbackQuery($update->callbackQueryId);
@@ -132,8 +156,33 @@ class TelegramWebhookHandler
             $reply = (string) config('telegram.messages.ai_unavailable');
         }
 
-        $markup = $this->bot->conversationKeyboard(! $this->dialogue->hasVehicle($profile));
-        $this->bot->sendMessage($update->chatId, $reply, $markup);
+        $this->bot->sendMessage($update->chatId, $reply, $this->bot->openAppReplyKeyboard());
+
+        if ($this->dialogue->hasVehicle($profile)) {
+            $summary = $this->serviceRecordCommit->offerSummary($profile);
+            if ($summary === null) {
+                return;
+            }
+
+            $this->bot->sendMessage(
+                $update->chatId,
+                $summary,
+                $this->bot->saveDraftKeyboard('save_service_record'),
+            );
+
+            return;
+        }
+
+        $summary = $this->vehicleCommit->offerSummary($profile);
+        if ($summary === null) {
+            return;
+        }
+
+        $this->bot->sendMessage(
+            $update->chatId,
+            $summary,
+            $this->bot->saveDraftKeyboard('save_vehicle'),
+        );
     }
 
     private function rememberBotUser(TelegramInboundUpdate $update): TelegramBotUser

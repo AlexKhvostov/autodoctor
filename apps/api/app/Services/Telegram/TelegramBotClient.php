@@ -55,20 +55,25 @@ class TelegramBotClient
         Http::timeout(10)->acceptJson()->post($this->methodUrl('answerCallbackQuery'), $payload);
     }
 
-    public function conversationKeyboard(bool $offerSave): ?array
+    public function saveDraftKeyboard(string $callbackData = 'save_vehicle'): array
+    {
+        return [
+            'inline_keyboard' => [[
+                [
+                    'text' => (string) config('telegram.messages.save_vehicle_button'),
+                    'callback_data' => $callbackData,
+                ],
+            ]],
+        ];
+    }
+
+    public function conversationKeyboard(bool $offerSave, string $callbackData = 'save_vehicle'): ?array
     {
         if (! $offerSave) {
             return $this->openAppReplyKeyboard();
         }
 
-        return [
-            'inline_keyboard' => [[
-                [
-                    'text' => (string) config('telegram.messages.save_vehicle_button'),
-                    'callback_data' => 'save_vehicle',
-                ],
-            ]],
-        ];
+        return $this->saveDraftKeyboard($callbackData);
     }
 
     public function openAppReplyKeyboard(): ?array

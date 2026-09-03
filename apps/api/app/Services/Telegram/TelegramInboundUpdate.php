@@ -95,4 +95,9 @@ final class TelegramInboundUpdate
     {
         return $this->isCallback && trim((string) $this->text) === 'save_vehicle';
     }
+
+    public function isSaveServiceRecord(): bool
+    {
+        return $this->isCallback && trim((string) $this->text) === 'save_service_record';
+    }
 }
