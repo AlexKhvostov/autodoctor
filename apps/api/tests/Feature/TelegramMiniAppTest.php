@@ -31,9 +31,9 @@ class TelegramMiniAppTest extends TestCase
             ->assertOk()
             ->assertSee('AutoDoctor', false)
             ->assertSee('telegram-web-app.js', false)
-            ->assertSee('garage-content', false)
-            ->assertSee('state-grid', false)
-            ->assertSee('timeline', false);
+            ->assertSee('agent-card', false)
+            ->assertSee('unit-bar', false)
+            ->assertSee('road-item', false);
     }
 
     public function test_state_requires_telegram_init_data(): void
@@ -65,7 +65,7 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('vehicles.0.sections.1.title', 'История обслуживания')
             ->assertJsonPath('vehicles.0.sections.1.fields.0.filled', false)
             ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['required', 'recommended', 'seasonal'], 'analytics']]]])
-            ->assertJsonStructure(['agent' => ['tokens_label', 'settings', 'hint'], 'garage' => ['can_add', 'active_label']])
+            ->assertJsonStructure(['agent' => ['title', 'subtitle', 'avatar_url', 'tokens_label', 'approx_replies_label', 'settings', 'intro'], 'garage' => ['can_add', 'active_label']])
             ->assertJsonPath('user.initial', 'A');
     }
 
@@ -99,7 +99,7 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('vehicles.0.sections.0.fields.12.filled', true)
             ->assertJsonPath('vehicles.0.sections.0.fields.13.filled', false)
             ->assertJsonPath('vehicles.0.tabs.roadmap.recommended.0.tone', 'unknown')
-            ->assertJsonStructure(['agent' => ['tokens_label', 'settings', 'hint']]);
+            ->assertJsonStructure(['agent' => ['title', 'subtitle', 'avatar_url', 'tokens_label', 'approx_replies_label', 'settings', 'intro']]);
     }
 
     public function test_snapshot_lists_saved_vehicle_profile_and_maintenance_slots(): void

@@ -162,23 +162,47 @@ class TelegramMiniAppSnapshot
     {
         if ($profile === null) {
             return [
+                'title' => 'AI-ассистент',
+                'subtitle' => 'Умный помощник по вашему авто',
+                'avatar_url' => url('/branding/agent_companion_widget.png'),
                 'tokens_balance' => null,
                 'tokens_label' => '—',
+                'approx_replies_left' => null,
+                'approx_replies_label' => null,
+                'typical_spend_ml' => (int) config('agent.fuel.ml_per_user_message_proxy', 80),
+                'typical_spend_label' => null,
                 'status' => 'unknown',
                 'settings' => [],
-                'hint' => 'Напишите боту /start — здесь появятся токены и настройки собеседника.',
+                'intro' => 'Напишите боту /start — здесь появятся токены и настройки собеседника.',
+                'hint' => 'Правки настроек пока — через бота.',
             ];
         }
 
         $wallet = $this->agentProfile->wallet($profile);
         $balance = (int) $wallet->balance_ml;
+        $typicalSpend = (int) config('agent.fuel.ml_per_user_message_proxy', 80);
+        $approxReplies = max(0, (int) floor($balance / max(1, $typicalSpend)));
+        $lowBalance = (int) config('agent.fuel.low_balance_ml', 400);
+        $lowReplies = (int) config('agent.fuel.low_approx_replies', 5);
+        $status = match (true) {
+            $balance <= 0 => 'empty',
+            $balance <= $lowBalance || $approxReplies <= $lowReplies => 'low',
+            default => 'ok',
+        };
         $prefs = $this->agentProfile->preferences($profile);
         $skill = $this->skills->toArray($this->skills->forProfile($profile));
 
         return [
+            'title' => 'AI-ассистент',
+            'subtitle' => 'Умный помощник по вашему авто',
+            'avatar_url' => url('/branding/agent_companion_widget.png'),
             'tokens_balance' => $balance,
             'tokens_label' => number_format($balance, 0, '', ' '),
-            'status' => $balance <= 0 ? 'empty' : ($balance <= (int) config('agent.fuel.low_balance_ml', 400) ? 'low' : 'ok'),
+            'approx_replies_left' => $approxReplies,
+            'approx_replies_label' => '≈'.$approxReplies.' ответов',
+            'typical_spend_ml' => $typicalSpend,
+            'typical_spend_label' => '≈'.$typicalSpend.' ток. за короткий ответ',
+            'status' => $status,
             'settings' => [
                 [
                     'key' => 'knowledge',
@@ -206,7 +230,8 @@ class TelegramMiniAppSnapshot
                     'value' => filled($prefs->custom_instructions) ? (string) $prefs->custom_instructions : null,
                 ],
             ],
-            'hint' => 'Собеседник в чате учитывает эти настройки. Пока правки — через бота; скоро можно будет менять здесь.',
+            'intro' => 'Помню контекст авто, историю обслуживания и ваши настройки. Спросите в чате бота — отвечу с учётом машины.',
+            'hint' => 'Собеседник в чате учитывает эти настройки. Пока правки — через бота.',
         ];
     }
 

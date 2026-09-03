@@ -7,19 +7,22 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            color-scheme: dark;
-            --bg: #12110f;
-            --card: #1c1a16;
-            --card-elevated: #25221c;
-            --text: #f5f0e8;
-            --muted: #9d9488;
-            --accent: #f5b942;
-            --ai: #7cb8ff;
-            --line: rgba(245, 240, 232, 0.08);
-            --ok: #79c784;
-            --warn: #f5b942;
-            --bad: #f07474;
-            --soft: rgba(157, 148, 136, 0.75);
+            color-scheme: light;
+            --bg: #eef3fb;
+            --bg-soft: #f7faff;
+            --card: #ffffff;
+            --text: #152033;
+            --muted: #6b7a90;
+            --line: rgba(21, 32, 51, 0.08);
+            --primary: #1ecad3;
+            --primary-deep: #0aa9b3;
+            --primary-soft: rgba(30, 202, 211, 0.12);
+            --ai: #3b82f6;
+            --ai-soft: rgba(59, 130, 246, 0.1);
+            --ok: #22b573;
+            --warn: #f59e0b;
+            --bad: #ef4444;
+            --shadow: 0 1px 3px rgba(21, 32, 51, 0.06), 0 4px 14px rgba(21, 32, 51, 0.04);
         }
         * { box-sizing: border-box; }
         html, body {
@@ -29,6 +32,7 @@
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             font-size: 14px;
+            -webkit-font-smoothing: antialiased;
         }
         .app {
             height: 100%;
@@ -36,14 +40,13 @@
             flex-direction: column;
             max-width: 420px;
             margin: 0 auto;
+            background: linear-gradient(180deg, #f3f8ff 0%, var(--bg) 120px);
         }
         .topbar {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--line);
-            background: var(--bg);
+            padding: 10px 12px 8px;
         }
         .garage-btn {
             flex: 1;
@@ -52,275 +55,282 @@
             align-items: center;
             gap: 8px;
             padding: 8px 10px;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--line);
             background: var(--card);
+            box-shadow: var(--shadow);
             color: inherit;
             cursor: pointer;
             text-align: left;
         }
         .garage-kicker {
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--muted);
+            letter-spacing: 0.08em;
+            color: var(--primary-deep);
+            font-weight: 700;
         }
         .garage-title {
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .garage-sub {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--muted);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .avatar {
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             border: 1px solid var(--line);
             background: var(--card);
-            color: var(--muted);
+            color: var(--primary-deep);
             display: grid;
             place-items: center;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 700;
             flex-shrink: 0;
+            box-shadow: var(--shadow);
         }
         .main {
             flex: 1;
             overflow: auto;
-            padding: 12px;
+            padding: 0 12px 12px;
         }
         .panel { display: none; }
         .panel.active { display: block; }
         .hint {
             color: var(--muted);
-            font-size: 12px;
-            line-height: 1.45;
-            margin: 0 0 12px;
+            font-size: 11px;
+            line-height: 1.4;
+            margin: 0 0 8px;
         }
         .section-title {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.07em;
+            letter-spacing: 0.08em;
             color: var(--muted);
-            margin: 14px 0 8px;
+            font-weight: 700;
+            margin: 8px 0 6px;
         }
-        .section-title:first-child { margin-top: 0; }
         .state-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 6px;
         }
         .unit-card {
             background: var(--card);
             border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 10px;
-            min-height: 132px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+            border-radius: 10px;
+            padding: 7px 8px 6px;
+            box-shadow: var(--shadow);
+            min-height: 0;
         }
-        .unit-card.status-overdue { border-color: rgba(240, 116, 116, 0.45); }
-        .unit-card.status-soon { border-color: rgba(245, 185, 66, 0.35); }
-        .unit-card.status-unknown { border-color: rgba(157, 148, 136, 0.25); }
-        .unit-head {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-        }
-        .unit-ring {
-            width: 44px;
-            height: 44px;
-            flex-shrink: 0;
-        }
-        .unit-ring svg { display: block; width: 44px; height: 44px; }
+        .unit-card.status-overdue { border-color: rgba(239, 68, 68, 0.35); }
+        .unit-card.status-soon { border-color: rgba(245, 158, 11, 0.35); }
         .unit-name {
             font-size: 12px;
-            font-weight: 600;
-            line-height: 1.25;
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .unit-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 3px;
+        }
+        .unit-bar {
             flex: 1;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(21, 32, 51, 0.08);
+            overflow: hidden;
         }
-        .unit-metric {
+        .unit-bar > span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+        }
+        .unit-pct {
             font-size: 10px;
+            font-weight: 800;
+            min-width: 28px;
+            text-align: right;
+        }
+        .unit-meta, .unit-fact {
+            font-size: 9px;
+            line-height: 1.3;
             color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
         }
-        .unit-value {
-            font-size: 13px;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-        .unit-fact {
-            font-size: 10px;
-            color: var(--muted);
-            line-height: 1.35;
-        }
-        .unit-fact strong { color: var(--text); font-weight: 500; }
-        .timeline {
-            position: relative;
-            padding-left: 18px;
-        }
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 5px;
-            top: 4px;
-            bottom: 4px;
-            width: 2px;
-            background: linear-gradient(var(--line), rgba(245,185,66,0.35), var(--line));
-        }
-        .timeline-now {
-            position: relative;
-            margin: 10px 0 12px -18px;
-            padding-left: 18px;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--accent);
-            font-weight: 700;
-        }
-        .timeline-now::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            width: 12px;
-            height: 12px;
-            margin-top: -6px;
-            border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 0 3px rgba(245,185,66,0.2);
-        }
-        .timeline-item {
-            position: relative;
-            margin-bottom: 10px;
-            padding: 10px 10px 10px 0;
-        }
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -16px;
-            top: 14px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--card-elevated);
-            border: 2px solid var(--muted);
-        }
-        .timeline-item.tone-overdue::before { border-color: var(--bad); background: rgba(240,116,116,0.25); }
-        .timeline-item.tone-soon::before { border-color: var(--warn); background: rgba(245,185,66,0.2); }
-        .timeline-item.tone-soft::before { border-color: var(--soft); opacity: 0.85; }
-        .timeline-card {
-            border-radius: 10px;
-            padding: 10px 12px;
+        .unit-fact strong { color: var(--text); font-weight: 600; }
+        .road-list { display: flex; flex-direction: column; gap: 4px; }
+        .road-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 7px;
+            padding: 7px 8px;
             background: var(--card);
             border: 1px solid var(--line);
-        }
-        .timeline-item.tone-overdue .timeline-card {
-            border-color: rgba(240, 116, 116, 0.35);
-            background: rgba(240, 116, 116, 0.08);
-        }
-        .timeline-item.tone-soon .timeline-card {
-            border-color: rgba(245, 185, 66, 0.3);
-        }
-        .timeline-item.tone-soft .timeline-card {
-            opacity: 0.88;
-            background: rgba(255,255,255,0.02);
-        }
-        .timeline-item.required .timeline-card { border-left: 3px solid var(--warn); }
-        .timeline-item.recommended .timeline-card { border-left: 3px solid rgba(157,148,136,0.35); }
-        .timeline-label { font-size: 13px; font-weight: 600; }
-        .timeline-detail { font-size: 12px; color: var(--muted); margin-top: 3px; }
-        .timeline-badge {
-            display: inline-block;
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 2px 6px;
-            border-radius: 999px;
-            margin-bottom: 4px;
-        }
-        .timeline-badge.reg { background: rgba(245,185,66,0.18); color: var(--accent); }
-        .timeline-badge.rec { background: rgba(255,255,255,0.06); color: var(--soft); }
-        .agent-hero {
-            background: linear-gradient(135deg, rgba(124,184,255,0.18), rgba(245,185,66,0.12));
-            border: 1px solid rgba(124,184,255,0.25);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 12px;
-        }
-        .agent-hero-top { display: flex; align-items: center; gap: 10px; }
-        .ai-logo {
-            width: 36px;
-            height: 36px;
             border-radius: 10px;
-            background: rgba(124,184,255,0.2);
-            color: var(--ai);
+            box-shadow: var(--shadow);
+        }
+        .road-item.required { border-left: 2px solid var(--warn); }
+        .road-item.recommended { border-left: 2px solid rgba(107, 122, 144, 0.35); opacity: 0.95; }
+        .road-icons {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex-shrink: 0;
+            width: 18px;
+            align-items: center;
+            padding-top: 1px;
+        }
+        .ico {
+            width: 16px;
+            height: 16px;
+            border-radius: 5px;
             display: grid;
             place-items: center;
-            font-weight: 800;
-            font-size: 13px;
+            font-size: 9px;
+            line-height: 1;
         }
-        .agent-tokens { font-size: 22px; font-weight: 700; line-height: 1.1; }
-        .agent-tokens-label { font-size: 11px; color: var(--muted); }
+        .ico-tier-reg { background: rgba(245, 158, 11, 0.15); color: #b45309; }
+        .ico-tier-rec { background: rgba(107, 122, 144, 0.12); color: var(--muted); }
+        .ico-urg-overdue { background: rgba(239, 68, 68, 0.14); color: var(--bad); }
+        .ico-urg-soon { background: rgba(245, 158, 11, 0.14); color: var(--warn); }
+        .ico-urg-soft { background: rgba(30, 202, 211, 0.14); color: var(--primary-deep); }
+        .ico-urg-unknown { background: rgba(107, 122, 144, 0.12); color: var(--muted); }
+        .road-body { flex: 1; min-width: 0; }
+        .road-label { font-size: 12px; font-weight: 700; line-height: 1.2; }
+        .road-detail { font-size: 10px; color: var(--muted); margin-top: 1px; }
+        .road-now {
+            text-align: center;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary-deep);
+            font-weight: 800;
+            margin: 4px 0 6px;
+        }
+        .agent-card {
+            border-radius: 14px;
+            padding: 10px 10px 8px;
+            background: linear-gradient(135deg, rgba(30,202,211,0.14), rgba(59,130,246,0.08)), var(--card);
+            border: 1px solid rgba(30, 202, 211, 0.28);
+            box-shadow: var(--shadow);
+            margin-bottom: 10px;
+        }
+        .agent-card.status-low, .agent-card.status-empty {
+            border-color: rgba(245, 158, 11, 0.45);
+            background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(59,130,246,0.06)), var(--card);
+        }
+        .agent-top { display: flex; gap: 10px; align-items: flex-start; }
+        .agent-avatar {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.9);
+            box-shadow: 0 2px 8px rgba(30, 202, 211, 0.25);
+            flex-shrink: 0;
+            background: var(--primary-soft);
+        }
+        .agent-title { font-size: 15px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+        .agent-subtitle { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 1px; }
+        .agent-tokens-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+        .agent-token-val {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-deep);
+        }
+        .agent-token-meta { font-size: 10px; color: var(--muted); font-weight: 600; }
+        .agent-intro {
+            font-size: 11px;
+            line-height: 1.35;
+            color: var(--muted);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--line);
+        }
+        .settings-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 4px 10px;
+            box-shadow: var(--shadow);
+        }
         .setting-row {
             display: flex;
             justify-content: space-between;
-            gap: 12px;
-            padding: 9px 0;
+            gap: 10px;
+            padding: 7px 0;
             border-top: 1px solid var(--line);
-            font-size: 13px;
+            font-size: 12px;
         }
-        .setting-row:first-of-type { border-top: 0; }
-        .setting-label { color: var(--muted); }
-        .setting-value { text-align: right; max-width: 55%; }
-        .analytics-list { margin-top: 8px; }
+        .setting-row:first-child { border-top: 0; }
+        .setting-label { color: var(--muted); font-size: 11px; }
+        .setting-value { text-align: right; max-width: 55%; font-size: 11px; font-weight: 600; }
+        .analytics-list { margin-top: 4px; }
         .analytics-point {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-top: 1px solid var(--line);
-            font-size: 13px;
+            padding: 7px 8px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            box-shadow: var(--shadow);
         }
         .bottom-nav {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 4px;
-            padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+            padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+            background: rgba(255,255,255,0.92);
             border-top: 1px solid var(--line);
-            background: var(--bg);
+            backdrop-filter: blur(8px);
         }
         .nav-btn {
             border: 0;
             background: transparent;
             color: var(--muted);
             border-radius: 10px;
-            padding: 6px 4px;
-            font-size: 10px;
+            padding: 5px 3px;
+            font-size: 9px;
+            font-weight: 600;
             cursor: pointer;
         }
-        .nav-btn.active { color: var(--text); background: rgba(255,255,255,0.05); }
+        .nav-btn.active { color: var(--text); background: var(--primary-soft); }
         .nav-btn-agent {
-            background: rgba(124,184,255,0.12);
-            border: 1px solid rgba(124,184,255,0.28);
-            color: var(--ai);
+            background: linear-gradient(135deg, rgba(30,202,211,0.18), rgba(59,130,246,0.12));
+            border: 1px solid rgba(30, 202, 211, 0.3);
+            color: var(--primary-deep);
         }
-        .nav-btn-agent.active { background: rgba(124,184,255,0.22); color: #dbeaff; }
-        .nav-icon { display: block; font-size: 15px; line-height: 1.2; margin-bottom: 2px; }
-        .nav-agent-tokens { display: block; font-size: 10px; font-weight: 700; margin-top: 2px; }
+        .nav-btn-agent.active { background: linear-gradient(135deg, rgba(30,202,211,0.28), rgba(59,130,246,0.18)); }
+        .nav-icon { display: block; font-size: 14px; line-height: 1.1; margin-bottom: 1px; }
+        .nav-agent-tokens { display: block; font-size: 9px; font-weight: 800; margin-top: 1px; }
         .sheet-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.55);
+            background: rgba(21, 32, 51, 0.35);
             display: none;
             z-index: 20;
         }
@@ -331,23 +341,24 @@
             right: 0;
             bottom: 0;
             max-height: 82vh;
-            background: var(--card);
+            background: var(--bg-soft);
             border-radius: 16px 16px 0 0;
             transform: translateY(100%);
             transition: transform 0.2s ease;
             z-index: 21;
             overflow: auto;
             padding: 12px 14px calc(16px + env(safe-area-inset-bottom));
+            box-shadow: 0 -8px 30px rgba(21, 32, 51, 0.12);
         }
         .sheet.open { transform: translateY(0); }
         .sheet-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             gap: 8px;
         }
-        .sheet-title { font-size: 16px; font-weight: 600; }
+        .sheet-title { font-size: 16px; font-weight: 800; }
         .sheet-close, .sheet-back {
             border: 0;
             background: transparent;
@@ -356,102 +367,85 @@
             cursor: pointer;
             line-height: 1;
         }
-        .sheet-back { font-size: 14px; color: var(--ai); }
-        .garage-hint {
-            font-size: 12px;
-            color: var(--muted);
-            line-height: 1.4;
-            margin-bottom: 12px;
-        }
+        .sheet-back { font-size: 13px; color: var(--primary-deep); font-weight: 700; }
+        .garage-hint { font-size: 11px; color: var(--muted); line-height: 1.4; margin-bottom: 10px; }
         .vehicle-tile {
             border: 1px solid var(--line);
-            background: var(--bg);
+            background: var(--card);
             border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 10px;
+            padding: 10px;
+            margin-bottom: 8px;
+            box-shadow: var(--shadow);
         }
-        .vehicle-tile.active {
-            border-color: rgba(124,184,255,0.45);
-            background: rgba(124,184,255,0.08);
-        }
-        .vehicle-tile-head {
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-        }
+        .vehicle-tile.active { border-color: rgba(30, 202, 211, 0.45); background: linear-gradient(135deg, rgba(30,202,211,0.08), #fff); }
+        .vehicle-tile-head { display: flex; gap: 9px; align-items: flex-start; }
         .vehicle-icon {
-            width: 44px;
-            height: 44px;
+            width: 38px;
+            height: 38px;
             border-radius: 10px;
-            background: var(--card-elevated);
+            background: var(--primary-soft);
             display: grid;
             place-items: center;
-            font-size: 20px;
+            font-size: 18px;
             flex-shrink: 0;
         }
-        .vehicle-tile-title { font-weight: 600; font-size: 14px; }
-        .vehicle-tile-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .vehicle-tile-title { font-weight: 700; font-size: 13px; }
+        .vehicle-tile-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
         .vehicle-badge {
             display: inline-block;
-            margin-top: 6px;
-            font-size: 10px;
-            padding: 3px 8px;
+            margin-top: 5px;
+            font-size: 9px;
+            padding: 2px 7px;
             border-radius: 999px;
-            background: rgba(124,184,255,0.18);
-            color: var(--ai);
+            background: var(--primary-soft);
+            color: var(--primary-deep);
+            font-weight: 700;
         }
-        .vehicle-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
+        .vehicle-actions { display: flex; gap: 6px; margin-top: 8px; }
         .btn {
             flex: 1;
             border: 0;
             border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 12px;
+            padding: 7px 8px;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
         }
-        .btn-ghost {
-            background: rgba(255,255,255,0.06);
-            color: var(--text);
-        }
+        .btn-ghost { background: rgba(21,32,51,0.05); color: var(--text); }
         .btn-primary {
-            background: rgba(124,184,255,0.22);
-            color: #dbeaff;
-            border: 1px solid rgba(124,184,255,0.35);
+            background: var(--primary-soft);
+            color: var(--primary-deep);
+            border: 1px solid rgba(30, 202, 211, 0.35);
         }
-        .btn-primary:disabled {
-            opacity: 0.55;
-            cursor: default;
-        }
+        .btn-primary:disabled { opacity: 0.55; cursor: default; }
         .btn-add {
             width: 100%;
-            margin-top: 4px;
-            background: transparent;
-            border: 1px dashed var(--line);
+            margin-top: 2px;
+            background: var(--card);
+            border: 1px dashed rgba(21,32,51,0.15);
             color: var(--muted);
+            box-shadow: var(--shadow);
         }
         .btn-add.locked { opacity: 0.6; cursor: default; }
-        .passport-section { margin-top: 12px; }
+        .passport-section { margin-top: 10px; }
         .passport-title {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             color: var(--muted);
-            margin-bottom: 6px;
+            font-weight: 700;
+            margin-bottom: 4px;
         }
         .field-row {
             display: flex;
             justify-content: space-between;
             gap: 10px;
-            padding: 6px 0;
-            font-size: 12px;
+            padding: 5px 0;
+            font-size: 11px;
             border-top: 1px solid var(--line);
         }
         .field-row:first-of-type { border-top: 0; }
-        .field-value.empty { color: rgba(157,148,136,0.55); }
+        .field-value.empty { color: rgba(107, 122, 144, 0.65); }
     </style>
 </head>
 <body>
@@ -463,7 +457,7 @@
                     <div class="garage-title" id="garage-title">Выберите автомобиль</div>
                     <div class="garage-sub" id="garage-sub"></div>
                 </div>
-                <span>▾</span>
+                <span style="color:var(--muted);font-size:11px">▾</span>
             </button>
             <div class="avatar" id="user-avatar" title="Профиль">AD</div>
         </header>
@@ -487,9 +481,9 @@
                 <span class="nav-icon">⌁</span>Аналитика
             </button>
             <button class="nav-btn nav-btn-agent" type="button" data-tab="agent" id="nav-agent">
-                <span class="nav-icon ai-logo" style="width:auto;height:auto;background:transparent;border:0;font-size:12px;">AI</span>
+                <span class="nav-icon">✦</span>
                 <span class="nav-agent-tokens" id="nav-tokens">—</span>
-                <span>Агент</span>
+                <span>AI</span>
             </button>
         </nav>
     </div>
@@ -509,17 +503,14 @@
         if (tg) {
             tg.ready();
             tg.expand();
-            document.body.style.background = tg.themeParams.bg_color || '';
+            if (tg.setHeaderColor) tg.setHeaderColor('#eef3fb');
+            if (tg.setBackgroundColor) tg.setBackgroundColor('#eef3fb');
         }
 
         let appState = {
-            vehicles: [],
-            agent: {},
-            garage: {},
-            activeVehicleKey: null,
-            tab: 'state',
-            garageView: 'list',
-            garageDetailKey: null,
+            vehicles: [], agent: {}, garage: {},
+            activeVehicleKey: null, tab: 'state',
+            garageView: 'list', garageDetailKey: null,
         };
 
         function vehicleKey(vehicle, index) {
@@ -536,24 +527,29 @@
         }
 
         function vehicleByKey(key) {
-            const list = appState.vehicles || [];
-            return list.find((v, i) => vehicleKey(v, i) === key) || null;
+            return (appState.vehicles || []).find((v, i) => vehicleKey(v, i) === key) || null;
+        }
+
+        function statusColor(status) {
+            if (status === 'overdue') return 'var(--bad)';
+            if (status === 'soon') return 'var(--warn)';
+            if (status === 'unknown') return 'var(--muted)';
+            return 'var(--ok)';
         }
 
         function renderHeader() {
             const vehicle = activeVehicle();
-            const kicker = document.getElementById('garage-kicker');
+            document.getElementById('garage-kicker').textContent = 'Гараж';
             const title = document.getElementById('garage-title');
             const sub = document.getElementById('garage-sub');
-            kicker.textContent = 'Гараж';
             if (!vehicle || vehicle.status === 'placeholder') {
                 title.textContent = 'Выберите автомобиль';
                 sub.textContent = 'Нажмите — откроется гараж';
                 return;
             }
             title.textContent = vehicle.title || 'Автомобиль';
-            const status = vehicle.status === 'draft' ? 'черновик · ' : '';
-            sub.textContent = status + (vehicle.summary || 'активно для AI и аналитики');
+            sub.textContent = (vehicle.status === 'draft' ? 'черновик · ' : '') +
+                (vehicle.summary || 'активно для AI');
         }
 
         function renderGarageSheet() {
@@ -571,44 +567,36 @@
 
             back.style.display = 'none';
             title.textContent = 'Гараж';
-            let html = '<p class="garage-hint">Выберите автомобиль, с которым беседуете с AI. ' +
-                'Состояние, roadmap и аналитика ниже — про активную машину.</p>';
+            let html = '<p class="garage-hint">Выберите авто для AI, состояния и roadmap.</p>';
 
             (appState.vehicles || []).forEach((vehicle, index) => {
                 const key = vehicleKey(vehicle, index);
                 if (vehicle.status === 'placeholder') {
                     html += '<div class="vehicle-tile"><div class="vehicle-tile-head">' +
-                        '<div class="vehicle-icon">＋</div>' +
-                        '<div><div class="vehicle-tile-title">Пока нет автомобиля</div>' +
+                        '<div class="vehicle-icon">＋</div><div><div class="vehicle-tile-title">Пока нет автомобиля</div>' +
                         '<div class="vehicle-tile-sub">Расскажите боту про машину</div></div></div></div>';
                     return;
                 }
                 const isActive = key === appState.activeVehicleKey;
                 html += '<div class="vehicle-tile' + (isActive ? ' active' : '') + '">' +
-                    '<div class="vehicle-tile-head">' +
-                    '<div class="vehicle-icon">🚗</div>' +
-                    '<div style="min-width:0;flex:1">' +
+                    '<div class="vehicle-tile-head"><div class="vehicle-icon">🚗</div><div style="min-width:0;flex:1">' +
                     '<div class="vehicle-tile-title">' + escapeHtml(vehicle.title) + '</div>' +
                     '<div class="vehicle-tile-sub">' + escapeHtml(vehicle.summary || 'Нет данных') + '</div>' +
                     (isActive ? '<span class="vehicle-badge">' + escapeHtml(garage.active_label || 'Активна для AI') + '</span>' : '') +
-                    '</div></div>' +
-                    '<div class="vehicle-actions">' +
+                    '</div></div><div class="vehicle-actions">' +
                     '<button class="btn btn-ghost" type="button" data-detail="' + escapeHtml(key) + '">' +
                     escapeHtml(garage.detail_label || 'Подробнее') + '</button>' +
                     '<button class="btn btn-primary" type="button" data-select="' + escapeHtml(key) + '"' +
                     (isActive ? ' disabled' : '') + '>' +
-                    (isActive ? '✓ Выбрана' : escapeHtml(garage.select_label || 'Выбрать для AI')) +
+                    (isActive ? '✓ Выбрана' : escapeHtml(garage.select_label || 'Для AI')) +
                     '</button></div></div>';
             });
 
-            if (garage.can_add) {
-                html += '<button class="btn btn-add" type="button" id="garage-add">' +
-                    '+ Добавить автомобиль</button>' +
-                    '<p class="garage-hint">' + escapeHtml(garage.add_hint || '') + '</p>';
-            } else {
-                html += '<button class="btn btn-add locked" type="button" disabled>+ Второй автомобиль — скоро</button>' +
-                    '<p class="garage-hint">' + escapeHtml(garage.locked_hint || '') + '</p>';
-            }
+            html += garage.can_add
+                ? '<button class="btn btn-add" type="button" id="garage-add">+ Добавить автомобиль</button>' +
+                  '<p class="garage-hint">' + escapeHtml(garage.add_hint || '') + '</p>'
+                : '<button class="btn btn-add locked" type="button" disabled>+ Второй автомобиль — скоро</button>' +
+                  '<p class="garage-hint">' + escapeHtml(garage.locked_hint || '') + '</p>';
 
             root.innerHTML = html;
             root.querySelectorAll('[data-select]').forEach((btn) => {
@@ -618,41 +606,30 @@
                 btn.addEventListener('click', () => openVehicleDetail(btn.dataset.detail));
             });
             const addBtn = document.getElementById('garage-add');
-            if (addBtn) {
-                addBtn.addEventListener('click', () => {
-                    closeGarage();
-                    if (tg && tg.close) {
-                        tg.close();
-                    }
-                });
-            }
+            if (addBtn) addBtn.addEventListener('click', () => { closeGarage(); if (tg && tg.close) tg.close(); });
         }
 
         function renderVehiclePassport(key) {
             const vehicle = vehicleByKey(key);
             if (!vehicle) return '<p class="hint">Автомобиль не найден.</p>';
-            let html = '<div class="vehicle-tile-title" style="margin-bottom:8px">' + escapeHtml(vehicle.title) + '</div>' +
-                '<div class="vehicle-tile-sub" style="margin-bottom:12px">' + escapeHtml(vehicle.summary || '') + '</div>';
+            let html = '<div class="vehicle-tile-title">' + escapeHtml(vehicle.title) + '</div>' +
+                '<div class="vehicle-tile-sub" style="margin-bottom:10px">' + escapeHtml(vehicle.summary || '') + '</div>';
             (vehicle.sections || []).forEach((section) => {
                 html += '<div class="passport-section"><div class="passport-title">' + escapeHtml(section.title) + '</div>';
                 (section.fields || []).forEach((field) => {
                     const value = field.filled ? field.value : '—';
-                    const cls = field.filled ? 'field-value' : 'field-value empty';
                     html += '<div class="field-row"><span>' + escapeHtml(field.label) + '</span>' +
-                        '<span class="' + cls + '">' + escapeHtml(value) + '</span></div>';
+                        '<span class="' + (field.filled ? 'field-value' : 'field-value empty') + '">' +
+                        escapeHtml(value) + '</span></div>';
                 });
                 html += '</div>';
             });
-            html += '<div class="vehicle-actions" style="margin-top:14px">' +
-                '<button class="btn btn-primary" type="button" id="passport-select"' +
+            html += '<div class="vehicle-actions"><button class="btn btn-primary" type="button" id="passport-select"' +
                 (key === appState.activeVehicleKey ? ' disabled' : '') + '>' +
-                (key === appState.activeVehicleKey ? '✓ Активна для AI' : 'Выбрать для AI') +
-                '</button></div>';
+                (key === appState.activeVehicleKey ? '✓ Активна для AI' : 'Выбрать для AI') + '</button></div>';
             setTimeout(() => {
                 const btn = document.getElementById('passport-select');
-                if (btn && !btn.disabled) {
-                    btn.addEventListener('click', () => selectVehicle(key));
-                }
+                if (btn && !btn.disabled) btn.addEventListener('click', () => selectVehicle(key));
             }, 0);
             return html;
         }
@@ -672,102 +649,90 @@
             renderGarageSheet();
         }
 
-        function ringSvg(percent, status) {
-            const p = percent == null ? null : Math.min(100, Math.max(0, percent));
-            const r = 18;
-            const c = 2 * Math.PI * r;
-            const color = status === 'overdue' ? 'var(--bad)'
-                : status === 'soon' ? 'var(--warn)'
-                : status === 'unknown' ? 'var(--muted)' : 'var(--ok)';
-            if (p == null) {
-                return '<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>' +
-                    '<text x="22" y="24" text-anchor="middle" font-size="8" fill="var(--muted)">?</text></svg>';
-            }
-            const dash = (p / 100) * c;
-            return '<svg viewBox="0 0 44 44">' +
-                '<circle cx="22" cy="22" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>' +
-                '<circle cx="22" cy="22" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="4" ' +
-                'stroke-dasharray="' + dash + ' ' + c + '" transform="rotate(-90 22 22)" stroke-linecap="round"/>' +
-                '<text x="22" y="24" text-anchor="middle" font-size="9" font-weight="700" fill="' + color + '">' + p + '%</text></svg>';
+        function metricPercent(item) {
+            if (item.wear_percent != null) return item.wear_percent;
+            if (item.used_percent != null) return item.used_percent;
+            return null;
         }
 
-        function stateDisplayMetric(item) {
+        function metricCaption(item) {
             if (item.wear_percent != null) {
-                return { percent: item.wear_percent, label: 'износ', caption: 'остаток ' + (item.remaining_percent ?? '—') + '%' };
+                return 'износ · остаток ' + (item.remaining_percent ?? '—') + '%';
             }
-            if (item.used_percent != null) {
-                return { percent: item.used_percent, label: 'ресурс', caption: 'использовано' };
-            }
-            return { percent: null, label: item.metric_label || 'нет данных', caption: '' };
+            if (item.used_percent != null) return 'ресурс использован';
+            return item.metric_label || 'нет данных';
         }
 
         function renderState() {
-            const vehicle = activeVehicle();
-            const items = vehicle?.tabs?.state || [];
+            const items = activeVehicle()?.tabs?.state || [];
             const root = document.getElementById('panel-state');
             if (!items.length) {
                 root.innerHTML = '<p class="hint">Нет данных по узлам. Расскажите боту про обслуживание.</p>';
                 return;
             }
-            root.innerHTML = '<div class="section-title">Узлы и износ</div><div class="state-grid">' +
-                items.map((item) => {
-                    const status = item.status || 'unknown';
-                    const metric = stateDisplayMetric(item);
-                    const last = item.last_service ? ('<strong>Было:</strong> ' + escapeHtml(item.last_service)) : '<strong>Было:</strong> —';
-                    const next = item.next_due ? ('<strong>Далее:</strong> ' + escapeHtml(item.next_due)) : '<strong>Далее:</strong> —';
-                    return '<article class="unit-card status-' + status + '">' +
-                        '<div class="unit-head">' +
-                        '<div class="unit-ring">' + ringSvg(metric.percent, status) + '</div>' +
-                        '<div><div class="unit-name">' + escapeHtml(item.label) + '</div>' +
-                        '<div class="unit-metric">' + escapeHtml(metric.label) + '</div></div></div>' +
-                        (metric.caption ? '<div class="unit-value">' + escapeHtml(metric.caption) + '</div>' : '') +
-                        '<div class="unit-fact">' + last + '</div>' +
-                        '<div class="unit-fact">' + next + '</div></article>';
-                }).join('') + '</div>';
+            root.innerHTML = '<div class="state-grid">' + items.map((item) => {
+                const status = item.status || 'unknown';
+                const pct = metricPercent(item);
+                const color = statusColor(status);
+                const barWidth = pct == null ? 8 : Math.max(4, pct);
+                const pctLabel = pct == null ? '—' : (pct + '%');
+                const last = item.last_service ? escapeHtml(item.last_service) : '—';
+                const next = item.next_due ? escapeHtml(item.next_due) : '—';
+                return '<article class="unit-card status-' + status + '">' +
+                    '<div class="unit-name">' + escapeHtml(item.label) + '</div>' +
+                    '<div class="unit-bar-row">' +
+                    '<div class="unit-bar"><span style="width:' + barWidth + '%;background:' + color + '"></span></div>' +
+                    '<div class="unit-pct" style="color:' + color + '">' + pctLabel + '</div></div>' +
+                    '<div class="unit-meta">' + escapeHtml(metricCaption(item)) + '</div>' +
+                    '<div class="unit-fact">Было: ' + last + '</div>' +
+                    '<div class="unit-fact"><strong>Далее:</strong> ' + next + '</div></article>';
+            }).join('') + '</div>';
         }
 
-        function renderTimelineItems(items, tierClass) {
-            return (items || []).map((item) => {
-                const tone = item.tone || 'soft';
-                const badge = tierClass === 'required'
-                    ? '<span class="timeline-badge reg">Регламент</span>'
-                    : '<span class="timeline-badge rec">Рекомендация</span>';
-                return '<div class="timeline-item ' + tierClass + ' tone-' + tone + '">' +
-                    '<div class="timeline-card">' + badge +
-                    '<div class="timeline-label">' + escapeHtml(item.label) + '</div>' +
-                    '<div class="timeline-detail">' + escapeHtml(item.detail || item.due_label || '—') + '</div></div></div>';
-            }).join('');
+        function urgencyIcon(tone) {
+            if (tone === 'overdue') return '<span class="ico ico-urg-overdue" title="Срочно">!</span>';
+            if (tone === 'soon') return '<span class="ico ico-urg-soon" title="Скоро">⏱</span>';
+            if (tone === 'unknown') return '<span class="ico ico-urg-unknown" title="Уточнить">?</span>';
+            return '<span class="ico ico-urg-soft" title="Можно позже">○</span>';
+        }
+
+        function tierIcon(tier) {
+            if (tier === 'required') return '<span class="ico ico-tier-reg" title="Регламент">🛡</span>';
+            return '<span class="ico ico-tier-rec" title="Рекомендация">✦</span>';
+        }
+
+        function renderRoadItem(item, tierClass) {
+            return '<div class="road-item ' + tierClass + ' tone-' + (item.tone || 'soft') + '">' +
+                '<div class="road-icons">' + tierIcon(tierClass) + urgencyIcon(item.tone) + '</div>' +
+                '<div class="road-body"><div class="road-label">' + escapeHtml(item.label) + '</div>' +
+                '<div class="road-detail">' + escapeHtml(item.detail || item.due_label || '—') + '</div></div></div>';
         }
 
         function renderRoadmap() {
-            const vehicle = activeVehicle();
-            const roadmap = vehicle?.tabs?.roadmap || { required: [], recommended: [], seasonal: [], hint: null };
+            const roadmap = activeVehicle()?.tabs?.roadmap || { required: [], recommended: [], seasonal: [], hint: null };
             const root = document.getElementById('panel-roadmap');
             const required = roadmap.required || [];
             const recommended = [...(roadmap.recommended || []), ...(roadmap.seasonal || [])];
-
             if (!required.length && !recommended.length) {
                 root.innerHTML = '<p class="hint">' + escapeHtml(roadmap.hint || 'Пока нет ближайших работ.') + '</p>';
                 return;
             }
-
             let html = roadmap.hint ? '<p class="hint">' + escapeHtml(roadmap.hint) + '</p>' : '';
-            html += '<div class="timeline"><div class="timeline-now">Сегодня</div>';
+            html += '<div class="road-now">● Сегодня</div><div class="road-list">';
             if (required.length) {
-                html += '<div class="section-title">Регламент и безопасность</div>';
-                html += renderTimelineItems(required, 'required');
+                html += '<div class="section-title">Регламент</div>';
+                html += required.map((item) => renderRoadItem(item, 'required')).join('');
             }
             if (recommended.length) {
                 html += '<div class="section-title">Рекомендации</div>';
-                html += renderTimelineItems(recommended, 'recommended');
+                html += recommended.map((item) => renderRoadItem(item, 'recommended')).join('');
             }
             html += '</div>';
             root.innerHTML = html;
         }
 
         function renderAnalytics() {
-            const vehicle = activeVehicle();
-            const analytics = vehicle?.tabs?.analytics || { points: [], hint: null };
+            const analytics = activeVehicle()?.tabs?.analytics || { points: [], hint: null };
             const root = document.getElementById('panel-analytics');
             if (analytics.hint && !(analytics.points || []).length) {
                 root.innerHTML = '<p class="hint">' + escapeHtml(analytics.hint) + '</p>';
@@ -784,19 +749,36 @@
         function renderAgent() {
             const agent = appState.agent || {};
             const root = document.getElementById('panel-agent');
+            const statusClass = agent.status && agent.status !== 'ok' ? ' status-' + agent.status : '';
+            const avatar = agent.avatar_url
+                ? '<img class="agent-avatar" src="' + escapeHtml(agent.avatar_url) + '" alt="AI">'
+                : '<div class="agent-avatar"></div>';
             const settings = (agent.settings || []).map((row) => {
                 const value = row.value ? row.value : '—';
-                const cls = row.value ? 'setting-value' : 'setting-value field-value empty';
                 return '<div class="setting-row"><span class="setting-label">' + escapeHtml(row.label) +
-                    '</span><span class="' + cls + '">' + escapeHtml(value) + '</span></div>';
+                    '</span><span class="setting-value' + (row.value ? '' : ' field-value empty') + '">' +
+                    escapeHtml(value) + '</span></div>';
             }).join('');
+
             root.innerHTML =
-                '<div class="agent-hero"><div class="agent-hero-top">' +
-                '<div class="ai-logo">AI</div>' +
-                '<div><div class="agent-tokens">' + escapeHtml(agent.tokens_label || '—') + '</div>' +
-                '<div class="agent-tokens-label">токенов на ответы</div></div></div></div>' +
-                settings +
-                (agent.hint ? '<p class="hint" style="margin-top:12px">' + escapeHtml(agent.hint) + '</p>' : '');
+                '<div class="agent-card' + statusClass + '"><div class="agent-top">' + avatar +
+                '<div><div class="agent-title">' + escapeHtml(agent.title || 'AI-ассистент') + '</div>' +
+                '<div class="agent-subtitle">' + escapeHtml(agent.subtitle || '') + '</div>' +
+                '<div class="agent-tokens-row">' +
+                '<span class="agent-token-val">⚡ ' + escapeHtml(agent.tokens_label || '—') + '</span>' +
+                (agent.approx_replies_label
+                    ? '<span class="agent-token-meta">' + escapeHtml(agent.approx_replies_label) + '</span>'
+                    : '') +
+                '</div>' +
+                (agent.typical_spend_label
+                    ? '<div class="agent-token-meta">' + escapeHtml(agent.typical_spend_label) + '</div>'
+                    : '') +
+                '</div></div>' +
+                (agent.intro ? '<div class="agent-intro">' + escapeHtml(agent.intro) + '</div>' : '') +
+                '</div>' +
+                '<div class="section-title">Настройки собеседника</div>' +
+                '<div class="settings-card">' + settings + '</div>' +
+                (agent.hint ? '<p class="hint" style="margin-top:8px">' + escapeHtml(agent.hint) + '</p>' : '');
         }
 
         function renderNavTokens() {
