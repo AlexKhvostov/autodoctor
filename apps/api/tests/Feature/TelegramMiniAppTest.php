@@ -31,9 +31,9 @@ class TelegramMiniAppTest extends TestCase
             ->assertOk()
             ->assertSee('AutoDoctor', false)
             ->assertSee('telegram-web-app.js', false)
-            ->assertSee('agent-card', false)
-            ->assertSee('unit-bar', false)
-            ->assertSee('road-item', false);
+            ->assertSee('topbar-shell', false)
+            ->assertSee('tl-wrap', false)
+            ->assertSee('chart-card', false);
     }
 
     public function test_state_requires_telegram_init_data(): void
@@ -60,13 +60,10 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('title', 'AutoDoctor')
             ->assertJsonPath('vehicles.0.title', 'Автомобиль')
             ->assertJsonPath('vehicles.0.status', 'placeholder')
-            ->assertJsonPath('vehicles.0.sections.0.fields.0.label', 'Марка')
-            ->assertJsonPath('vehicles.0.sections.0.fields.0.filled', false)
-            ->assertJsonPath('vehicles.0.sections.1.title', 'История обслуживания')
-            ->assertJsonPath('vehicles.0.sections.1.fields.0.filled', false)
-            ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['required', 'recommended', 'seasonal'], 'analytics']]]])
-            ->assertJsonStructure(['agent' => ['title', 'subtitle', 'avatar_url', 'tokens_label', 'approx_replies_label', 'settings', 'intro'], 'garage' => ['can_add', 'active_label']])
-            ->assertJsonPath('user.initial', 'A');
+            ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['timeline'], 'analytics' => ['charts']]]]])
+            ->assertJsonStructure(['agent' => ['title', 'form', 'editable', 'memory_hint'], 'help' => ['sections'], 'garage'])
+            ->assertJsonPath('user.initial', 'A')
+            ->assertJsonMissingPath('subtitle');
     }
 
     public function test_state_shows_draft_vehicle_card_from_bot(): void
@@ -95,11 +92,38 @@ class TelegramMiniAppTest extends TestCase
             ->assertOk()
             ->assertJsonPath('vehicles.0.title', 'Volkswagen Polo')
             ->assertJsonPath('vehicles.0.status', 'draft')
-            ->assertJsonPath('vehicles.0.sections.0.fields.0.value', 'Volkswagen')
-            ->assertJsonPath('vehicles.0.sections.0.fields.12.filled', true)
-            ->assertJsonPath('vehicles.0.sections.0.fields.13.filled', false)
-            ->assertJsonPath('vehicles.0.tabs.roadmap.recommended.0.tone', 'unknown')
-            ->assertJsonStructure(['agent' => ['title', 'subtitle', 'avatar_url', 'tokens_label', 'approx_replies_label', 'settings', 'intro']]);
+            ->assertJsonPath('vehicles.0.tabs.roadmap.timeline.0.tone', 'unknown');
+    }
+
+    public function test_mini_app_can_update_agent_preferences(): void
+    {
+        config(['telegram.bot_token' => 'TESTTOKEN', 'telegram.allowlist_ids' => '70004']);
+        GuestProfile::query()->create(['telegram_id' => 70004]);
+
+        $headers = ['X-Telegram-Init-Data' => $this->sign([
+            'auth_date' => (string) time(),
+            'user' => '{"id":70004,"first_name":"Agent"}',
+        ])];
+
+        $this->withHeaders($headers)
+            ->patchJson('/telegram/app/agent/skill', [
+                'knowledge_band' => 'curious',
+                'hands_on' => 'sometimes',
+            ])
+            ->assertOk()
+            ->assertJsonPath('skill.self_reported_band', 'curious');
+
+        $this->withHeaders($headers)
+            ->patchJson('/telegram/app/agent/preferences', [
+                'simplicity' => 7,
+                'verbosity' => 4,
+                'directness' => 6,
+                'initiative' => 5,
+                'custom_instructions' => 'Обращайся на «ты»',
+            ])
+            ->assertOk()
+            ->assertJsonPath('preferences.simplicity', 7)
+            ->assertJsonPath('preferences.custom_instructions', 'Обращайся на «ты»');
     }
 
     public function test_snapshot_lists_saved_vehicle_profile_and_maintenance_slots(): void
@@ -143,21 +167,16 @@ class TelegramMiniAppTest extends TestCase
             'version' => 1,
         ]);
 
-        $state = app(TelegramMiniAppSnapshot::class)->forTelegramUser(70003);
+        $state = app(TelegramMiniAppSnapshot::class)->forTelegramUser(70003, (string) $vehicle->id);
         $card = $state['vehicles'][0];
 
         $this->assertSame('Volkswagen Polo', $card['title']);
         $this->assertSame('saved', $card['status']);
-        $this->assertSame('Volkswagen', $card['sections'][0]['fields'][0]['value']);
-        $this->assertFalse($card['sections'][0]['fields'][2]['filled']);
-        $maintenance = collect($card['sections'][1]['fields'])->firstWhere('key', 'engine_oil');
-        $this->assertSame('12.03.2026 · 140 000 км', $maintenance['value']);
-        $this->assertArrayHasKey('tabs', $card);
-        $this->assertNotEmpty($card['tabs']['state']);
-        $this->assertArrayHasKey('required', $card['tabs']['roadmap']);
+        $this->assertArrayHasKey('timeline', $card['tabs']['roadmap']);
         $oilState = collect($card['tabs']['state'])->firstWhere('key', 'engine_oil');
         $this->assertSame('12.03.2026 · 140 000 км', $oilState['last_service']);
-        $this->assertArrayHasKey('agent', $state);
+        $this->assertTrue($state['agent']['editable']);
+        $this->assertArrayHasKey('form', $state['agent']);
         $this->assertSame((string) $vehicle->id, $state['active_vehicle_id']);
     }
 

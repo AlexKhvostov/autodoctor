@@ -48,24 +48,26 @@ class TelegramMiniAppSnapshot
     /**
      * @return array<string, mixed>
      */
-    public function forTelegramUser(int $telegramUserId): array
+    public function forTelegramUser(int $telegramUserId, ?string $activeVehicleId = null): array
     {
         $profile = GuestProfile::query()
             ->where('telegram_id', $telegramUserId)
             ->first();
 
+        $vehicle = $this->resolveVehicle($profile, $activeVehicleId);
+
         if ($profile === null) {
             return $this->response(
-                'Расскажите боту про машину — данные появятся здесь.',
                 $this->vehiclesForGuest(null, $telegramUserId),
+                null,
                 null,
             );
         }
 
         return $this->response(
-            'Выберите авто в шапке. Ниже — состояние, план и настройки AI.',
             $this->vehiclesForGuest($profile, $telegramUserId),
             $profile,
+            $vehicle,
         );
     }
 
@@ -75,8 +77,8 @@ class TelegramMiniAppSnapshot
     public function deniedResponse(): array
     {
         return $this->response(
-            'Сейчас закрытый пилот. Напишите боту и нажмите «Запросить доступ».',
             [$this->placeholderCard()],
+            null,
             null,
         );
     }
@@ -85,7 +87,7 @@ class TelegramMiniAppSnapshot
      * @param  list<array<string, mixed>>  $vehicles
      * @return array<string, mixed>
      */
-    private function response(string $subtitle, array $vehicles, ?GuestProfile $profile): array
+    private function response(array $vehicles, ?GuestProfile $profile, ?Vehicle $activeVehicle): array
     {
         $activeVehicleId = null;
         foreach ($vehicles as $vehicle) {
@@ -107,12 +109,49 @@ class TelegramMiniAppSnapshot
 
         return [
             'title' => 'AutoDoctor',
-            'subtitle' => $subtitle,
             'active_vehicle_id' => $activeVehicleId,
             'user' => $this->userHeader($profile),
-            'agent' => $this->agentTab($profile),
+            'agent' => $this->agentTab($profile, $activeVehicle),
             'garage' => $this->garageMeta($vehicles),
+            'help' => $this->helpContent(),
             'vehicles' => $vehicles,
+        ];
+    }
+
+    private function resolveVehicle(?GuestProfile $profile, ?string $vehicleId): ?Vehicle
+    {
+        if ($profile === null || $vehicleId === null || $vehicleId === '') {
+            return null;
+        }
+
+        return $profile->vehicles()->whereKey($vehicleId)->first();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function helpContent(): array
+    {
+        return [
+            'title' => 'Как пользоваться',
+            'sections' => [
+                [
+                    'title' => 'Шапка и гараж',
+                    'body' => 'Нажмите на блок с машиной — откроется гараж. Там выбираете автомобиль для AI, состояния, roadmap и аналитики.',
+                ],
+                [
+                    'title' => 'Состояние',
+                    'body' => 'Карточки узлов показывают износ, прошлое обслуживание и ближайшую замену по данным из чата с ботом.',
+                ],
+                [
+                    'title' => 'Roadmap',
+                    'body' => 'Временная шкала от «сейчас» вперёд: что предстоит и когда. 🛡 — регламент, ✦ — рекомендация.',
+                ],
+                [
+                    'title' => 'AI-ассистент',
+                    'body' => 'Настройте стиль ответов здесь — агент помнит вас, машину и заметки из диалога. Общение — в чате бота.',
+                ],
+            ],
         ];
     }
 
@@ -158,80 +197,133 @@ class TelegramMiniAppSnapshot
     /**
      * @return array<string, mixed>
      */
-    private function agentTab(?GuestProfile $profile): array
+    private function agentTab(?GuestProfile $profile, ?Vehicle $vehicle = null): array
     {
-        if ($profile === null) {
-            return [
-                'title' => 'AI-ассистент',
-                'subtitle' => 'Умный помощник по вашему авто',
-                'avatar_url' => url('/branding/agent_companion_widget.png'),
-                'tokens_balance' => null,
-                'tokens_label' => '—',
-                'approx_replies_left' => null,
-                'approx_replies_label' => null,
-                'typical_spend_ml' => (int) config('agent.fuel.ml_per_user_message_proxy', 80),
-                'typical_spend_label' => null,
-                'status' => 'unknown',
-                'settings' => [],
-                'intro' => 'Напишите боту /start — здесь появятся токены и настройки собеседника.',
-                'hint' => 'Правки настроек пока — через бота.',
-            ];
-        }
-
-        $wallet = $this->agentProfile->wallet($profile);
-        $balance = (int) $wallet->balance_ml;
-        $typicalSpend = (int) config('agent.fuel.ml_per_user_message_proxy', 80);
-        $approxReplies = max(0, (int) floor($balance / max(1, $typicalSpend)));
-        $lowBalance = (int) config('agent.fuel.low_balance_ml', 400);
-        $lowReplies = (int) config('agent.fuel.low_approx_replies', 5);
-        $status = match (true) {
-            $balance <= 0 => 'empty',
-            $balance <= $lowBalance || $approxReplies <= $lowReplies => 'low',
-            default => 'ok',
-        };
-        $prefs = $this->agentProfile->preferences($profile);
-        $skill = $this->skills->toArray($this->skills->forProfile($profile));
-
-        return [
+        $base = [
             'title' => 'AI-ассистент',
             'subtitle' => 'Умный помощник по вашему авто',
             'avatar_url' => url('/branding/agent_companion_widget.png'),
+            'tokens_balance' => null,
+            'tokens_label' => '—',
+            'approx_replies_left' => null,
+            'approx_replies_label' => null,
+            'typical_spend_ml' => (int) config('agent.fuel.ml_per_user_message_proxy', 80),
+            'typical_spend_label' => null,
+            'status' => 'unknown',
+            'intro' => 'Напишите боту /start — здесь появятся токены и настройки собеседника.',
+            'memory_hint' => 'Агент помнит ваши настройки, данные машины и заметки из диалога.',
+            'notes' => ['user' => [], 'vehicle' => []],
+            'form' => null,
+            'editable' => false,
+        ];
+
+        if ($profile === null) {
+            return $base;
+        }
+
+        $payload = $this->agentProfile->profilePayload($profile, $vehicle);
+        $fuel = $payload['fuel'];
+        $prefs = $payload['preferences'];
+        $skill = $payload['skill'];
+        $balance = (int) $fuel['balance_ml'];
+        $typicalSpend = (int) $fuel['typical_spend_ml'];
+        $approxReplies = (int) $fuel['approx_replies_left'];
+        $knowledgeBand = is_string($skill['self_reported_band'] ?? null)
+            ? $skill['self_reported_band']
+            : ($skill['band'] ?? 'basic');
+        $handsOn = is_string($skill['hands_on_level'] ?? null)
+            ? $skill['hands_on_level']
+            : match ($skill['hands_on'] ?? null) {
+                true => 'often',
+                false => 'never',
+                default => 'sometimes',
+            };
+
+        return [
+            ...$base,
             'tokens_balance' => $balance,
             'tokens_label' => number_format($balance, 0, '', ' '),
             'approx_replies_left' => $approxReplies,
             'approx_replies_label' => '≈'.$approxReplies.' ответов',
             'typical_spend_ml' => $typicalSpend,
             'typical_spend_label' => '≈'.$typicalSpend.' ток. за короткий ответ',
-            'status' => $status,
-            'settings' => [
-                [
-                    'key' => 'knowledge',
-                    'label' => 'Понимание авто',
-                    'value' => $this->knowledgeLabel($skill['self_reported_band'] ?? $skill['band']),
+            'status' => $fuel['status'],
+            'intro' => 'Помню контекст авто, историю обслуживания и ваши настройки. Спросите в чате бота.',
+            'memory_hint' => 'Агент помнит вас, активную машину и заметки из разговора — не нужно повторять одно и то же.',
+            'notes' => $payload['notes'],
+            'editable' => true,
+            'form' => [
+                'knowledge_band' => [
+                    'label' => 'Насколько разбираетесь в машинах',
+                    'value' => $knowledgeBand,
+                    'options' => $this->knowledgeOptions(),
                 ],
-                [
-                    'key' => 'hands_on',
-                    'label' => 'Готовность к проверкам',
-                    'value' => $this->handsOnLabel($skill['hands_on_level'] ?? null, $skill['hands_on']),
+                'hands_on' => [
+                    'label' => 'Готовы сами заглянуть под капот / к колёсам',
+                    'value' => $handsOn,
+                    'options' => $this->handsOnOptions(),
                 ],
-                [
-                    'key' => 'simplicity',
-                    'label' => 'Простота ответов',
-                    'value' => $this->scaleLabel((int) $prefs->simplicity),
+                'simplicity' => [
+                    'label' => 'Простота языка',
+                    'value' => (int) $prefs['simplicity'],
+                    'low' => 'Проще',
+                    'high' => 'Техничнее',
                 ],
-                [
-                    'key' => 'initiative',
-                    'label' => 'Инициатива советов',
-                    'value' => $this->scaleLabel((int) $prefs->initiative),
+                'verbosity' => [
+                    'label' => 'Краткость',
+                    'value' => (int) $prefs['verbosity'],
+                    'low' => 'Коротко',
+                    'high' => 'Подробнее',
                 ],
-                [
-                    'key' => 'instructions',
+                'directness' => [
+                    'label' => 'Прямота',
+                    'value' => (int) $prefs['directness'],
+                    'low' => 'Мягче',
+                    'high' => 'Прямее',
+                ],
+                'initiative' => [
+                    'label' => 'Инициативность',
+                    'value' => (int) $prefs['initiative'],
+                    'low' => 'Ждёт',
+                    'high' => 'Сам уточняет',
+                ],
+                'custom_instructions' => [
                     'label' => 'Ваши пожелания',
-                    'value' => filled($prefs->custom_instructions) ? (string) $prefs->custom_instructions : null,
+                    'value' => $prefs['custom_instructions'],
+                    'placeholder' => 'Как обращаться, что не предлагать, особенности…',
                 ],
             ],
-            'intro' => 'Помню контекст авто, историю обслуживания и ваши настройки. Спросите в чате бота — отвечу с учётом машины.',
-            'hint' => 'Собеседник в чате учитывает эти настройки. Пока правки — через бота.',
+        ];
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function knowledgeOptions(): array
+    {
+        return [
+            ['value' => 'never_tools', 'label' => 'Никогда не держал отвертку'],
+            ['value' => 'scared', 'label' => 'Боюсь что-то трогать'],
+            ['value' => 'novice', 'label' => 'Почти не разбираюсь'],
+            ['value' => 'basic', 'label' => 'Знаю основы'],
+            ['value' => 'curious', 'label' => 'Любитель: читаю и смотрю'],
+            ['value' => 'confident', 'label' => 'Хорошо разбираюсь'],
+            ['value' => 'advanced', 'label' => 'Многое делаю сам'],
+            ['value' => 'pro', 'label' => 'Механик / сервис'],
+        ];
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function handsOnOptions(): array
+    {
+        return [
+            ['value' => 'never', 'label' => 'Нет, только сервис'],
+            ['value' => 'outside', 'label' => 'Только снаружи'],
+            ['value' => 'sometimes', 'label' => 'Иногда простое'],
+            ['value' => 'often', 'label' => 'Часто сам заглядываю'],
+            ['value' => 'always', 'label' => 'Да, спокойно под капотом'],
         ];
     }
 
@@ -731,19 +823,20 @@ class TelegramMiniAppSnapshot
     private function roadmapTab(?Vehicle $vehicle): array
     {
         if ($vehicle === null) {
+            $timeline = array_map(fn (array $field): array => $this->roadmapRow(
+                $field['key'],
+                $field['label'],
+                'уточните в чате',
+                'unknown',
+                'recommended',
+                null,
+                null,
+                null,
+            ), $this->maintenanceFields(null));
+
             return [
-                'required' => [],
-                'recommended' => array_map(fn (array $field): array => [
-                    'key' => $field['key'],
-                    'label' => $field['label'],
-                    'detail' => 'уточните в чате',
-                    'tone' => 'unknown',
-                    'tier' => 'recommended',
-                    'sort_days' => null,
-                    'due_label' => null,
-                ], $this->maintenanceFields(null)),
-                'seasonal' => $this->seasonalTips(),
-                'hint' => 'Запишите машину в боте — здесь появится дорожная карта обслуживания.',
+                'timeline' => $timeline,
+                'hint' => 'Запишите машину в боте — здесь появится дорожная карта.',
             ];
         }
 
@@ -752,15 +845,12 @@ class TelegramMiniAppSnapshot
             $snapshot->load(['items.rule']);
         } catch (Throwable) {
             return [
-                'required' => [],
-                'recommended' => [],
-                'seasonal' => $this->seasonalTips(),
+                'timeline' => [],
                 'hint' => 'План обслуживания готовится.',
             ];
         }
 
-        $required = [];
-        $recommended = [];
+        $timeline = [];
         foreach ($snapshot->items as $item) {
             $rule = $item->rule;
             if ($rule === null) {
@@ -774,31 +864,37 @@ class TelegramMiniAppSnapshot
                 continue;
             }
 
-            $row = [
-                'key' => $rule->work_code,
-                'label' => (string) ($rule->localized_content['title']['ru'] ?? $rule->work_code),
-                'detail' => $this->roadmapDetail($item, $vehicle),
-                'tone' => $this->roadmapTone($item),
-                'tier' => $this->roadmapTier($rule, $item),
-                'sort_days' => $this->roadmapSortDays($item, $vehicle),
-                'due_label' => $this->roadmapDueLabel($item, $vehicle),
-            ];
-
-            if ($row['tier'] === 'required') {
-                $required[] = $row;
-            } else {
-                $recommended[] = $row;
-            }
+            $sortDays = $this->roadmapSortDays($item, $vehicle);
+            $timeline[] = $this->roadmapRow(
+                $rule->work_code,
+                (string) ($rule->localized_content['title']['ru'] ?? $rule->work_code),
+                $this->roadmapDetail($item, $vehicle),
+                $this->roadmapTone($item),
+                $this->roadmapTier($rule, $item),
+                $sortDays,
+                $item->due_date?->format('d.m.Y'),
+                $item->due_mileage_km,
+            );
         }
 
-        usort($required, fn (array $a, array $b): int => ($a['sort_days'] ?? 9999) <=> ($b['sort_days'] ?? 9999));
-        usort($recommended, fn (array $a, array $b): int => ($a['sort_days'] ?? 9999) <=> ($b['sort_days'] ?? 9999));
+        foreach ($this->seasonalTips() as $tip) {
+            $timeline[] = $this->roadmapRow(
+                (string) $tip['key'],
+                (string) $tip['label'],
+                (string) $tip['detail'],
+                (string) ($tip['tone'] ?? 'soft'),
+                (string) ($tip['tier'] ?? 'recommended'),
+                (int) ($tip['sort_days'] ?? 45),
+                null,
+                null,
+            );
+        }
+
+        usort($timeline, fn (array $a, array $b): int => ($a['sort_days'] ?? 9999) <=> ($b['sort_days'] ?? 9999));
 
         return [
-            'required' => $required,
-            'recommended' => $recommended,
-            'seasonal' => $this->seasonalTips(),
-            'hint' => $required === [] && $recommended === []
+            'timeline' => $timeline,
+            'hint' => $timeline === []
                 ? 'Пока всё спокойно — ближайших работ нет или данных мало.'
                 : null,
         ];
@@ -807,32 +903,91 @@ class TelegramMiniAppSnapshot
     /**
      * @return array<string, mixed>
      */
+    private function roadmapRow(
+        string $key,
+        string $label,
+        string $detail,
+        string $tone,
+        string $tier,
+        ?int $sortDays,
+        ?string $dueDate,
+        ?int $dueMileageKm,
+    ): array {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'detail' => $detail,
+            'tone' => $tone,
+            'tier' => $tier,
+            'sort_days' => $sortDays,
+            'days_label' => $this->roadmapDaysLabel($sortDays),
+            'due_date' => $dueDate,
+            'due_mileage_label' => $dueMileageKm !== null
+                ? number_format($dueMileageKm, 0, '', ' ').' км'
+                : null,
+        ];
+    }
+
+    private function roadmapDaysLabel(?int $sortDays): ?string
+    {
+        if ($sortDays === null) {
+            return null;
+        }
+        if ($sortDays < 0) {
+            return 'уже пора';
+        }
+        if ($sortDays === 0) {
+            return 'сегодня';
+        }
+        if ($sortDays === 1) {
+            return 'через 1 день';
+        }
+        $mod10 = $sortDays % 10;
+        $mod100 = $sortDays % 100;
+        $word = ($mod10 >= 2 && $mod10 <= 4 && ! ($mod100 >= 12 && $mod100 <= 14)) ? 'дня' : 'дней';
+
+        return 'через '.$sortDays.' '.$word;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function analyticsTab(?Vehicle $vehicle): array
     {
-        if ($vehicle === null) {
-            return [
-                'points' => [],
-                'hint' => 'Графики появятся после записи машины и пробега в чате с ботом.',
-            ];
+        $points = [];
+        if ($vehicle !== null) {
+            $points = MileageObservation::query()
+                ->where('vehicle_id', $vehicle->id)
+                ->orderBy('observed_at')
+                ->limit(24)
+                ->get()
+                ->map(fn (MileageObservation $row): array => [
+                    'date' => $row->observed_at?->format('d.m.Y'),
+                    'mileage' => $row->value,
+                    'unit' => $row->unit,
+                ])
+                ->all();
         }
-
-        $points = MileageObservation::query()
-            ->where('vehicle_id', $vehicle->id)
-            ->orderBy('observed_at')
-            ->limit(24)
-            ->get()
-            ->map(fn (MileageObservation $row): array => [
-                'date' => $row->observed_at?->format('d.m.Y'),
-                'mileage' => $row->value,
-                'unit' => $row->unit,
-            ])
-            ->all();
 
         return [
             'points' => $points,
-            'hint' => $points === []
-                ? 'Пока мало точек для графика. Сообщайте пробег боту — линия вырастет.'
-                : null,
+            'charts' => [
+                [
+                    'key' => 'mileage',
+                    'title' => 'Пробег',
+                    'caption' => $points === []
+                        ? 'Сообщайте пробег боту — линия вырастет.'
+                        : 'Точки из чата с ботом.',
+                    'placeholder' => true,
+                ],
+                [
+                    'key' => 'fuel',
+                    'title' => 'Расход топлива',
+                    'caption' => 'Скоро: после нескольких заправок и пробега.',
+                    'placeholder' => true,
+                ],
+            ],
+            'hint' => null,
         ];
     }
 
@@ -981,6 +1136,7 @@ class TelegramMiniAppSnapshot
                 'detail' => 'Чаще мойте днище и арки — соль ускоряет коррозию',
                 'tone' => 'soft',
                 'tier' => 'recommended',
+                'sort_days' => 14,
             ];
             $tips[] = [
                 'key' => 'post_winter_brakes',
@@ -988,6 +1144,7 @@ class TelegramMiniAppSnapshot
                 'detail' => 'Проверьте колодки и диски после сезона',
                 'tone' => 'soon',
                 'tier' => 'required',
+                'sort_days' => 21,
             ];
         }
 
@@ -998,6 +1155,7 @@ class TelegramMiniAppSnapshot
                 'detail' => 'После зимы — свежий воздух в салоне',
                 'tone' => 'soft',
                 'tier' => 'recommended',
+                'sort_days' => 30,
             ];
         }
 

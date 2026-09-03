@@ -42,37 +42,48 @@
             margin: 0 auto;
             background: linear-gradient(180deg, #f3f8ff 0%, var(--bg) 120px);
         }
+        .topbar-shell {
+            background: var(--card);
+            border-bottom: 1px solid var(--line);
+            box-shadow: 0 2px 12px rgba(21, 32, 51, 0.06);
+        }
         .topbar {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 12px 8px;
+            gap: 6px;
+            padding: 6px 10px;
         }
         .garage-btn {
             flex: 1;
             min-width: 0;
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 12px;
+            gap: 7px;
+            padding: 5px 8px;
+            border-radius: 10px;
             border: 1px solid var(--line);
-            background: var(--card);
-            box-shadow: var(--shadow);
+            background: var(--bg-soft);
             color: inherit;
             cursor: pointer;
             text-align: left;
         }
-        .garage-kicker {
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--primary-deep);
-            font-weight: 700;
+        .car-thumb {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--primary-soft);
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            overflow: hidden;
         }
+        .car-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .garage-text { min-width: 0; flex: 1; }
         .garage-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
+            line-height: 1.15;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -80,13 +91,29 @@
         .garage-sub {
             font-size: 10px;
             color: var(--muted);
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+        .garage-chev { color: var(--muted); font-size: 10px; flex-shrink: 0; }
+        .info-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--line);
+            background: var(--bg-soft);
+            color: var(--primary-deep);
+            font-size: 12px;
+            font-weight: 800;
+            font-style: italic;
+            cursor: pointer;
+            flex-shrink: 0;
         }
         .avatar {
-            width: 34px;
-            height: 34px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             border: 1px solid var(--line);
             background: var(--card);
@@ -174,28 +201,72 @@
             color: var(--muted);
         }
         .unit-fact strong { color: var(--text); font-weight: 600; }
-        .road-list { display: flex; flex-direction: column; gap: 4px; }
-        .road-item {
+        .road-list { display: flex; flex-direction: column; gap: 0; }
+        .tl-wrap { position: relative; padding-left: 22px; }
+        .tl-wrap::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(var(--bad), var(--primary) 18%, rgba(21,32,51,0.1));
+        }
+        .tl-now {
+            position: relative;
+            margin: 6px 0 8px -22px;
+            padding-left: 22px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary-deep);
+            font-weight: 800;
+        }
+        .tl-now::before {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 50%;
+            width: 12px;
+            height: 12px;
+            margin-top: -6px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+        .tl-node {
+            position: relative;
+            margin-bottom: 8px;
+            padding: 6px 8px 6px 0;
             display: flex;
-            align-items: flex-start;
             gap: 7px;
-            padding: 7px 8px;
+            align-items: flex-start;
+        }
+        .tl-node::before {
+            content: '';
+            position: absolute;
+            left: -18px;
+            top: 12px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--card);
+            border: 2px solid var(--muted);
+        }
+        .tl-node.past::before { border-color: var(--bad); background: rgba(239,68,68,0.15); }
+        .tl-node.required .tl-card { border-left: 2px solid var(--warn); }
+        .tl-node.recommended .tl-card { border-left: 2px solid rgba(107,122,144,0.35); opacity: 0.92; }
+        .tl-card {
+            flex: 1;
             background: var(--card);
             border: 1px solid var(--line);
-            border-radius: 10px;
+            border-radius: 9px;
+            padding: 7px 8px;
             box-shadow: var(--shadow);
         }
-        .road-item.required { border-left: 2px solid var(--warn); }
-        .road-item.recommended { border-left: 2px solid rgba(107, 122, 144, 0.35); opacity: 0.95; }
-        .road-icons {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            flex-shrink: 0;
-            width: 18px;
-            align-items: center;
-            padding-top: 1px;
-        }
+        .tl-label { font-size: 13px; font-weight: 700; line-height: 1.2; }
+        .tl-meta { font-size: 9px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+        .tl-icons { display: flex; gap: 3px; flex-shrink: 0; padding-top: 2px; }
         .ico {
             width: 16px;
             height: 16px;
@@ -207,21 +278,69 @@
         }
         .ico-tier-reg { background: rgba(245, 158, 11, 0.15); color: #b45309; }
         .ico-tier-rec { background: rgba(107, 122, 144, 0.12); color: var(--muted); }
-        .ico-urg-overdue { background: rgba(239, 68, 68, 0.14); color: var(--bad); }
-        .ico-urg-soon { background: rgba(245, 158, 11, 0.14); color: var(--warn); }
-        .ico-urg-soft { background: rgba(30, 202, 211, 0.14); color: var(--primary-deep); }
-        .ico-urg-unknown { background: rgba(107, 122, 144, 0.12); color: var(--muted); }
-        .road-body { flex: 1; min-width: 0; }
-        .road-label { font-size: 12px; font-weight: 700; line-height: 1.2; }
-        .road-detail { font-size: 10px; color: var(--muted); margin-top: 1px; }
-        .road-now {
-            text-align: center;
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 10px 10px;
+            margin-bottom: 8px;
+            box-shadow: var(--shadow);
+        }
+        .chart-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+        .chart-svg { width: 100%; height: 72px; display: block; }
+        .chart-caption { font-size: 9px; color: var(--muted); margin-top: 4px; }
+        .form-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            box-shadow: var(--shadow);
+        }
+        .form-label { font-size: 10px; color: var(--muted); font-weight: 600; margin-bottom: 4px; display: block; }
+        .form-select, .form-textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 11px;
+            background: var(--bg-soft);
+            color: var(--text);
+        }
+        .form-textarea { min-height: 64px; resize: vertical; }
+        .form-range { width: 100%; margin: 4px 0; }
+        .form-range-labels {
+            display: flex;
+            justify-content: space-between;
             font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+            color: var(--muted);
+        }
+        .form-save {
+            width: 100%;
+            margin-top: 6px;
+            padding: 9px;
+            border: 0;
+            border-radius: 9px;
+            background: linear-gradient(135deg, rgba(30,202,211,0.25), rgba(59,130,246,0.18));
             color: var(--primary-deep);
-            font-weight: 800;
-            margin: 4px 0 6px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .form-save:disabled { opacity: 0.5; cursor: default; }
+        .note-item {
+            font-size: 10px;
+            color: var(--muted);
+            padding: 5px 0;
+            border-top: 1px solid var(--line);
+        }
+        .note-item:first-child { border-top: 0; }
+        .save-toast {
+            font-size: 10px;
+            color: var(--ok);
+            font-weight: 600;
+            min-height: 14px;
+            margin-top: 4px;
         }
         .agent-card {
             border-radius: 14px;
@@ -450,20 +569,22 @@
 </head>
 <body>
     <div class="app">
-        <header class="topbar">
-            <button class="garage-btn" id="garage-open" type="button">
-                <div style="min-width:0;flex:1">
-                    <div class="garage-kicker" id="garage-kicker">Гараж</div>
-                    <div class="garage-title" id="garage-title">Выберите автомобиль</div>
-                    <div class="garage-sub" id="garage-sub"></div>
-                </div>
-                <span style="color:var(--muted);font-size:11px">▾</span>
-            </button>
-            <div class="avatar" id="user-avatar" title="Профиль">AD</div>
-        </header>
+        <div class="topbar-shell">
+            <header class="topbar">
+                <button class="garage-btn" id="garage-open" type="button">
+                    <div class="car-thumb" id="car-thumb">🚗</div>
+                    <div class="garage-text">
+                        <div class="garage-title" id="garage-title">Автомобиль</div>
+                        <div class="garage-sub" id="garage-sub"></div>
+                    </div>
+                    <span class="garage-chev">▾</span>
+                </button>
+                <button class="info-btn" id="help-open" type="button" title="Подсказка">i</button>
+                <div class="avatar" id="user-avatar" title="Профиль">AD</div>
+            </header>
+        </div>
 
         <main class="main">
-            <p class="hint" id="subtitle">Загружаем…</p>
             <section class="panel active" id="panel-state"></section>
             <section class="panel" id="panel-roadmap"></section>
             <section class="panel" id="panel-analytics"></section>
@@ -497,6 +618,13 @@
         </div>
         <div id="garage-content"></div>
     </div>
+    <div class="sheet" id="help-sheet">
+        <div class="sheet-head">
+            <div class="sheet-title" id="help-title">Подсказка</div>
+            <button class="sheet-close" id="help-close" type="button">×</button>
+        </div>
+        <div id="help-content"></div>
+    </div>
 
     <script>
         const tg = window.Telegram && window.Telegram.WebApp;
@@ -508,10 +636,48 @@
         }
 
         let appState = {
-            vehicles: [], agent: {}, garage: {},
+            vehicles: [], agent: {}, garage: {}, help: {},
             activeVehicleKey: null, tab: 'state',
             garageView: 'list', garageDetailKey: null,
+            savingAgent: false, agentToast: '',
         };
+
+        const apiBase = @json(url('/telegram/app'));
+        const initData = tg && tg.initData ? tg.initData : '';
+        const apiHeaders = {
+            'X-Telegram-Init-Data': initData,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        };
+
+        function stateUrl() {
+            const vehicle = activeVehicle();
+            return vehicle && vehicle.id
+                ? apiBase + '/state?vehicle_id=' + encodeURIComponent(vehicle.id)
+                : apiBase + '/state';
+        }
+
+        function tierIcon(tier) {
+            return tier === 'required'
+                ? '<span class="ico ico-tier-reg" title="Регламент">🛡</span>'
+                : '<span class="ico ico-tier-rec" title="Рекомендация">✦</span>';
+        }
+
+        function renderHeader() {
+            const vehicle = activeVehicle();
+            const title = document.getElementById('garage-title');
+            const sub = document.getElementById('garage-sub');
+            const thumb = document.getElementById('car-thumb');
+            if (!vehicle || vehicle.status === 'placeholder') {
+                title.textContent = 'Автомобиль';
+                sub.textContent = 'Нажмите, чтобы выбрать';
+                thumb.textContent = '🚗';
+                return;
+            }
+            title.textContent = vehicle.title || 'Автомобиль';
+            sub.textContent = vehicle.summary || '';
+            thumb.textContent = '🚗';
+        }
 
         function vehicleKey(vehicle, index) {
             if (vehicle.id) return String(vehicle.id);
@@ -537,19 +703,200 @@
             return 'var(--ok)';
         }
 
-        function renderHeader() {
-            const vehicle = activeVehicle();
-            document.getElementById('garage-kicker').textContent = 'Гараж';
-            const title = document.getElementById('garage-title');
-            const sub = document.getElementById('garage-sub');
-            if (!vehicle || vehicle.status === 'placeholder') {
-                title.textContent = 'Выберите автомобиль';
-                sub.textContent = 'Нажмите — откроется гараж';
+        function renderRoadmap() {
+            const roadmap = activeVehicle()?.tabs?.roadmap || { timeline: [], hint: null };
+            const root = document.getElementById('panel-roadmap');
+            const timeline = roadmap.timeline || [];
+            if (!timeline.length) {
+                root.innerHTML = '<p class="hint">' + escapeHtml(roadmap.hint || 'Пока нет ближайших работ.') + '</p>';
                 return;
             }
-            title.textContent = vehicle.title || 'Автомобиль';
-            sub.textContent = (vehicle.status === 'draft' ? 'черновик · ' : '') +
-                (vehicle.summary || 'активно для AI');
+            const past = timeline.filter((item) => (item.sort_days ?? 9999) < 0);
+            const future = timeline.filter((item) => (item.sort_days ?? 9999) >= 0);
+            let html = roadmap.hint ? '<p class="hint">' + escapeHtml(roadmap.hint) + '</p>' : '';
+            html += '<div class="tl-wrap">';
+            past.forEach((item) => { html += renderTimelineNode(item, true); });
+            html += '<div class="tl-now">Сейчас</div>';
+            future.forEach((item) => { html += renderTimelineNode(item, false); });
+            html += '</div>';
+            root.innerHTML = html;
+        }
+
+        function renderTimelineNode(item, isPast) {
+            const meta = [
+                item.days_label,
+                item.due_date ? ('до ' + item.due_date) : null,
+                item.due_mileage_label ? ('~ ' + item.due_mileage_label) : null,
+            ].filter(Boolean).join(' · ');
+            return '<div class="tl-node ' + (isPast ? 'past ' : '') + (item.tier || 'recommended') + '">' +
+                '<div class="tl-icons">' + tierIcon(item.tier) + '</div>' +
+                '<div class="tl-card"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
+                '<div class="tl-meta">' + escapeHtml(meta || item.detail || '—') + '</div></div></div>';
+        }
+
+        function placeholderChart() {
+            return '<svg class="chart-svg" viewBox="0 0 300 72" preserveAspectRatio="none">' +
+                '<polyline fill="none" stroke="rgba(30,202,211,0.55)" stroke-width="2" ' +
+                'points="0,58 40,52 80,48 120,40 160,36 200,28 240,22 280,18 300,14"/>' +
+                '<line x1="0" y1="68" x2="300" y2="68" stroke="rgba(21,32,51,0.08)" stroke-width="1"/></svg>';
+        }
+
+        function renderAnalytics() {
+            const analytics = activeVehicle()?.tabs?.analytics || { charts: [], points: [] };
+            const root = document.getElementById('panel-analytics');
+            const charts = analytics.charts || [
+                { title: 'Пробег', caption: 'Скоро' },
+                { title: 'Расход топлива', caption: 'Скоро' },
+            ];
+            root.innerHTML = charts.map((chart) =>
+                '<div class="chart-card"><div class="chart-title">' + escapeHtml(chart.title) + '</div>' +
+                placeholderChart() +
+                '<div class="chart-caption">' + escapeHtml(chart.caption || '') + '</div></div>'
+            ).join('');
+        }
+
+        function renderSelectField(key, field) {
+            const options = (field.options || []).map((opt) =>
+                '<option value="' + escapeHtml(opt.value) + '"' +
+                (opt.value === field.value ? ' selected' : '') + '>' +
+                escapeHtml(opt.label) + '</option>'
+            ).join('');
+            return '<div class="form-card"><label class="form-label" for="f-' + key + '">' +
+                escapeHtml(field.label) + '</label>' +
+                '<select class="form-select" id="f-' + key + '" data-field="' + key + '">' + options + '</select></div>';
+        }
+
+        function renderSliderField(key, field) {
+            return '<div class="form-card"><label class="form-label">' + escapeHtml(field.label) +
+                ' · <span id="fv-' + key + '">' + field.value + '</span></label>' +
+                '<input class="form-range" type="range" min="0" max="10" step="1" id="f-' + key + '" ' +
+                'data-field="' + key + '" value="' + field.value + '">' +
+                '<div class="form-range-labels"><span>' + escapeHtml(field.low) + '</span>' +
+                '<span>' + escapeHtml(field.high) + '</span></div></div>';
+        }
+
+        function renderNotesBlock(title, notes) {
+            if (!notes || !notes.length) {
+                return '<div class="note-item">' + escapeHtml('Пока пусто — появится из диалога') + '</div>';
+            }
+            return notes.slice(0, 5).map((note) =>
+                '<div class="note-item">' + escapeHtml(note.body || '') + '</div>'
+            ).join('');
+        }
+
+        function renderAgent() {
+            const agent = appState.agent || {};
+            const root = document.getElementById('panel-agent');
+            const statusClass = agent.status && agent.status !== 'ok' ? ' status-' + agent.status : '';
+            const avatar = agent.avatar_url
+                ? '<img class="agent-avatar" src="' + escapeHtml(agent.avatar_url) + '" alt="AI">'
+                : '<div class="agent-avatar"></div>';
+            const form = agent.form;
+            let formHtml = '';
+            if (form && agent.editable) {
+                formHtml =
+                    renderSelectField('knowledge_band', form.knowledge_band) +
+                    renderSelectField('hands_on', form.hands_on) +
+                    renderSliderField('simplicity', form.simplicity) +
+                    renderSliderField('verbosity', form.verbosity) +
+                    renderSliderField('directness', form.directness) +
+                    renderSliderField('initiative', form.initiative) +
+                    '<div class="form-card"><label class="form-label" for="f-custom_instructions">' +
+                    escapeHtml(form.custom_instructions.label) + '</label>' +
+                    '<textarea class="form-textarea" id="f-custom_instructions" data-field="custom_instructions" ' +
+                    'placeholder="' + escapeHtml(form.custom_instructions.placeholder || '') + '">' +
+                    escapeHtml(form.custom_instructions.value || '') + '</textarea></div>' +
+                    '<button class="form-save" id="agent-save" type="button"' +
+                    (appState.savingAgent ? ' disabled' : '') + '>' +
+                    (appState.savingAgent ? 'Сохраняем…' : 'Сохранить настройки') + '</button>' +
+                    '<div class="save-toast" id="agent-toast">' + escapeHtml(appState.agentToast) + '</div>';
+            }
+
+            root.innerHTML =
+                '<div class="agent-card' + statusClass + '"><div class="agent-top">' + avatar +
+                '<div><div class="agent-title">' + escapeHtml(agent.title || 'AI-ассистент') + '</div>' +
+                '<div class="agent-subtitle">' + escapeHtml(agent.subtitle || '') + '</div>' +
+                '<div class="agent-tokens-row"><span class="agent-token-val">⚡ ' +
+                escapeHtml(agent.tokens_label || '—') + '</span>' +
+                (agent.approx_replies_label ? '<span class="agent-token-meta">' +
+                escapeHtml(agent.approx_replies_label) + '</span>' : '') + '</div>' +
+                (agent.typical_spend_label ? '<div class="agent-token-meta">' +
+                escapeHtml(agent.typical_spend_label) + '</div>' : '') +
+                '</div></div>' +
+                (agent.intro ? '<div class="agent-intro">' + escapeHtml(agent.intro) + '</div>' : '') +
+                (agent.memory_hint ? '<div class="agent-intro" style="border-top:0;padding-top:0;margin-top:4px">' +
+                escapeHtml(agent.memory_hint) + '</div>' : '') + '</div>' +
+                '<div class="section-title">Настройки собеседника</div>' + formHtml +
+                '<div class="section-title">Заметки агента</div>' +
+                '<div class="form-card"><div class="form-label">О вас</div>' +
+                renderNotesBlock('user', agent.notes?.user) + '</div>' +
+                '<div class="form-card"><div class="form-label">О машине</div>' +
+                renderNotesBlock('vehicle', agent.notes?.vehicle) + '</div>';
+
+            root.querySelectorAll('.form-range').forEach((input) => {
+                input.addEventListener('input', () => {
+                    const label = document.getElementById('fv-' + input.dataset.field);
+                    if (label) label.textContent = input.value;
+                });
+            });
+            const saveBtn = document.getElementById('agent-save');
+            if (saveBtn) saveBtn.addEventListener('click', saveAgentSettings);
+        }
+
+        async function saveAgentSettings() {
+            if (appState.savingAgent) return;
+            appState.savingAgent = true;
+            appState.agentToast = '';
+            renderAgent();
+            try {
+                const skillBody = {
+                    knowledge_band: document.getElementById('f-knowledge_band')?.value,
+                    hands_on: document.getElementById('f-hands_on')?.value,
+                };
+                const prefsBody = {
+                    simplicity: Number(document.getElementById('f-simplicity')?.value ?? 5),
+                    verbosity: Number(document.getElementById('f-verbosity')?.value ?? 5),
+                    directness: Number(document.getElementById('f-directness')?.value ?? 5),
+                    initiative: Number(document.getElementById('f-initiative')?.value ?? 5),
+                    custom_instructions: document.getElementById('f-custom_instructions')?.value?.trim() || null,
+                };
+                const skillRes = await fetch(apiBase + '/agent/skill', {
+                    method: 'PATCH', headers: apiHeaders, body: JSON.stringify(skillBody),
+                });
+                const prefsRes = await fetch(apiBase + '/agent/preferences', {
+                    method: 'PATCH', headers: apiHeaders, body: JSON.stringify(prefsBody),
+                });
+                if (!skillRes.ok || !prefsRes.ok) throw new Error('save failed');
+                await loadState();
+                appState.agentToast = 'Настройки сохранены';
+            } catch (e) {
+                appState.agentToast = 'Не удалось сохранить';
+            } finally {
+                appState.savingAgent = false;
+                renderAgent();
+            }
+        }
+
+        function renderHelp() {
+            const help = appState.help || {};
+            document.getElementById('help-title').textContent = help.title || 'Подсказка';
+            document.getElementById('help-content').innerHTML = (help.sections || []).map((section) =>
+                '<div class="passport-section"><div class="passport-title">' + escapeHtml(section.title) +
+                '</div><p class="garage-hint" style="margin-bottom:10px">' + escapeHtml(section.body) + '</p></div>'
+            ).join('');
+        }
+
+        function openHelp() {
+            renderHelp();
+            document.getElementById('sheet-backdrop').classList.add('open');
+            document.getElementById('help-sheet').classList.add('open');
+        }
+
+        function closeHelp() {
+            document.getElementById('help-sheet').classList.remove('open');
+            if (!document.getElementById('garage-sheet').classList.contains('open')) {
+                document.getElementById('sheet-backdrop').classList.remove('open');
+            }
         }
 
         function renderGarageSheet() {
@@ -640,7 +987,7 @@
             appState.garageView = 'list';
             appState.garageDetailKey = null;
             closeGarage();
-            renderAll();
+            loadState();
         }
 
         function openVehicleDetail(key) {
@@ -689,98 +1036,6 @@
             }).join('') + '</div>';
         }
 
-        function urgencyIcon(tone) {
-            if (tone === 'overdue') return '<span class="ico ico-urg-overdue" title="Срочно">!</span>';
-            if (tone === 'soon') return '<span class="ico ico-urg-soon" title="Скоро">⏱</span>';
-            if (tone === 'unknown') return '<span class="ico ico-urg-unknown" title="Уточнить">?</span>';
-            return '<span class="ico ico-urg-soft" title="Можно позже">○</span>';
-        }
-
-        function tierIcon(tier) {
-            if (tier === 'required') return '<span class="ico ico-tier-reg" title="Регламент">🛡</span>';
-            return '<span class="ico ico-tier-rec" title="Рекомендация">✦</span>';
-        }
-
-        function renderRoadItem(item, tierClass) {
-            return '<div class="road-item ' + tierClass + ' tone-' + (item.tone || 'soft') + '">' +
-                '<div class="road-icons">' + tierIcon(tierClass) + urgencyIcon(item.tone) + '</div>' +
-                '<div class="road-body"><div class="road-label">' + escapeHtml(item.label) + '</div>' +
-                '<div class="road-detail">' + escapeHtml(item.detail || item.due_label || '—') + '</div></div></div>';
-        }
-
-        function renderRoadmap() {
-            const roadmap = activeVehicle()?.tabs?.roadmap || { required: [], recommended: [], seasonal: [], hint: null };
-            const root = document.getElementById('panel-roadmap');
-            const required = roadmap.required || [];
-            const recommended = [...(roadmap.recommended || []), ...(roadmap.seasonal || [])];
-            if (!required.length && !recommended.length) {
-                root.innerHTML = '<p class="hint">' + escapeHtml(roadmap.hint || 'Пока нет ближайших работ.') + '</p>';
-                return;
-            }
-            let html = roadmap.hint ? '<p class="hint">' + escapeHtml(roadmap.hint) + '</p>' : '';
-            html += '<div class="road-now">● Сегодня</div><div class="road-list">';
-            if (required.length) {
-                html += '<div class="section-title">Регламент</div>';
-                html += required.map((item) => renderRoadItem(item, 'required')).join('');
-            }
-            if (recommended.length) {
-                html += '<div class="section-title">Рекомендации</div>';
-                html += recommended.map((item) => renderRoadItem(item, 'recommended')).join('');
-            }
-            html += '</div>';
-            root.innerHTML = html;
-        }
-
-        function renderAnalytics() {
-            const analytics = activeVehicle()?.tabs?.analytics || { points: [], hint: null };
-            const root = document.getElementById('panel-analytics');
-            if (analytics.hint && !(analytics.points || []).length) {
-                root.innerHTML = '<p class="hint">' + escapeHtml(analytics.hint) + '</p>';
-                return;
-            }
-            const rows = (analytics.points || []).slice().reverse().map((point) =>
-                '<div class="analytics-point"><span>' + escapeHtml(point.date || '—') + '</span>' +
-                '<span>' + escapeHtml(formatMileage(point.mileage, point.unit)) + '</span></div>'
-            ).join('');
-            root.innerHTML = (analytics.hint ? '<p class="hint">' + escapeHtml(analytics.hint) + '</p>' : '') +
-                '<div class="analytics-list">' + rows + '</div>';
-        }
-
-        function renderAgent() {
-            const agent = appState.agent || {};
-            const root = document.getElementById('panel-agent');
-            const statusClass = agent.status && agent.status !== 'ok' ? ' status-' + agent.status : '';
-            const avatar = agent.avatar_url
-                ? '<img class="agent-avatar" src="' + escapeHtml(agent.avatar_url) + '" alt="AI">'
-                : '<div class="agent-avatar"></div>';
-            const settings = (agent.settings || []).map((row) => {
-                const value = row.value ? row.value : '—';
-                return '<div class="setting-row"><span class="setting-label">' + escapeHtml(row.label) +
-                    '</span><span class="setting-value' + (row.value ? '' : ' field-value empty') + '">' +
-                    escapeHtml(value) + '</span></div>';
-            }).join('');
-
-            root.innerHTML =
-                '<div class="agent-card' + statusClass + '"><div class="agent-top">' + avatar +
-                '<div><div class="agent-title">' + escapeHtml(agent.title || 'AI-ассистент') + '</div>' +
-                '<div class="agent-subtitle">' + escapeHtml(agent.subtitle || '') + '</div>' +
-                '<div class="agent-tokens-row">' +
-                '<span class="agent-token-val">⚡ ' + escapeHtml(agent.tokens_label || '—') + '</span>' +
-                (agent.approx_replies_label
-                    ? '<span class="agent-token-meta">' + escapeHtml(agent.approx_replies_label) + '</span>'
-                    : '') +
-                '</div>' +
-                (agent.typical_spend_label
-                    ? '<div class="agent-token-meta">' + escapeHtml(agent.typical_spend_label) + '</div>'
-                    : '') +
-                '</div></div>' +
-                (agent.intro ? '<div class="agent-intro">' + escapeHtml(agent.intro) + '</div>' : '') +
-                '</div>' +
-                '<div class="section-title">Настройки собеседника</div>' +
-                '<div class="settings-card">' + settings + '</div>' +
-                (agent.hint ? '<p class="hint" style="margin-top:8px">' + escapeHtml(agent.hint) + '</p>' : '');
-        }
-
         function renderNavTokens() {
             document.getElementById('nav-tokens').textContent = (appState.agent && appState.agent.tokens_label) || '—';
         }
@@ -815,18 +1070,25 @@
         function closeGarage() {
             appState.garageView = 'list';
             appState.garageDetailKey = null;
-            document.getElementById('sheet-backdrop').classList.remove('open');
             document.getElementById('garage-sheet').classList.remove('open');
+            if (!document.getElementById('help-sheet').classList.contains('open')) {
+                document.getElementById('sheet-backdrop').classList.remove('open');
+            }
         }
 
         document.getElementById('garage-open').addEventListener('click', openGarage);
         document.getElementById('garage-close').addEventListener('click', closeGarage);
+        document.getElementById('help-open').addEventListener('click', openHelp);
+        document.getElementById('help-close').addEventListener('click', closeHelp);
         document.getElementById('garage-back').addEventListener('click', () => {
             appState.garageView = 'list';
             appState.garageDetailKey = null;
             renderGarageSheet();
         });
-        document.getElementById('sheet-backdrop').addEventListener('click', closeGarage);
+        document.getElementById('sheet-backdrop').addEventListener('click', () => {
+            closeGarage();
+            closeHelp();
+        });
         document.querySelectorAll('.nav-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 appState.tab = btn.dataset.tab;
@@ -846,29 +1108,38 @@
             }[ch]));
         }
 
-        const initData = tg && tg.initData ? tg.initData : '';
-        fetch(@json(url('/telegram/app/state')), {
-            headers: { 'X-Telegram-Init-Data': initData, 'Accept': 'application/json' }
-        }).then(async (response) => {
-            const data = await response.json();
-            document.getElementById('subtitle').textContent = data.subtitle || data.error || '';
-            if (data.user && data.user.initial) {
-                document.getElementById('user-avatar').textContent = data.user.initial;
+        async function loadState() {
+            try {
+                const response = await fetch(stateUrl(), {
+                    headers: { 'X-Telegram-Init-Data': initData, 'Accept': 'application/json' },
+                });
+                const data = await response.json();
+                if (data.user && data.user.initial) {
+                    document.getElementById('user-avatar').textContent = data.user.initial;
+                }
+                appState.vehicles = data.vehicles || [];
+                appState.agent = data.agent || {};
+                appState.garage = data.garage || {};
+                appState.help = data.help || {};
+                const storedVehicle = localStorage.getItem('ad_active_vehicle');
+                const defaultKey = data.active_vehicle_id != null
+                    ? String(data.active_vehicle_id)
+                    : vehicleKey(appState.vehicles[0], 0);
+                const keys = appState.vehicles.map((v, i) => vehicleKey(v, i));
+                if (!keys.includes(appState.activeVehicleKey)) {
+                    appState.activeVehicleKey = keys.includes(storedVehicle) ? storedVehicle : defaultKey;
+                } else if (appState.activeVehicleKey === null) {
+                    appState.activeVehicleKey = keys.includes(storedVehicle) ? storedVehicle : defaultKey;
+                }
+                renderAll();
+            } catch (e) {
+                document.getElementById('panel-state').innerHTML =
+                    '<p class="hint">Не удалось загрузить данные.</p>';
             }
-            appState.vehicles = data.vehicles || [];
-            appState.agent = data.agent || {};
-            appState.garage = data.garage || {};
-            const storedVehicle = localStorage.getItem('ad_active_vehicle');
-            const defaultKey = data.active_vehicle_id != null
-                ? String(data.active_vehicle_id)
-                : vehicleKey(appState.vehicles[0], 0);
-            const keys = appState.vehicles.map((v, i) => vehicleKey(v, i));
-            appState.activeVehicleKey = keys.includes(storedVehicle) ? storedVehicle : defaultKey;
-            appState.tab = localStorage.getItem('ad_active_tab') || 'state';
-            renderAll();
-        }).catch(() => {
-            document.getElementById('subtitle').textContent = 'Не удалось загрузить данные.';
-        });
+        }
+
+        appState.tab = localStorage.getItem('ad_active_tab') || 'state';
+        loadState();
     </script>
 </body>
 </html>

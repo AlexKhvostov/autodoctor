@@ -14,3 +14,5 @@ Route::get('/', function () {
 Route::post('/telegram/webhook', TelegramWebhookController::class);
 Route::get('/telegram/app', [TelegramMiniAppController::class, 'show']);
 Route::get('/telegram/app/state', [TelegramMiniAppController::class, 'state']);
+Route::patch('/telegram/app/agent/preferences', [TelegramMiniAppController::class, 'updateAgentPreferences']);
+Route::patch('/telegram/app/agent/skill', [TelegramMiniAppController::class, 'updateAgentSkill']);
