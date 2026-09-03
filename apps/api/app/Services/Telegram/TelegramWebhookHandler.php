@@ -159,7 +159,7 @@ class TelegramWebhookHandler
         $this->bot->sendMessage($update->chatId, $reply, $this->bot->openAppReplyKeyboard());
 
         if ($this->dialogue->hasVehicle($profile)) {
-            $summary = $this->serviceRecordCommit->offerSummary($profile);
+            $summary = $this->serviceRecordCommit->offerSummary($profile, $reply);
             if ($summary === null) {
                 return;
             }

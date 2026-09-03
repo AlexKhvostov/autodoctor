@@ -145,7 +145,7 @@ class TelegramMiniAppSnapshot
                 ],
                 [
                     'title' => 'Roadmap',
-                    'body' => 'Временная шкала от «сейчас» вперёд: что предстоит и когда. 🛡 — регламент, ✦ — рекомендация.',
+                    'body' => 'Выше «Сейчас» — выполненные работы, ниже — предстоящие по порядку. 🛡 — регламент, ✦ — рекомендация.',
                 ],
                 [
                     'title' => 'AI-ассистент',
@@ -413,6 +413,16 @@ class TelegramMiniAppSnapshot
             'title' => $this->vehicleTitle($values),
             'summary' => $this->vehicleSummary($values),
             'status' => 'saved',
+            'version' => $vehicle->version,
+            'editable' => true,
+            'edit_profile' => [
+                'make' => $this->textValue($configuration?->make),
+                'model' => $this->textValue($configuration?->model),
+                'production_year' => $vehicle->production_year,
+                'mileage_value' => $vehicle->current_mileage,
+                'mileage_unit' => $vehicle->mileage_unit ?? 'km',
+                'vin' => is_string($vin) && $vin !== '' ? strtoupper($vin) : null,
+            ],
             'sections' => $this->buildSections($values, $vehicle),
             'tabs' => [
                 'state' => $this->stateTab($vehicle),
@@ -811,6 +821,7 @@ class TelegramMiniAppSnapshot
                 'used_percent' => $wear === null ? $usedPercent : null,
                 'metric_label' => $this->stateMetricLabel($item, $wear, $usedPercent),
                 'criticality' => $rule->criticality,
+                'history' => $this->unitServiceHistory($vehicle, $rule->work_code),
             ];
         }
 
@@ -823,7 +834,7 @@ class TelegramMiniAppSnapshot
     private function roadmapTab(?Vehicle $vehicle): array
     {
         if ($vehicle === null) {
-            $timeline = array_map(fn (array $field): array => $this->roadmapRow(
+            $upcoming = array_map(fn (array $field): array => $this->roadmapRow(
                 $field['key'],
                 $field['label'],
                 'уточните в чате',
@@ -835,7 +846,9 @@ class TelegramMiniAppSnapshot
             ), $this->maintenanceFields(null));
 
             return [
-                'timeline' => $timeline,
+                'now' => $this->roadmapNow(null),
+                'past' => [],
+                'upcoming' => $upcoming,
                 'hint' => 'Запишите машину в боте — здесь появится дорожная карта.',
             ];
         }
@@ -845,12 +858,14 @@ class TelegramMiniAppSnapshot
             $snapshot->load(['items.rule']);
         } catch (Throwable) {
             return [
-                'timeline' => [],
+                'now' => $this->roadmapNow($vehicle),
+                'past' => $this->roadmapPastEvents($vehicle),
+                'upcoming' => [],
                 'hint' => 'План обслуживания готовится.',
             ];
         }
 
-        $timeline = [];
+        $upcoming = [];
         foreach ($snapshot->items as $item) {
             $rule = $item->rule;
             if ($rule === null) {
@@ -865,7 +880,7 @@ class TelegramMiniAppSnapshot
             }
 
             $sortDays = $this->roadmapSortDays($item, $vehicle);
-            $timeline[] = $this->roadmapRow(
+            $upcoming[] = $this->roadmapRow(
                 $rule->work_code,
                 (string) ($rule->localized_content['title']['ru'] ?? $rule->work_code),
                 $this->roadmapDetail($item, $vehicle),
@@ -878,7 +893,7 @@ class TelegramMiniAppSnapshot
         }
 
         foreach ($this->seasonalTips() as $tip) {
-            $timeline[] = $this->roadmapRow(
+            $upcoming[] = $this->roadmapRow(
                 (string) $tip['key'],
                 (string) $tip['label'],
                 (string) $tip['detail'],
@@ -890,14 +905,188 @@ class TelegramMiniAppSnapshot
             );
         }
 
-        usort($timeline, fn (array $a, array $b): int => ($a['sort_days'] ?? 9999) <=> ($b['sort_days'] ?? 9999));
+        usort($upcoming, fn (array $a, array $b): int => ($a['sort_days'] ?? 9999) <=> ($b['sort_days'] ?? 9999));
 
         return [
-            'timeline' => $timeline,
-            'hint' => $timeline === []
+            'now' => $this->roadmapNow($vehicle),
+            'past' => $this->roadmapPastEvents($vehicle),
+            'upcoming' => $upcoming,
+            'hint' => $upcoming === []
                 ? 'Пока всё спокойно — ближайших работ нет или данных мало.'
                 : null,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function roadmapNow(?Vehicle $vehicle): array
+    {
+        $now = [
+            'date' => now()->format('d.m.Y'),
+            'mileage_label' => null,
+            'last_event_date' => null,
+            'last_event_mileage_label' => null,
+        ];
+
+        if ($vehicle === null) {
+            return $now;
+        }
+
+        $now['mileage_label'] = $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit);
+
+        $latestDate = null;
+        $latestMileage = null;
+
+        foreach ($vehicle->serviceRecords as $record) {
+            $dateKey = $record->service_date?->format('Y-m-d');
+            if ($dateKey === null) {
+                continue;
+            }
+            if ($latestDate === null || $dateKey > $latestDate) {
+                $latestDate = $dateKey;
+                $latestMileage = is_numeric($record->mileage_value) ? (int) $record->mileage_value : null;
+            }
+        }
+
+        foreach ($vehicle->historyAnswers as $answer) {
+            if ($answer->answer !== 'done_known' || $answer->performed_date === null) {
+                continue;
+            }
+            $dateKey = $answer->performed_date->format('Y-m-d');
+            if ($latestDate === null || $dateKey > $latestDate) {
+                $latestDate = $dateKey;
+                $latestMileage = is_numeric($answer->performed_mileage_km)
+                    ? (int) $answer->performed_mileage_km
+                    : $latestMileage;
+            }
+        }
+
+        if ($latestDate !== null) {
+            $now['last_event_date'] = date('d.m.Y', strtotime($latestDate));
+            if ($latestMileage !== null) {
+                $now['last_event_mileage_label'] = number_format($latestMileage, 0, '', ' ').' км';
+            }
+        }
+
+        return $now;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function roadmapPastEvents(Vehicle $vehicle): array
+    {
+        $events = [];
+        $seen = [];
+
+        foreach ($vehicle->serviceRecords as $record) {
+            $date = $record->service_date?->format('d.m.Y');
+            $sortDate = $record->service_date?->format('Y-m-d') ?? '0000-00-00';
+            $mileageLabel = is_numeric($record->mileage_value)
+                ? number_format((int) $record->mileage_value, 0, '', ' ').' км'
+                : null;
+
+            foreach ($record->items as $item) {
+                $code = $item->workCatalogItem?->code;
+                if ($code === null) {
+                    continue;
+                }
+                $label = (string) ($item->workCatalogItem?->localized_name['ru'] ?? $code);
+                $dedupeKey = $code.'|'.$sortDate.'|'.$record->id;
+                if (isset($seen[$dedupeKey])) {
+                    continue;
+                }
+                $seen[$dedupeKey] = true;
+                $events[] = [
+                    'key' => $dedupeKey,
+                    'label' => $label,
+                    'date' => $date,
+                    'mileage_label' => $mileageLabel,
+                    'sort_date' => $sortDate,
+                ];
+            }
+        }
+
+        foreach ($vehicle->historyAnswers as $answer) {
+            if ($answer->answer !== 'done_known' || $answer->performed_date === null) {
+                continue;
+            }
+            $code = $answer->workCatalogItem?->code;
+            if ($code === null) {
+                continue;
+            }
+            $sortDate = $answer->performed_date->format('Y-m-d');
+            $dedupeKey = $code.'|'.$sortDate.'|history';
+            if (isset($seen[$dedupeKey])) {
+                continue;
+            }
+            $seen[$dedupeKey] = true;
+            $events[] = [
+                'key' => $dedupeKey,
+                'label' => (string) ($answer->workCatalogItem?->localized_name['ru'] ?? $code),
+                'date' => $answer->performed_date->format('d.m.Y'),
+                'mileage_label' => is_numeric($answer->performed_mileage_km)
+                    ? number_format((int) $answer->performed_mileage_km, 0, '', ' ').' км'
+                    : null,
+                'sort_date' => $sortDate,
+            ];
+        }
+
+        usort($events, fn (array $a, array $b): int => ($a['sort_date'] ?? '') <=> ($b['sort_date'] ?? ''));
+
+        return array_map(fn (array $event): array => [
+            'key' => $event['key'],
+            'label' => $event['label'],
+            'date' => $event['date'],
+            'mileage_label' => $event['mileage_label'],
+        ], $events);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function unitServiceHistory(Vehicle $vehicle, string $workCode): array
+    {
+        $entries = [];
+
+        foreach ($vehicle->serviceRecords as $record) {
+            foreach ($record->items as $item) {
+                if ($item->workCatalogItem?->code !== $workCode) {
+                    continue;
+                }
+                $entries[] = [
+                    'date' => $record->service_date?->format('d.m.Y'),
+                    'mileage_label' => is_numeric($record->mileage_value)
+                        ? number_format((int) $record->mileage_value, 0, '', ' ').' км'
+                        : null,
+                    'sort_date' => $record->service_date?->format('Y-m-d') ?? '0000-00-00',
+                    'source' => 'service',
+                ];
+            }
+        }
+
+        $answer = $vehicle->historyAnswers->first(
+            fn (HistoryAnswer $row): bool => $row->workCatalogItem?->code === $workCode,
+        );
+        if ($answer !== null && $answer->answer === 'done_known' && $answer->performed_date !== null) {
+            $entries[] = [
+                'date' => $answer->performed_date->format('d.m.Y'),
+                'mileage_label' => is_numeric($answer->performed_mileage_km)
+                    ? number_format((int) $answer->performed_mileage_km, 0, '', ' ').' км'
+                    : null,
+                'sort_date' => $answer->performed_date->format('Y-m-d'),
+                'source' => 'history',
+            ];
+        }
+
+        usort($entries, fn (array $a, array $b): int => ($b['sort_date'] ?? '') <=> ($a['sort_date'] ?? ''));
+
+        return array_map(fn (array $entry): array => [
+            'date' => $entry['date'],
+            'mileage_label' => $entry['mileage_label'],
+            'source' => $entry['source'],
+        ], $entries);
     }
 
     /**
@@ -920,7 +1109,8 @@ class TelegramMiniAppSnapshot
             'tone' => $tone,
             'tier' => $tier,
             'sort_days' => $sortDays,
-            'days_label' => $this->roadmapDaysLabel($sortDays),
+            'is_overdue' => $tone === 'overdue',
+            'days_label' => $this->roadmapDaysLabel($sortDays, $tone === 'overdue'),
             'due_date' => $dueDate,
             'due_mileage_label' => $dueMileageKm !== null
                 ? number_format($dueMileageKm, 0, '', ' ').' км'
@@ -928,13 +1118,13 @@ class TelegramMiniAppSnapshot
         ];
     }
 
-    private function roadmapDaysLabel(?int $sortDays): ?string
+    private function roadmapDaysLabel(?int $sortDays, bool $isOverdue = false): ?string
     {
+        if ($isOverdue) {
+            return 'уже пора';
+        }
         if ($sortDays === null) {
             return null;
-        }
-        if ($sortDays < 0) {
-            return 'уже пора';
         }
         if ($sortDays === 0) {
             return 'сегодня';
@@ -1055,10 +1245,10 @@ class TelegramMiniAppSnapshot
     private function roadmapSortDays(PlanItem $item, Vehicle $vehicle): ?int
     {
         if ($item->status === 'overdue' || $item->urgency === 'immediate') {
-            return -1;
+            return 0;
         }
         if ($item->due_date !== null) {
-            return (int) now()->startOfDay()->diffInDays($item->due_date, false);
+            return max(0, (int) now()->startOfDay()->diffInDays($item->due_date, false));
         }
         if ($item->due_mileage_km !== null && $vehicle->current_mileage !== null) {
             $left = $item->due_mileage_km - (int) round(
@@ -1067,7 +1257,7 @@ class TelegramMiniAppSnapshot
                     : $vehicle->current_mileage,
             );
             if ($left <= 0) {
-                return -1;
+                return 0;
             }
 
             return (int) max(1, round($left / 40));

@@ -10,6 +10,7 @@ use App\Services\GuestSkillProfileService;
 use App\Services\Telegram\TelegramAllowlist;
 use App\Services\Telegram\TelegramInitDataValidator;
 use App\Services\Telegram\TelegramMiniAppSnapshot;
+use App\Services\VehicleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -22,6 +23,7 @@ class TelegramMiniAppController extends Controller
     public function __construct(
         private readonly AgentProfileService $agents,
         private readonly GuestSkillProfileService $skills,
+        private readonly VehicleService $vehicles,
     ) {}
 
     public function show(): View
@@ -136,6 +138,67 @@ class TelegramMiniAppController extends Controller
         return response()->json([
             'ok' => true,
             'skill' => $this->skills->toArray($skill),
+        ]);
+    }
+
+    public function updateVehicle(
+        Request $request,
+        TelegramInitDataValidator $validator,
+        TelegramAllowlist $allowlist,
+    ): JsonResponse {
+        $profile = $this->authorizedProfile($request, $validator, $allowlist);
+        if ($profile instanceof JsonResponse) {
+            return $profile;
+        }
+
+        $this->rejectUnknownFields($request, [
+            'vehicle_id',
+            'version',
+            'make',
+            'model',
+            'production_year',
+            'mileage',
+            'vin',
+        ]);
+
+        $validated = Validator::make($request->all(), [
+            'vehicle_id' => ['required', 'uuid'],
+            'version' => ['required', 'integer', 'min:1'],
+            'make' => ['sometimes', 'string', 'min:1', 'max:100'],
+            'model' => ['sometimes', 'string', 'min:1', 'max:100'],
+            'production_year' => ['sometimes', 'integer', 'between:1886,2100'],
+            'mileage' => ['sometimes', 'array:value,unit'],
+            'mileage.value' => ['required_with:mileage', 'integer', 'min:0'],
+            'mileage.unit' => ['required_with:mileage', Rule::in(['km', 'mi'])],
+            'vin' => ['sometimes', 'nullable', 'string', 'regex:/^[A-HJ-NPR-Z0-9]{17}$/'],
+        ])->validate();
+
+        if (count(array_diff(array_keys($validated), ['vehicle_id', 'version'])) === 0) {
+            throw ValidationException::withMessages([
+                'vehicle_id' => [__('validation.required')],
+            ]);
+        }
+
+        $vehicle = Vehicle::query()
+            ->whereKey($validated['vehicle_id'])
+            ->whereHas('anonymousSession', fn ($query) => $query->where('guest_profile_id', $profile->id))
+            ->with('anonymousSession')
+            ->first();
+
+        if ($vehicle === null) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'vehicle_not_found',
+            ], 404);
+        }
+
+        $patch = array_diff_key($validated, ['vehicle_id' => true]);
+        $updated = $this->vehicles->update($vehicle->anonymousSession, (string) $vehicle->id, $patch);
+
+        return response()->json([
+            'ok' => true,
+            'vehicle_id' => $updated->id,
+            'version' => $updated->version,
         ]);
     }
 

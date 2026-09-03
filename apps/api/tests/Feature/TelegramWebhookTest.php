@@ -332,18 +332,20 @@ class TelegramWebhookTest extends TestCase
         });
     }
 
-    public function test_work_message_offers_separate_journal_summary(): void
+    public function test_work_message_waits_for_clarification_before_journal_summary(): void
     {
         CarbonImmutable::setTestNow('2026-09-03 12:00:00');
         $this->seed(AiConfigSeeder::class);
         $this->seed(MaintenanceV1Seeder::class);
         $this->seed(MaintenanceV2Seeder::class);
         config(['ai.providers.abacus.api_key' => 'test-key']);
-        Http::fake(function ($request) {
+
+        $fakeLlm = function ($request) {
             $url = $request->url();
             if (str_contains($url, 'api.telegram.org')) {
                 return Http::response(['ok' => true], 200);
             }
+
             $system = (string) data_get($request->data(), 'messages.0.content');
             if (str_contains($system, 'Extract a car card')) {
                 return Http::response([
@@ -354,12 +356,42 @@ class TelegramWebhookTest extends TestCase
                     ]],
                 ], 200);
             }
-            if (str_contains($system, 'maintenance work event')) {
+            if (str_contains($system, 'обновляешь память')) {
                 return Http::response([
                     'choices' => [[
                         'message' => [
-                            'content' => '{"has_work_event":true,"work_codes":["tire_condition_inspection"],"service_date":"2026-09-03","mileage_km":148000,"note":"Замена всех 4 колёс"}',
+                            'content' => '{"vehicle":{"add":[],"remove":[]},"user":{"add":[],"remove":[]},"issues":[],"skill_signal":{"delta":null,"reason":null}}',
                         ],
+                    ]],
+                ], 200);
+            }
+            if (str_contains($system, 'maintenance work event')) {
+                $transcript = (string) data_get($request->data(), 'messages.1.content');
+                $complete = str_contains($transcript, '150000') || str_contains($transcript, '150 000');
+
+                return Http::response([
+                    'choices' => [[
+                        'message' => [
+                            'content' => $complete
+                                ? '{"has_work_event":true,"work_codes":["tire_condition_inspection"],"service_date":"2026-09-03","service_date_status":"known","mileage_km":150000,"mileage_status":"known","note":"Замена всех 4 колёс"}'
+                                : '{"has_work_event":true,"work_codes":["tire_condition_inspection"],"service_date":"2026-09-03","service_date_status":"known","mileage_km":null,"mileage_status":"missing","note":"Замена всех 4 колёс"}',
+                        ],
+                    ]],
+                ], 200);
+            }
+
+            $messages = $request->data()['messages'] ?? [];
+            $lastUser = '';
+            foreach (array_reverse($messages) as $message) {
+                if (($message['role'] ?? '') === 'user') {
+                    $lastUser = (string) ($message['content'] ?? '');
+                    break;
+                }
+            }
+            if (str_contains($lastUser, '150000')) {
+                return Http::response([
+                    'choices' => [[
+                        'message' => ['content' => 'Запишу: сегодня замена колёс, пробег 150 000 км.'],
                     ]],
                 ], 200);
             }
@@ -369,7 +401,9 @@ class TelegramWebhookTest extends TestCase
                     'message' => ['content' => 'Понял, сегодня поменяли колёса. Какой пробег сейчас, если помните?'],
                 ]],
             ], 200);
-        });
+        };
+
+        Http::fake($fakeLlm);
         Http::preventStrayRequests();
 
         $user = TelegramBotUser::query()->create(['telegram_user_id' => 80004]);
@@ -381,31 +415,6 @@ class TelegramWebhookTest extends TestCase
         $this->postJson('/telegram/webhook', $this->callbackUpdate(80004, 'save_vehicle'), [
             'X-Telegram-Bot-Api-Secret-Token' => 'test-secret',
         ])->assertOk();
-
-        Http::fake(function ($request) {
-            $url = $request->url();
-            if (str_contains($url, 'api.telegram.org')) {
-                return Http::response(['ok' => true], 200);
-            }
-            $system = (string) data_get($request->data(), 'messages.0.content');
-            if (str_contains($system, 'maintenance work event')) {
-                return Http::response([
-                    'choices' => [[
-                        'message' => [
-                            'content' => '{"has_work_event":true,"work_codes":["tire_condition_inspection"],"service_date":"2026-09-03","mileage_km":148000,"note":"Замена всех 4 колёс"}',
-                        ],
-                    ]],
-                ], 200);
-            }
-
-            return Http::response([
-                'choices' => [[
-                    'message' => ['content' => 'Понял, сегодня поменяли колёса.'],
-                ]],
-            ], 200);
-        });
-        Http::preventStrayRequests();
-
         $this->postJson('/telegram/webhook', $this->update(80004, 'сегодня поменял колеса'), [
             'X-Telegram-Bot-Api-Secret-Token' => 'test-secret',
         ])->assertOk();
@@ -416,9 +425,20 @@ class TelegramWebhookTest extends TestCase
             }
             $text = (string) ($request['text'] ?? '');
 
-            return str_contains($text, 'поменяли колёса')
-                && ! str_contains($request->body(), 'save_service_record');
+            return str_contains($text, 'поменяли колёса');
         });
+        Http::assertNotSent(function ($request): bool {
+            if (! str_contains($request->url(), '/sendMessage')) {
+                return false;
+            }
+
+            return str_contains((string) ($request['text'] ?? ''), (string) config('telegram.messages.save_work_summary_intro'));
+        });
+
+        $this->postJson('/telegram/webhook', $this->update(80004, '150000'), [
+            'X-Telegram-Bot-Api-Secret-Token' => 'test-secret',
+        ])->assertOk();
+
         Http::assertSent(function ($request): bool {
             if (! str_contains($request->url(), '/sendMessage')) {
                 return false;
@@ -428,8 +448,8 @@ class TelegramWebhookTest extends TestCase
             return str_contains($text, (string) config('telegram.messages.save_work_summary_intro'))
                 && str_contains($text, 'Проверка состояния шин')
                 && str_contains($text, '03.09.2026')
-                && str_contains($request->body(), 'save_service_record')
-                && ! str_contains($text, 'поменяли колёса');
+                && str_contains($text, '150000')
+                && str_contains($request->body(), 'save_service_record');
         });
 
         CarbonImmutable::setTestNow();
@@ -461,7 +481,7 @@ class TelegramWebhookTest extends TestCase
                 return Http::response([
                     'choices' => [[
                         'message' => [
-                            'content' => '{"has_work_event":true,"work_codes":["tire_condition_inspection"],"service_date":"2026-09-03","mileage_km":148000,"note":"Замена всех 4 колёс"}',
+                            'content' => '{"has_work_event":true,"work_codes":["tire_condition_inspection"],"service_date":"2026-09-03","service_date_status":"known","mileage_km":148000,"mileage_status":"known","note":"Замена всех 4 колёс"}',
                         ],
                     ]],
                 ], 200);

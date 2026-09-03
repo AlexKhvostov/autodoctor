@@ -26,9 +26,13 @@ class TelegramServiceRecordCommitService
         private readonly LlmClient $llm,
     ) {}
 
-    public function offerSummary(GuestProfile $profile): ?string
+    public function offerSummary(GuestProfile $profile, ?string $assistantReply = null): ?string
     {
         if (! $this->dialogue->hasVehicle($profile)) {
+            return null;
+        }
+
+        if ($assistantReply !== null && $this->isAwaitingClarification($assistantReply)) {
             return null;
         }
 
@@ -39,7 +43,7 @@ class TelegramServiceRecordCommitService
         }
 
         if (! $this->isCompleteDraft($profile, $draft)) {
-            $this->storeDraft($profile, null);
+            $this->storeDraft($profile, is_array($draft) ? $draft : null);
 
             return null;
         }
@@ -82,8 +86,74 @@ class TelegramServiceRecordCommitService
         }
 
         $codes = $this->validWorkCodes($profile, $draft['work_codes'] ?? []);
+        if ($codes === []) {
+            return false;
+        }
 
-        return $codes !== [];
+        return $this->slotStatus($draft, 'service_date', 'service_date_status') !== 'missing'
+            && $this->slotStatus($draft, 'mileage_km', 'mileage_status') !== 'missing';
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     */
+    private function slotStatus(array $draft, string $valueKey, string $statusKey): string
+    {
+        $status = strtolower(trim((string) ($draft[$statusKey] ?? '')));
+        if (in_array($status, ['known', 'unknown'], true)) {
+            if ($status === 'known' && ! $this->hasSlotValue($draft, $valueKey)) {
+                return 'missing';
+            }
+
+            return $status;
+        }
+
+        if ($this->hasSlotValue($draft, $valueKey)) {
+            return 'known';
+        }
+
+        return 'missing';
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     */
+    private function hasSlotValue(array $draft, string $valueKey): bool
+    {
+        if ($valueKey === 'service_date') {
+            return trim((string) ($draft['service_date'] ?? '')) !== '';
+        }
+
+        return is_numeric($draft[$valueKey] ?? null);
+    }
+
+    public function isAwaitingClarification(string $assistantReply): bool
+    {
+        $reply = trim($assistantReply);
+        if ($reply === '') {
+            return false;
+        }
+
+        if (str_contains($reply, '?')) {
+            return true;
+        }
+
+        foreach ([
+            'уточн',
+            'напишите',
+            'скажите',
+            'подскажите',
+            'если помните',
+            'какой пробег',
+            'когда именно',
+            'не сказали',
+        ] as $pattern) {
+            if (mb_stripos($reply, $pattern) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -106,9 +176,14 @@ class TelegramServiceRecordCommitService
         $date = $this->resolveServiceDate($draft);
         if ($date !== null) {
             $lines[] = 'Дата: '.$date->format('d.m.Y');
+        } elseif ($this->slotStatus($draft, 'service_date', 'service_date_status') === 'unknown') {
+            $lines[] = 'Дата: неизвестна';
         }
-        if (is_numeric($draft['mileage_km'] ?? null)) {
+        if ($this->slotStatus($draft, 'mileage_km', 'mileage_status') === 'known'
+            && is_numeric($draft['mileage_km'] ?? null)) {
             $lines[] = 'Пробег: '.(int) $draft['mileage_km'].' км';
+        } elseif ($this->slotStatus($draft, 'mileage_km', 'mileage_status') === 'unknown') {
+            $lines[] = 'Пробег: неизвестен';
         }
         $note = trim((string) ($draft['note'] ?? ''));
         if ($note !== '') {
@@ -129,18 +204,17 @@ class TelegramServiceRecordCommitService
         return DB::transaction(function () use ($profile, $vehicle, $draft): ServiceRecord {
             $codes = $this->validWorkCodes($profile, $draft['work_codes'] ?? []);
             $catalog = WorkCatalogItem::query()->whereIn('code', $codes)->get()->keyBy('code');
-            $serviceDate = $this->resolveServiceDate($draft)?->format('Y-m-d') ?? now()->format('Y-m-d');
-            $mileage = is_numeric($draft['mileage_km'] ?? null)
-                ? ['value' => (int) $draft['mileage_km'], 'unit' => 'km']
-                : ($vehicle->current_mileage === null ? null : [
-                    'value' => $vehicle->current_mileage,
-                    'unit' => $vehicle->mileage_unit ?? 'km',
-                ]);
+            $serviceDate = $this->resolveServiceDate($draft)?->format('Y-m-d');
+            $mileage = null;
+            if ($this->slotStatus($draft, 'mileage_km', 'mileage_status') === 'known'
+                && is_numeric($draft['mileage_km'] ?? null)) {
+                $mileage = ['value' => (int) $draft['mileage_km'], 'unit' => 'km'];
+            }
             $note = trim((string) ($draft['note'] ?? ''));
 
             $record = ServiceRecord::query()->create([
                 'vehicle_id' => $vehicle->id,
-                'service_date' => $serviceDate,
+                'service_date' => $serviceDate ?? now()->format('Y-m-d'),
                 'mileage_value' => $mileage['value'] ?? null,
                 'mileage_unit' => $mileage['unit'] ?? null,
                 'evidence_source' => 'self',
@@ -280,10 +354,16 @@ class TelegramServiceRecordCommitService
                         'role' => 'system',
                         'content' => 'Extract a maintenance work event from the chat for AutoDoctor journal. '
                             .'Reply with JSON only, no markdown. Keys: has_work_event (bool), work_codes (array of catalog codes), '
-                            .'service_date (YYYY-MM-DD or null), mileage_km (int or null), note (string or null). '
+                            .'service_date (YYYY-MM-DD or null), service_date_status (known|unknown|missing), '
+                            .'mileage_km (int or null), mileage_status (known|unknown|missing), note (string or null). '
                             .'Set has_work_event true only when the user reports completed maintenance (replaced, changed, serviced). '
-                            .'Not for complaints, questions or future plans. Never invent date, mileage or work. '
-                            .'If user says today/сегодня, use today\'s date. Map tire/wheel replacement to tire_condition_inspection. '
+                            .'Not for complaints, questions or future plans. '
+                            .'Use service_date and mileage_km ONLY from what the user explicitly said about THIS work in the chat. '
+                            .'Do NOT copy current vehicle mileage from context as work mileage. '
+                            .'If the assistant asked a question and the user has not answered yet, set the related status to missing. '
+                            .'If the user says they do not know or do not remember, set status to unknown and value to null. '
+                            .'If user says today/сегодня or yesterday/вчера, set service_date accordingly and service_date_status known. '
+                            .'Map tire/wheel replacement to tire_condition_inspection. '
                             ."Allowed work codes:\n".$catalogLines,
                     ],
                     ['role' => 'user', 'content' => $transcript],

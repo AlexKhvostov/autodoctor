@@ -33,6 +33,8 @@ class TelegramMiniAppTest extends TestCase
             ->assertSee('telegram-web-app.js', false)
             ->assertSee('topbar-shell', false)
             ->assertSee('tl-wrap', false)
+            ->assertSee('history-sheet', false)
+            ->assertSee('disableVerticalSwipes', false)
             ->assertSee('chart-card', false);
     }
 
@@ -60,7 +62,7 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('title', 'AutoDoctor')
             ->assertJsonPath('vehicles.0.title', 'Автомобиль')
             ->assertJsonPath('vehicles.0.status', 'placeholder')
-            ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['timeline'], 'analytics' => ['charts']]]]])
+            ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['now', 'past', 'upcoming'], 'analytics' => ['charts']]]]])
             ->assertJsonStructure(['agent' => ['title', 'form', 'editable', 'memory_hint'], 'help' => ['sections'], 'garage'])
             ->assertJsonPath('user.initial', 'A')
             ->assertJsonMissingPath('subtitle');
@@ -92,7 +94,7 @@ class TelegramMiniAppTest extends TestCase
             ->assertOk()
             ->assertJsonPath('vehicles.0.title', 'Volkswagen Polo')
             ->assertJsonPath('vehicles.0.status', 'draft')
-            ->assertJsonPath('vehicles.0.tabs.roadmap.timeline.0.tone', 'unknown');
+            ->assertJsonPath('vehicles.0.tabs.roadmap.upcoming.0.tone', 'unknown');
     }
 
     public function test_mini_app_can_update_agent_preferences(): void
@@ -172,12 +174,75 @@ class TelegramMiniAppTest extends TestCase
 
         $this->assertSame('Volkswagen Polo', $card['title']);
         $this->assertSame('saved', $card['status']);
-        $this->assertArrayHasKey('timeline', $card['tabs']['roadmap']);
+        $this->assertArrayHasKey('now', $card['tabs']['roadmap']);
+        $this->assertArrayHasKey('upcoming', $card['tabs']['roadmap']);
         $oilState = collect($card['tabs']['state'])->firstWhere('key', 'engine_oil');
         $this->assertSame('12.03.2026 · 140 000 км', $oilState['last_service']);
+        $this->assertNotEmpty($oilState['history']);
         $this->assertTrue($state['agent']['editable']);
         $this->assertArrayHasKey('form', $state['agent']);
+        $this->assertTrue($card['editable']);
+        $this->assertArrayHasKey('edit_profile', $card);
         $this->assertSame((string) $vehicle->id, $state['active_vehicle_id']);
+    }
+
+    public function test_mini_app_can_update_vehicle_profile(): void
+    {
+        config(['telegram.bot_token' => 'TESTTOKEN', 'telegram.allowlist_ids' => '70005']);
+        $profile = GuestProfile::query()->create(['telegram_id' => 70005]);
+        $session = \App\Models\AnonymousSession::query()->create([
+            'guest_profile_id' => $profile->id,
+            'locale' => 'ru',
+            'platform' => 'telegram',
+            'app_version' => 'telegram-bot',
+            'token_hash' => hash('sha256', 'test5'),
+            'status' => 'active',
+            'last_activity_at' => now(),
+            'expires_at' => now()->addYear(),
+        ]);
+        $configuration = VehicleConfiguration::query()->create([
+            'make' => 'Volkswagen',
+            'model' => 'Polo',
+            'fuel_type' => 'petrol',
+            'engine_displacement_cc' => 1400,
+            'transmission_type' => 'manual',
+            'field_provenance' => [],
+            'confirmed_at' => now(),
+        ]);
+        $vehicle = Vehicle::query()->create([
+            'anonymous_session_id' => $session->id,
+            'configuration_id' => $configuration->id,
+            'production_year' => 2014,
+            'current_mileage' => 148000,
+            'mileage_unit' => 'km',
+            'profile_status' => 'pending_review',
+            'plan_eligibility' => 'universal_type_only',
+            'version' => 1,
+        ]);
+
+        $headers = ['X-Telegram-Init-Data' => $this->sign([
+            'auth_date' => (string) time(),
+            'user' => '{"id":70005,"first_name":"Driver"}',
+        ])];
+
+        $this->withHeaders($headers)
+            ->patchJson('/telegram/app/vehicle', [
+                'vehicle_id' => $vehicle->id,
+                'version' => 1,
+                'make' => 'VW',
+                'model' => 'Polo GTI',
+                'production_year' => 2015,
+                'mileage' => ['value' => 150000, 'unit' => 'km'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('version', 2);
+
+        $vehicle->refresh();
+        $this->assertSame('VW', $vehicle->configuration->make);
+        $this->assertSame('Polo GTI', $vehicle->configuration->model);
+        $this->assertSame(2015, $vehicle->production_year);
+        $this->assertSame(150000, $vehicle->current_mileage);
     }
 
     /**

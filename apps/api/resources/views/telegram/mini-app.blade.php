@@ -159,6 +159,8 @@
             box-shadow: var(--shadow);
             min-height: 0;
         }
+        .unit-card[data-unit] { cursor: pointer; }
+        .unit-card[data-unit]:active { opacity: 0.92; }
         .unit-card.status-overdue { border-color: rgba(239, 68, 68, 0.35); }
         .unit-card.status-soon { border-color: rgba(245, 158, 11, 0.35); }
         .unit-name {
@@ -210,17 +212,40 @@
             top: 0;
             bottom: 0;
             width: 2px;
-            background: linear-gradient(var(--bad), var(--primary) 18%, rgba(21,32,51,0.1));
+            background: linear-gradient(rgba(34,181,115,0.35), var(--primary) 42%, rgba(21,32,51,0.1));
+        }
+        .tl-past-scroll {
+            max-height: 140px;
+            overflow-y: auto;
+            margin-bottom: 4px;
+            padding-right: 2px;
         }
         .tl-now {
             position: relative;
-            margin: 6px 0 8px -22px;
-            padding-left: 22px;
+            margin: 4px 0 6px -22px;
+            padding: 6px 8px 6px 22px;
+            border-radius: 10px;
+            background: var(--primary-soft);
+            border: 1px solid rgba(30, 202, 211, 0.25);
+        }
+        .tl-now-label {
             font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: var(--primary-deep);
             font-weight: 800;
+        }
+        .tl-now-meta {
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 2px;
+            line-height: 1.25;
+        }
+        .tl-now-sub {
+            font-size: 9px;
+            color: var(--muted);
+            margin-top: 2px;
+            line-height: 1.35;
         }
         .tl-now::before {
             content: '';
@@ -236,10 +261,10 @@
         }
         .tl-node {
             position: relative;
-            margin-bottom: 8px;
-            padding: 6px 8px 6px 0;
+            margin-bottom: 5px;
+            padding: 4px 8px 4px 0;
             display: flex;
-            gap: 7px;
+            gap: 6px;
             align-items: flex-start;
         }
         .tl-node::before {
@@ -253,19 +278,22 @@
             background: var(--card);
             border: 2px solid var(--muted);
         }
-        .tl-node.past::before { border-color: var(--bad); background: rgba(239,68,68,0.15); }
+        .tl-node.past.done::before { border-color: var(--ok); background: rgba(34,181,115,0.15); }
+        .tl-node.overdue .tl-card { border-left-color: var(--bad); }
         .tl-node.required .tl-card { border-left: 2px solid var(--warn); }
         .tl-node.recommended .tl-card { border-left: 2px solid rgba(107,122,144,0.35); opacity: 0.92; }
         .tl-card {
             flex: 1;
+            min-width: 0;
             background: var(--card);
             border: 1px solid var(--line);
-            border-radius: 9px;
-            padding: 7px 8px;
+            border-left: 2px solid rgba(107,122,144,0.35);
+            border-radius: 8px;
+            padding: 5px 7px;
             box-shadow: var(--shadow);
         }
-        .tl-label { font-size: 13px; font-weight: 700; line-height: 1.2; }
-        .tl-meta { font-size: 9px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+        .tl-label { font-size: 12px; font-weight: 700; line-height: 1.2; }
+        .tl-meta { font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
         .tl-icons { display: flex; gap: 3px; flex-shrink: 0; padding-top: 2px; }
         .ico {
             width: 16px;
@@ -550,11 +578,21 @@
         .passport-title {
             font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             color: var(--muted);
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
+        .passport-edit-grid { display: grid; gap: 8px; margin-bottom: 10px; }
+        .history-item {
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--bg-soft);
+            margin-bottom: 6px;
+        }
+        .history-item-date { font-size: 12px; font-weight: 700; }
+        .history-item-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
         .field-row {
             display: flex;
             justify-content: space-between;
@@ -625,12 +663,21 @@
         </div>
         <div id="help-content"></div>
     </div>
+    <div class="sheet" id="history-sheet">
+        <div class="sheet-head">
+            <div class="sheet-title" id="history-title">История</div>
+            <button class="sheet-close" id="history-close" type="button">×</button>
+        </div>
+        <div id="history-content"></div>
+    </div>
 
     <script>
         const tg = window.Telegram && window.Telegram.WebApp;
         if (tg) {
             tg.ready();
             tg.expand();
+            if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+            if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
             if (tg.setHeaderColor) tg.setHeaderColor('#eef3fb');
             if (tg.setBackgroundColor) tg.setBackgroundColor('#eef3fb');
         }
@@ -639,6 +686,7 @@
             vehicles: [], agent: {}, garage: {}, help: {},
             activeVehicleKey: null, tab: 'state',
             garageView: 'list', garageDetailKey: null,
+            passportEditing: false, savingVehicle: false, vehicleToast: '',
             savingAgent: false, agentToast: '',
         };
 
@@ -704,31 +752,58 @@
         }
 
         function renderRoadmap() {
-            const roadmap = activeVehicle()?.tabs?.roadmap || { timeline: [], hint: null };
+            const roadmap = activeVehicle()?.tabs?.roadmap || { now: {}, past: [], upcoming: [], hint: null };
             const root = document.getElementById('panel-roadmap');
-            const timeline = roadmap.timeline || [];
-            if (!timeline.length) {
+            const past = roadmap.past || [];
+            const upcoming = roadmap.upcoming || [];
+            const now = roadmap.now || {};
+            if (!past.length && !upcoming.length) {
                 root.innerHTML = '<p class="hint">' + escapeHtml(roadmap.hint || 'Пока нет ближайших работ.') + '</p>';
                 return;
             }
-            const past = timeline.filter((item) => (item.sort_days ?? 9999) < 0);
-            const future = timeline.filter((item) => (item.sort_days ?? 9999) >= 0);
             let html = roadmap.hint ? '<p class="hint">' + escapeHtml(roadmap.hint) + '</p>' : '';
             html += '<div class="tl-wrap">';
-            past.forEach((item) => { html += renderTimelineNode(item, true); });
-            html += '<div class="tl-now">Сейчас</div>';
-            future.forEach((item) => { html += renderTimelineNode(item, false); });
+            if (past.length) {
+                html += '<div class="tl-past-scroll">';
+                past.forEach((item) => { html += renderPastNode(item); });
+                html += '</div>';
+            }
+            html += renderNowNode(now);
+            upcoming.forEach((item) => { html += renderTimelineNode(item); });
             html += '</div>';
             root.innerHTML = html;
         }
 
-        function renderTimelineNode(item, isPast) {
+        function renderNowNode(now) {
+            const meta = [
+                now.date,
+                now.mileage_label ? ('пробег ' + now.mileage_label) : null,
+            ].filter(Boolean).join(' · ');
+            const sub = now.last_event_date
+                ? ('посл. событие: ' + now.last_event_date +
+                    (now.last_event_mileage_label ? (' · ' + now.last_event_mileage_label) : ''))
+                : '';
+            return '<div class="tl-now"><div class="tl-now-label">Сейчас</div>' +
+                '<div class="tl-now-meta">' + escapeHtml(meta || 'сегодня') + '</div>' +
+                (sub ? '<div class="tl-now-sub">' + escapeHtml(sub) + '</div>' : '') +
+                '</div>';
+        }
+
+        function renderPastNode(item) {
+            const meta = [item.date, item.mileage_label].filter(Boolean).join(' · ');
+            return '<div class="tl-node past done">' +
+                '<div class="tl-card"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
+                '<div class="tl-meta">' + escapeHtml(meta || '—') + '</div></div></div>';
+        }
+
+        function renderTimelineNode(item) {
             const meta = [
                 item.days_label,
-                item.due_date ? ('до ' + item.due_date) : null,
+                item.due_date ? ('~ ' + item.due_date) : null,
                 item.due_mileage_label ? ('~ ' + item.due_mileage_label) : null,
             ].filter(Boolean).join(' · ');
-            return '<div class="tl-node ' + (isPast ? 'past ' : '') + (item.tier || 'recommended') + '">' +
+            const toneClass = item.tone === 'overdue' ? ' overdue' : '';
+            return '<div class="tl-node' + toneClass + ' ' + (item.tier || 'recommended') + '">' +
                 '<div class="tl-icons">' + tierIcon(item.tier) + '</div>' +
                 '<div class="tl-card"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
                 '<div class="tl-meta">' + escapeHtml(meta || item.detail || '—') + '</div></div></div>';
@@ -894,7 +969,8 @@
 
         function closeHelp() {
             document.getElementById('help-sheet').classList.remove('open');
-            if (!document.getElementById('garage-sheet').classList.contains('open')) {
+            if (!document.getElementById('garage-sheet').classList.contains('open') &&
+                !document.getElementById('history-sheet').classList.contains('open')) {
                 document.getElementById('sheet-backdrop').classList.remove('open');
             }
         }
@@ -961,24 +1037,99 @@
             if (!vehicle) return '<p class="hint">Автомобиль не найден.</p>';
             let html = '<div class="vehicle-tile-title">' + escapeHtml(vehicle.title) + '</div>' +
                 '<div class="vehicle-tile-sub" style="margin-bottom:10px">' + escapeHtml(vehicle.summary || '') + '</div>';
-            (vehicle.sections || []).forEach((section) => {
-                html += '<div class="passport-section"><div class="passport-title">' + escapeHtml(section.title) + '</div>';
-                (section.fields || []).forEach((field) => {
-                    const value = field.filled ? field.value : '—';
-                    html += '<div class="field-row"><span>' + escapeHtml(field.label) + '</span>' +
-                        '<span class="' + (field.filled ? 'field-value' : 'field-value empty') + '">' +
-                        escapeHtml(value) + '</span></div>';
+
+            if (vehicle.editable && vehicle.edit_profile && appState.passportEditing) {
+                const p = vehicle.edit_profile;
+                html += '<div class="passport-edit-grid">' +
+                    '<div class="form-card"><label class="form-label">Марка</label>' +
+                    '<input class="form-select" id="pe-make" value="' + escapeHtml(p.make || '') + '"></div>' +
+                    '<div class="form-card"><label class="form-label">Модель</label>' +
+                    '<input class="form-select" id="pe-model" value="' + escapeHtml(p.model || '') + '"></div>' +
+                    '<div class="form-card"><label class="form-label">Год выпуска</label>' +
+                    '<input class="form-select" id="pe-year" type="number" value="' +
+                    escapeHtml(p.production_year != null ? String(p.production_year) : '') + '"></div>' +
+                    '<div class="form-card"><label class="form-label">Пробег (км)</label>' +
+                    '<input class="form-select" id="pe-mileage" type="number" value="' +
+                    escapeHtml(p.mileage_value != null ? String(p.mileage_value) : '') + '"></div>' +
+                    '<div class="form-card"><label class="form-label">VIN</label>' +
+                    '<input class="form-select" id="pe-vin" value="' + escapeHtml(p.vin || '') + '"></div>' +
+                    '</div>' +
+                    '<button class="form-save" id="passport-save" type="button"' +
+                    (appState.savingVehicle ? ' disabled' : '') + '>' +
+                    (appState.savingVehicle ? 'Сохраняем…' : 'Сохранить') + '</button>' +
+                    (appState.vehicleToast ? '<div class="save-toast">' + escapeHtml(appState.vehicleToast) + '</div>' : '');
+            } else {
+                (vehicle.sections || []).forEach((section) => {
+                    html += '<div class="passport-section"><div class="passport-title">' + escapeHtml(section.title) + '</div>';
+                    (section.fields || []).forEach((field) => {
+                        const value = field.filled ? field.value : '—';
+                        html += '<div class="field-row"><span>' + escapeHtml(field.label) + '</span>' +
+                            '<span class="' + (field.filled ? 'field-value' : 'field-value empty') + '">' +
+                            escapeHtml(value) + '</span></div>';
+                    });
+                    html += '</div>';
                 });
-                html += '</div>';
-            });
-            html += '<div class="vehicle-actions"><button class="btn btn-primary" type="button" id="passport-select"' +
+            }
+
+            html += '<div class="vehicle-actions">';
+            if (vehicle.editable && vehicle.status === 'saved') {
+                html += '<button class="btn btn-ghost" type="button" id="passport-edit">' +
+                    (appState.passportEditing ? 'Отмена' : 'Редактировать') + '</button>';
+            }
+            html += '<button class="btn btn-primary" type="button" id="passport-select"' +
                 (key === appState.activeVehicleKey ? ' disabled' : '') + '>' +
                 (key === appState.activeVehicleKey ? '✓ Активна для AI' : 'Выбрать для AI') + '</button></div>';
+
             setTimeout(() => {
+                const editBtn = document.getElementById('passport-edit');
+                if (editBtn) editBtn.addEventListener('click', () => {
+                    appState.passportEditing = !appState.passportEditing;
+                    appState.vehicleToast = '';
+                    renderGarageSheet();
+                });
+                const saveBtn = document.getElementById('passport-save');
+                if (saveBtn) saveBtn.addEventListener('click', () => saveVehicleProfile(key));
                 const btn = document.getElementById('passport-select');
                 if (btn && !btn.disabled) btn.addEventListener('click', () => selectVehicle(key));
             }, 0);
             return html;
+        }
+
+        async function saveVehicleProfile(key) {
+            const vehicle = vehicleByKey(key);
+            if (!vehicle || !vehicle.id || appState.savingVehicle) return;
+            appState.savingVehicle = true;
+            appState.vehicleToast = '';
+            renderGarageSheet();
+            try {
+                const body = {
+                    vehicle_id: vehicle.id,
+                    version: vehicle.version,
+                    make: document.getElementById('pe-make')?.value?.trim(),
+                    model: document.getElementById('pe-model')?.value?.trim(),
+                };
+                const year = document.getElementById('pe-year')?.value?.trim();
+                if (year) body.production_year = Number(year);
+                const mileage = document.getElementById('pe-mileage')?.value?.trim();
+                if (mileage) body.mileage = { value: Number(mileage), unit: vehicle.edit_profile?.mileage_unit || 'km' };
+                const vin = document.getElementById('pe-vin')?.value?.trim();
+                if (vin) body.vin = vin.toUpperCase();
+                const res = await fetch(apiBase + '/vehicle', {
+                    method: 'PATCH', headers: apiHeaders, body: JSON.stringify(body),
+                });
+                if (!res.ok) throw new Error('save failed');
+                appState.passportEditing = false;
+                appState.vehicleToast = 'Сохранено';
+                await loadState();
+                appState.garageView = 'detail';
+                appState.garageDetailKey = key;
+                openGarage();
+            } catch (e) {
+                appState.vehicleToast = 'Не удалось сохранить';
+            } finally {
+                appState.savingVehicle = false;
+                if (appState.garageView === 'detail') renderGarageSheet();
+            }
         }
 
         function selectVehicle(key) {
@@ -993,6 +1144,8 @@
         function openVehicleDetail(key) {
             appState.garageView = 'detail';
             appState.garageDetailKey = key;
+            appState.passportEditing = false;
+            appState.vehicleToast = '';
             renderGarageSheet();
         }
 
@@ -1025,15 +1178,48 @@
                 const pctLabel = pct == null ? '—' : (pct + '%');
                 const last = item.last_service ? escapeHtml(item.last_service) : '—';
                 const next = item.next_due ? escapeHtml(item.next_due) : '—';
-                return '<article class="unit-card status-' + status + '">' +
+                const hasHistory = item.history && item.history.length;
+                return '<article class="unit-card status-' + status + '"' +
+                    (hasHistory ? ' data-unit="' + escapeHtml(item.key) + '"' : '') + '>' +
                     '<div class="unit-name">' + escapeHtml(item.label) + '</div>' +
                     '<div class="unit-bar-row">' +
                     '<div class="unit-bar"><span style="width:' + barWidth + '%;background:' + color + '"></span></div>' +
                     '<div class="unit-pct" style="color:' + color + '">' + pctLabel + '</div></div>' +
                     '<div class="unit-meta">' + escapeHtml(metricCaption(item)) + '</div>' +
                     '<div class="unit-fact">Было: ' + last + '</div>' +
-                    '<div class="unit-fact"><strong>Далее:</strong> ' + next + '</div></article>';
+                    '<div class="unit-fact"><strong>Далее:</strong> ' + next + '</div>' +
+                    (hasHistory ? '<div class="unit-fact">История →</div>' : '') +
+                    '</article>';
             }).join('') + '</div>';
+            root.querySelectorAll('[data-unit]').forEach((card) => {
+                card.addEventListener('click', () => openUnitHistory(card.dataset.unit));
+            });
+        }
+
+        function openUnitHistory(workCode) {
+            const item = (activeVehicle()?.tabs?.state || []).find((row) => row.key === workCode);
+            if (!item) return;
+            document.getElementById('history-title').textContent = item.label || 'История';
+            const history = item.history || [];
+            document.getElementById('history-content').innerHTML = history.length
+                ? history.map((row) =>
+                    '<div class="history-item"><div class="history-item-date">' +
+                    escapeHtml(row.date || '—') + '</div>' +
+                    '<div class="history-item-meta">' +
+                    escapeHtml([row.mileage_label, row.source === 'history' ? 'из чата' : 'сервис'].filter(Boolean).join(' · ')) +
+                    '</div></div>'
+                ).join('')
+                : '<p class="hint">Пока нет записей по этому узлу.</p>';
+            document.getElementById('sheet-backdrop').classList.add('open');
+            document.getElementById('history-sheet').classList.add('open');
+        }
+
+        function closeHistory() {
+            document.getElementById('history-sheet').classList.remove('open');
+            if (!document.getElementById('garage-sheet').classList.contains('open') &&
+                !document.getElementById('help-sheet').classList.contains('open')) {
+                document.getElementById('sheet-backdrop').classList.remove('open');
+            }
         }
 
         function renderNavTokens() {
@@ -1070,8 +1256,11 @@
         function closeGarage() {
             appState.garageView = 'list';
             appState.garageDetailKey = null;
+            appState.passportEditing = false;
+            appState.vehicleToast = '';
             document.getElementById('garage-sheet').classList.remove('open');
-            if (!document.getElementById('help-sheet').classList.contains('open')) {
+            if (!document.getElementById('help-sheet').classList.contains('open') &&
+                !document.getElementById('history-sheet').classList.contains('open')) {
                 document.getElementById('sheet-backdrop').classList.remove('open');
             }
         }
@@ -1080,14 +1269,18 @@
         document.getElementById('garage-close').addEventListener('click', closeGarage);
         document.getElementById('help-open').addEventListener('click', openHelp);
         document.getElementById('help-close').addEventListener('click', closeHelp);
+        document.getElementById('history-close').addEventListener('click', closeHistory);
         document.getElementById('garage-back').addEventListener('click', () => {
             appState.garageView = 'list';
             appState.garageDetailKey = null;
+            appState.passportEditing = false;
+            appState.vehicleToast = '';
             renderGarageSheet();
         });
         document.getElementById('sheet-backdrop').addEventListener('click', () => {
             closeGarage();
             closeHelp();
+            closeHistory();
         });
         document.querySelectorAll('.nav-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
