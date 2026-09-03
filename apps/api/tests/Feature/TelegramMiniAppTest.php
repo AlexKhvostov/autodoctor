@@ -35,6 +35,10 @@ class TelegramMiniAppTest extends TestCase
             ->assertSee('tl-wrap', false)
             ->assertSee('history-sheet', false)
             ->assertSee('disableVerticalSwipes', false)
+            ->assertSee('applyTelegramSafeAreas', false)
+            ->assertSee('--tg-content-safe-area-inset-top', false)
+            ->assertSee('contentSafeAreaInset', false)
+            ->assertSee('fullscreenChanged', false)
             ->assertSee('chart-card', false);
     }
 

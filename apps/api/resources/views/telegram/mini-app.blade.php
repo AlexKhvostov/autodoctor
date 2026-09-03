@@ -8,6 +8,22 @@
     <style>
         :root {
             color-scheme: light;
+            --tg-safe-top: calc(
+                var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px))
+                + var(--tg-content-safe-area-inset-top, 0px)
+            );
+            --tg-safe-bottom: calc(
+                var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+                + var(--tg-content-safe-area-inset-bottom, 0px)
+            );
+            --tg-safe-left: calc(
+                var(--tg-safe-area-inset-left, env(safe-area-inset-left, 0px))
+                + var(--tg-content-safe-area-inset-left, 0px)
+            );
+            --tg-safe-right: calc(
+                var(--tg-safe-area-inset-right, env(safe-area-inset-right, 0px))
+                + var(--tg-content-safe-area-inset-right, 0px)
+            );
             --bg: #eef3fb;
             --bg-soft: #f7faff;
             --card: #ffffff;
@@ -36,11 +52,16 @@
         }
         .app {
             height: 100%;
+            min-height: 100%;
             display: flex;
             flex-direction: column;
             max-width: 420px;
             margin: 0 auto;
+            padding-top: var(--tg-safe-top);
+            padding-left: var(--tg-safe-left);
+            padding-right: var(--tg-safe-right);
             background: linear-gradient(180deg, #f3f8ff 0%, var(--bg) 120px);
+            box-sizing: border-box;
         }
         .topbar-shell {
             background: var(--card);
@@ -450,7 +471,7 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 4px;
-            padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+            padding: 6px 8px calc(6px + var(--tg-safe-bottom));
             background: rgba(255,255,255,0.92);
             border-top: 1px solid var(--line);
             backdrop-filter: blur(8px);
@@ -494,7 +515,7 @@
             transition: transform 0.2s ease;
             z-index: 21;
             overflow: auto;
-            padding: 12px 14px calc(16px + env(safe-area-inset-bottom));
+            padding: 12px 14px calc(16px + var(--tg-safe-bottom));
             box-shadow: 0 -8px 30px rgba(21, 32, 51, 0.12);
         }
         .sheet.open { transform: translateY(0); }
@@ -673,6 +694,30 @@
 
     <script>
         const tg = window.Telegram && window.Telegram.WebApp;
+
+        function readInset(value) {
+            return typeof value === 'number' && !Number.isNaN(value) && value > 0 ? value : 0;
+        }
+
+        function applyTelegramSafeAreas() {
+            const content = (tg && tg.contentSafeAreaInset) || {};
+            const safe = (tg && tg.safeAreaInset) || {};
+            let top = readInset(safe.top) + readInset(content.top);
+            let bottom = readInset(safe.bottom) + readInset(content.bottom);
+            let left = readInset(safe.left) + readInset(content.left);
+            let right = readInset(safe.right) + readInset(content.right);
+
+            if (top === 0 && tg && (tg.isFullscreen || tg.isExpanded)) {
+                top = 72;
+            }
+
+            const root = document.documentElement;
+            if (top > 0) root.style.setProperty('--tg-safe-top', top + 'px');
+            if (bottom > 0) root.style.setProperty('--tg-safe-bottom', bottom + 'px');
+            if (left > 0) root.style.setProperty('--tg-safe-left', left + 'px');
+            if (right > 0) root.style.setProperty('--tg-safe-right', right + 'px');
+        }
+
         if (tg) {
             tg.ready();
             tg.expand();
@@ -680,6 +725,15 @@
             if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
             if (tg.setHeaderColor) tg.setHeaderColor('#eef3fb');
             if (tg.setBackgroundColor) tg.setBackgroundColor('#eef3fb');
+            applyTelegramSafeAreas();
+            setTimeout(applyTelegramSafeAreas, 50);
+            setTimeout(applyTelegramSafeAreas, 300);
+            if (typeof tg.onEvent === 'function') {
+                tg.onEvent('contentSafeAreaChanged', applyTelegramSafeAreas);
+                tg.onEvent('safeAreaChanged', applyTelegramSafeAreas);
+                tg.onEvent('viewportChanged', applyTelegramSafeAreas);
+                tg.onEvent('fullscreenChanged', applyTelegramSafeAreas);
+            }
         }
 
         let appState = {
