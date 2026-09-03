@@ -4,6 +4,7 @@ namespace App\Services\Telegram;
 
 use App\Models\GuestProfile;
 use App\Models\HistoryAnswer;
+use App\Models\MaintenanceRule;
 use App\Models\MileageObservation;
 use App\Models\PlanItem;
 use App\Models\ServiceRecord;
@@ -110,7 +111,29 @@ class TelegramMiniAppSnapshot
             'active_vehicle_id' => $activeVehicleId,
             'user' => $this->userHeader($profile),
             'agent' => $this->agentTab($profile),
+            'garage' => $this->garageMeta($vehicles),
             'vehicles' => $vehicles,
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $vehicles
+     * @return array<string, mixed>
+     */
+    private function garageMeta(array $vehicles): array
+    {
+        $savedCount = count(array_filter(
+            $vehicles,
+            fn (array $vehicle): bool => ($vehicle['status'] ?? '') === 'saved',
+        ));
+
+        return [
+            'can_add' => $savedCount === 0,
+            'add_hint' => 'Расскажите боту про машину — она появится в гараже.',
+            'locked_hint' => 'В пилоте доступен один автомобиль. Второй слот появится позже.',
+            'active_label' => 'Активна для AI и аналитики',
+            'select_label' => 'Выбрать для AI',
+            'detail_label' => 'Подробнее',
         ];
     }
 
@@ -614,10 +637,14 @@ class TelegramMiniAppSnapshot
             return array_map(fn (array $field): array => [
                 'key' => $field['key'],
                 'label' => $field['label'],
-                'detail' => $field['value'],
+                'last_service' => $field['filled'] ? $field['value'] : null,
+                'next_due' => null,
                 'filled' => $field['filled'],
                 'status' => $field['filled'] ? 'ok' : 'unknown',
                 'wear_percent' => null,
+                'remaining_percent' => null,
+                'used_percent' => null,
+                'metric_label' => $field['filled'] ? 'последнее обслуживание' : 'нет данных',
             ], $this->maintenanceFields(null));
         }
 
@@ -638,7 +665,7 @@ class TelegramMiniAppSnapshot
             $history = is_array($item->explanation['history_state'] ?? null)
                 ? $item->explanation['history_state']
                 : [];
-            $detail = $this->formatMaintenanceFacts(
+            $lastService = $this->formatMaintenanceFacts(
                 filled($history['performed_date'] ?? null)
                     ? date('d.m.Y', strtotime((string) $history['performed_date']))
                     : null,
@@ -650,14 +677,23 @@ class TelegramMiniAppSnapshot
                 ? $item->explanation['latest_observation']
                 : null;
             $wear = is_numeric($observation['wear_percent'] ?? null) ? (int) $observation['wear_percent'] : null;
+            $usedFraction = is_numeric($item->explanation['effective_used_fraction'] ?? null)
+                ? (float) $item->explanation['effective_used_fraction']
+                : null;
+            $usedPercent = $usedFraction !== null ? (int) round(min(1, max(0, $usedFraction)) * 100) : null;
 
             $items[] = [
                 'key' => $rule->work_code,
                 'label' => $title,
-                'detail' => $detail,
-                'filled' => filled($detail),
+                'last_service' => $lastService,
+                'next_due' => $this->nextDueLabel($item, $vehicle),
+                'filled' => filled($lastService),
                 'status' => $this->visualStatus($item),
                 'wear_percent' => $wear,
+                'remaining_percent' => $wear !== null ? max(0, 100 - $wear) : null,
+                'used_percent' => $wear === null ? $usedPercent : null,
+                'metric_label' => $this->stateMetricLabel($item, $wear, $usedPercent),
+                'criticality' => $rule->criticality,
             ];
         }
 
@@ -665,47 +701,82 @@ class TelegramMiniAppSnapshot
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array<string, mixed>
      */
     private function roadmapTab(?Vehicle $vehicle): array
     {
         if ($vehicle === null) {
-            return array_map(fn (array $field): array => [
-                'key' => $field['key'],
-                'label' => $field['label'],
-                'detail' => 'уточните в чате',
-                'tone' => 'unknown',
-            ], $this->maintenanceFields(null));
+            return [
+                'required' => [],
+                'recommended' => array_map(fn (array $field): array => [
+                    'key' => $field['key'],
+                    'label' => $field['label'],
+                    'detail' => 'уточните в чате',
+                    'tone' => 'unknown',
+                    'tier' => 'recommended',
+                    'sort_days' => null,
+                    'due_label' => null,
+                ], $this->maintenanceFields(null)),
+                'seasonal' => $this->seasonalTips(),
+                'hint' => 'Запишите машину в боте — здесь появится дорожная карта обслуживания.',
+            ];
         }
 
         try {
             $snapshot = $this->plans->calculate($vehicle->loadMissing('configuration'));
             $snapshot->load(['items.rule']);
         } catch (Throwable) {
-            return [];
+            return [
+                'required' => [],
+                'recommended' => [],
+                'seasonal' => $this->seasonalTips(),
+                'hint' => 'План обслуживания готовится.',
+            ];
         }
 
-        $rows = [];
+        $required = [];
+        $recommended = [];
         foreach ($snapshot->items as $item) {
             $rule = $item->rule;
             if ($rule === null) {
                 continue;
             }
-            if (! in_array($item->status, ['overdue', 'soon', 'unknown'], true)
+            if (! in_array($item->status, ['overdue', 'soon', 'unknown', 'current'], true)
                 && ! ($item->explanation['requires_check_now'] ?? false)) {
                 continue;
             }
-            $rows[] = [
+            if ($item->status === 'current' && ! ($item->explanation['requires_check_now'] ?? false)) {
+                continue;
+            }
+
+            $row = [
                 'key' => $rule->work_code,
                 'label' => (string) ($rule->localized_content['title']['ru'] ?? $rule->work_code),
                 'detail' => $this->roadmapDetail($item, $vehicle),
-                'tone' => $item->status === 'overdue' || $item->urgency === 'immediate' ? 'overdue' : 'soon',
+                'tone' => $this->roadmapTone($item),
+                'tier' => $this->roadmapTier($rule, $item),
+                'sort_days' => $this->roadmapSortDays($item, $vehicle),
+                'due_label' => $this->roadmapDueLabel($item, $vehicle),
             ];
+
+            if ($row['tier'] === 'required') {
+                $required[] = $row;
+            } else {
+                $recommended[] = $row;
+            }
         }
 
-        usort($rows, fn (array $a, array $b): int => ($a['tone'] === 'overdue' ? 0 : 1) <=> ($b['tone'] === 'overdue' ? 0 : 1));
+        usort($required, fn (array $a, array $b): int => ($a['sort_days'] ?? 9999) <=> ($b['sort_days'] ?? 9999));
+        usort($recommended, fn (array $a, array $b): int => ($a['sort_days'] ?? 9999) <=> ($b['sort_days'] ?? 9999));
 
-        return $rows;
+        return [
+            'required' => $required,
+            'recommended' => $recommended,
+            'seasonal' => $this->seasonalTips(),
+            'hint' => $required === [] && $recommended === []
+                ? 'Пока всё спокойно — ближайших работ нет или данных мало.'
+                : null,
+        ];
     }
 
     /**
@@ -757,8 +828,18 @@ class TelegramMiniAppSnapshot
 
     private function roadmapDetail(PlanItem $item, Vehicle $vehicle): string
     {
+        return $this->nextDueLabel($item, $vehicle) ?? match (true) {
+            $item->explanation['requires_check_now'] ?? false => 'уточните в чате',
+            $item->status === 'overdue' => 'просрочено',
+            $item->status === 'soon' => 'скоро',
+            default => 'уточните в чате',
+        };
+    }
+
+    private function nextDueLabel(PlanItem $item, Vehicle $vehicle): ?string
+    {
         if ($item->explanation['requires_check_now'] ?? false) {
-            return 'уточните в чате';
+            return 'нужна проверка';
         }
         if ($item->due_mileage_km !== null && $vehicle->current_mileage !== null) {
             $left = $item->due_mileage_km - (int) round(
@@ -776,11 +857,126 @@ class TelegramMiniAppSnapshot
             return 'до '.$item->due_date->format('d.m.Y');
         }
 
-        return match ($item->status) {
-            'overdue' => 'просрочено',
-            'soon' => 'скоро',
-            default => 'уточните в чате',
-        };
+        return null;
+    }
+
+    private function roadmapDueLabel(PlanItem $item, Vehicle $vehicle): ?string
+    {
+        if ($item->due_date !== null) {
+            return $item->due_date->format('d.m.Y');
+        }
+        if ($item->due_mileage_km !== null) {
+            return number_format($item->due_mileage_km, 0, '', ' ').' км';
+        }
+
+        return null;
+    }
+
+    private function roadmapSortDays(PlanItem $item, Vehicle $vehicle): ?int
+    {
+        if ($item->status === 'overdue' || $item->urgency === 'immediate') {
+            return -1;
+        }
+        if ($item->due_date !== null) {
+            return (int) now()->startOfDay()->diffInDays($item->due_date, false);
+        }
+        if ($item->due_mileage_km !== null && $vehicle->current_mileage !== null) {
+            $left = $item->due_mileage_km - (int) round(
+                ($vehicle->mileage_unit ?? 'km') === 'mi'
+                    ? $vehicle->current_mileage * 1.609344
+                    : $vehicle->current_mileage,
+            );
+            if ($left <= 0) {
+                return -1;
+            }
+
+            return (int) max(1, round($left / 40));
+        }
+
+        return 9999;
+    }
+
+    private function roadmapTone(PlanItem $item): string
+    {
+        if ($item->status === 'overdue' || $item->urgency === 'immediate') {
+            return 'overdue';
+        }
+        if ($item->status === 'soon') {
+            return 'soon';
+        }
+        if ($item->explanation['requires_check_now'] ?? false) {
+            return 'unknown';
+        }
+
+        return 'soft';
+    }
+
+    private function roadmapTier(MaintenanceRule $rule, PlanItem $item): string
+    {
+        if (in_array($rule->criticality, ['safety_critical', 'high'], true)) {
+            return 'required';
+        }
+        if ($rule->criticality === 'medium' && $rule->rule_kind === 'interval_based') {
+            return 'required';
+        }
+        if ($item->status === 'overdue' || $item->urgency === 'immediate') {
+            return 'required';
+        }
+
+        return 'recommended';
+    }
+
+    private function stateMetricLabel(PlanItem $item, ?int $wear, ?int $usedPercent): string
+    {
+        if ($wear !== null) {
+            return 'износ';
+        }
+        if ($usedPercent !== null) {
+            return 'ресурс';
+        }
+        if ($item->explanation['requires_check_now'] ?? false) {
+            return 'нужна проверка';
+        }
+
+        return 'нет данных';
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function seasonalTips(): array
+    {
+        $month = (int) date('n');
+        $tips = [];
+
+        if (in_array($month, [12, 1, 2, 3], true)) {
+            $tips[] = [
+                'key' => 'winter_wash',
+                'label' => 'Зимняя мойка',
+                'detail' => 'Чаще мойте днище и арки — соль ускоряет коррозию',
+                'tone' => 'soft',
+                'tier' => 'recommended',
+            ];
+            $tips[] = [
+                'key' => 'post_winter_brakes',
+                'label' => 'Тормоза после зимы',
+                'detail' => 'Проверьте колодки и диски после сезона',
+                'tone' => 'soon',
+                'tier' => 'required',
+            ];
+        }
+
+        if (in_array($month, [3, 4, 5], true)) {
+            $tips[] = [
+                'key' => 'spring_cabin_filter',
+                'label' => 'Салонный фильтр',
+                'detail' => 'После зимы — свежий воздух в салоне',
+                'tone' => 'soft',
+                'tier' => 'recommended',
+            ];
+        }
+
+        return $tips;
     }
 
     private function knowledgeLabel(?string $band): string
