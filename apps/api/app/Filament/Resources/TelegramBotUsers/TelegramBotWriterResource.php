@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\TelegramBotUsers;
 
+use App\Filament\Resources\GuestProfiles\GuestProfileResource;
 use App\Filament\Resources\TelegramBotUsers\Pages\ListTelegramBotWriters;
+use App\Models\GuestProfile;
 use App\Models\TelegramBotUser;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -53,7 +56,22 @@ class TelegramBotWriterResource extends Resource
                 ...TelegramBotUserColumns::identity(),
             ])
             ->defaultSort('last_message_at', 'desc')
-            ->recordActions([]);
+            ->recordActions([
+                Action::make('openProfile')
+                    ->label('Пользователь')
+                    ->url(function (TelegramBotUser $record): ?string {
+                        $profile = GuestProfile::query()
+                            ->where('telegram_id', $record->telegram_user_id)
+                            ->first();
+
+                        return $profile === null
+                            ? null
+                            : GuestProfileResource::getUrl('view', ['record' => $profile]);
+                    })
+                    ->visible(fn (TelegramBotUser $record): bool => GuestProfile::query()
+                        ->where('telegram_id', $record->telegram_user_id)
+                        ->exists()),
+            ]);
 
         return TelegramBotUserColumns::search($table);
     }

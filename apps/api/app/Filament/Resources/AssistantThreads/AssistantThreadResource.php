@@ -5,6 +5,7 @@ namespace App\Filament\Resources\AssistantThreads;
 use App\Filament\Resources\AssistantThreads\Pages\ListAssistantThreads;
 use App\Filament\Resources\AssistantThreads\Pages\ViewAssistantThread;
 use App\Filament\Resources\AssistantThreads\Tables\AssistantThreadsTable;
+use App\Filament\Resources\GuestProfiles\GuestProfileResource;
 use App\Models\AssistantThread;
 use BackedEnum;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -14,6 +15,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class AssistantThreadResource extends Resource
@@ -62,19 +64,16 @@ class AssistantThreadResource extends Resource
                     TextEntry::make('account_label')
                         ->label('Account')
                         ->url(fn (AssistantThread $record): ?string => $record->guest_profile_id
-                            ? \App\Filament\Resources\GuestProfiles\GuestProfileResource::getUrl('view', ['record' => $record->guest_profile_id])
+                            ? GuestProfileResource::getUrl('view', ['record' => $record->guest_profile_id])
                             : null)
                         ->color('primary')
-                        ->state(function (AssistantThread $record): string {
-                            $user = $record->guestProfile?->user;
-                            if ($user !== null) {
-                                return $user->email ?: ($user->name ?: 'User #'.$user->id);
-                            }
-
-                            $id = $record->guest_profile_id;
-
-                            return 'Guest '.mb_substr((string) $id, 0, 8);
-                        }),
+                        ->state(fn (AssistantThread $record): string => $record->guestProfile?->adminLabel()
+                            ?? ('Guest '.mb_substr((string) $record->guest_profile_id, 0, 8))),
+                    TextEntry::make('channel')
+                        ->label('Канал')
+                        ->badge()
+                        ->state(fn (AssistantThread $record): string => $record->channel === 'telegram' ? 'Telegram' : 'Приложение')
+                        ->color(fn (AssistantThread $record): string => $record->channel === 'telegram' ? 'info' : 'gray'),
                     TextEntry::make('account_type')
                         ->label('Type')
                         ->badge()
@@ -149,7 +148,7 @@ class AssistantThreadResource extends Resource
         ];
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
             ->with(['guestProfile.user', 'vehicle.configuration'])

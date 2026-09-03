@@ -39,6 +39,11 @@ class TelegramBotUserColumns
                 ->dateTime()
                 ->sortable()
                 ->placeholder('ещё не писал'),
+            TextColumn::make('access_requested_at')
+                ->label('Запросил доступ')
+                ->dateTime()
+                ->placeholder('—')
+                ->sortable(),
             TextColumn::make('allowlisted_at')
                 ->label('В белый список')
                 ->dateTime()

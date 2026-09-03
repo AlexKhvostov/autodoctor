@@ -14,6 +14,8 @@ final class TelegramInboundUpdate
         public readonly ?string $text,
         public readonly bool $isBot,
         public readonly bool $isStart,
+        public readonly bool $isCallback,
+        public readonly ?string $callbackQueryId,
     ) {}
 
     public static function fromPayload(array $payload): ?self
@@ -22,12 +24,18 @@ final class TelegramInboundUpdate
         $from = null;
         $chat = null;
         $text = null;
+        $isCallback = false;
+        $callbackQueryId = null;
 
         if (is_array($message)) {
             $from = $message['from'] ?? null;
             $chat = $message['chat'] ?? null;
             $text = isset($message['text']) ? (string) $message['text'] : null;
         } elseif (isset($payload['callback_query']) && is_array($payload['callback_query'])) {
+            $isCallback = true;
+            $callbackQueryId = isset($payload['callback_query']['id'])
+                ? (string) $payload['callback_query']['id']
+                : null;
             $from = $payload['callback_query']['from'] ?? null;
             $chat = $payload['callback_query']['message']['chat'] ?? null;
             $text = isset($payload['callback_query']['data'])
@@ -57,12 +65,34 @@ final class TelegramInboundUpdate
             lastName: isset($from['last_name']) ? (string) $from['last_name'] : null,
             text: $text,
             isBot: (bool) ($from['is_bot'] ?? false),
-            isStart: $command === '/start' || str_starts_with($command, '/start@'),
+            isStart: ! $isCallback && ($command === '/start' || str_starts_with($command, '/start@')),
+            isCallback: $isCallback,
+            callbackQueryId: $callbackQueryId,
         );
+    }
+
+    public function isGarage(): bool
+    {
+        if ($this->isCallback) {
+            return false;
+        }
+        $command = strtolower(strtok(trim((string) $this->text), ' ') ?: '');
+
+        return $command === '/garage' || str_starts_with($command, '/garage@');
     }
 
     public function isPrivateChat(): bool
     {
         return $this->chatType === 'private';
+    }
+
+    public function isAccessRequest(): bool
+    {
+        return $this->isCallback && trim((string) $this->text) === 'access_request';
+    }
+
+    public function isSaveVehicle(): bool
+    {
+        return $this->isCallback && trim((string) $this->text) === 'save_vehicle';
     }
 }

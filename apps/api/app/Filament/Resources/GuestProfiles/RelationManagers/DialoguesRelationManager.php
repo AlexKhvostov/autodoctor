@@ -20,6 +20,10 @@ class DialoguesRelationManager extends RelationManager
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['vehicle.configuration'])->withCount('messages'))
             ->columns([
+                TextColumn::make('channel')
+                    ->label('Канал')
+                    ->badge()
+                    ->state(fn (AssistantThread $record): string => $record->channel === 'telegram' ? 'Telegram' : 'Приложение'),
                 TextColumn::make('title')
                     ->label('Тема')
                     ->placeholder('Без названия')

@@ -38,6 +38,22 @@ class SetTelegramWebhookCommand extends Command
 
         $this->info('Webhook: '.$url);
 
+        $appUrl = (string) config('telegram.mini_app_url');
+        if (str_starts_with($appUrl, 'https://')) {
+            $menu = Http::timeout(15)->acceptJson()->post("{$base}/bot{$token}/setChatMenuButton", [
+                'menu_button' => [
+                    'type' => 'web_app',
+                    'text' => 'Открыть',
+                    'web_app' => ['url' => $appUrl],
+                ],
+            ]);
+            if ($menu->failed() || ! ($menu->json('ok') ?? false)) {
+                $this->warn('Menu button: '.$menu->body());
+            } else {
+                $this->info('Mini App: '.$appUrl);
+            }
+        }
+
         return self::SUCCESS;
     }
 }

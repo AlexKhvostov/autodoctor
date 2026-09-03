@@ -38,6 +38,7 @@ class AssistantThreadPersister
             $thread->title = $suggestedTitle ?: $this->fallbackTitle($userMessage);
             $thread->title_source = AssistantThread::TITLE_SOURCE_AUTO;
             $thread->status = AssistantThread::STATUS_ACTIVE;
+            $thread->channel = $this->channelFor($session);
         } else {
             $threadVehicleId = $thread->vehicle_id;
             $vehicleConflict = $threadVehicleId !== null
@@ -54,6 +55,7 @@ class AssistantThreadPersister
                     'title' => $suggestedTitle ?: $this->fallbackTitle($userMessage),
                     'title_source' => AssistantThread::TITLE_SOURCE_AUTO,
                     'status' => AssistantThread::STATUS_ACTIVE,
+                    'channel' => $this->channelFor($session),
                 ]);
             } else {
                 if ($threadVehicleId === null && $incomingVehicleId !== null) {
@@ -122,6 +124,13 @@ class AssistantThreadPersister
         }
 
         return $title;
+    }
+
+    private function channelFor(AnonymousSession $session): string
+    {
+        return $session->platform === 'telegram'
+            ? AssistantThread::CHANNEL_TELEGRAM
+            : AssistantThread::CHANNEL_APP;
     }
 
     private function isPlaceholderTitle(?string $title): bool

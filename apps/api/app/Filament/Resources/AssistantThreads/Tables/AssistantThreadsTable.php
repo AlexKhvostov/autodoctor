@@ -5,6 +5,7 @@ namespace App\Filament\Resources\AssistantThreads\Tables;
 use App\Models\AssistantThread;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class AssistantThreadsTable
@@ -20,20 +21,24 @@ class AssistantThreadsTable
                     ->placeholder('Untitled'),
                 TextColumn::make('account')
                     ->label('Account')
-                    ->state(function (AssistantThread $record): string {
-                        $user = $record->guestProfile?->user;
-                        if ($user !== null) {
-                            return $user->email ?: ($user->name ?: '#'.$user->id);
-                        }
-
-                        return 'Guest '.mb_substr((string) $record->guest_profile_id, 0, 8);
-                    })
+                    ->state(fn (AssistantThread $record): string => $record->guestProfile?->adminLabel()
+                        ?? ('Guest '.mb_substr((string) $record->guest_profile_id, 0, 8)))
                     ->searchable(query: function ($query, string $search): void {
-                        $query->whereHas('guestProfile.user', function ($q) use ($search): void {
-                            $q->where('email', 'like', "%{$search}%")
-                                ->orWhere('name', 'like', "%{$search}%");
+                        $query->whereHas('guestProfile', function ($q) use ($search): void {
+                            $q->where('telegram_id', 'like', "%{$search}%")
+                                ->orWhere('telegram_username', 'like', "%{$search}%")
+                                ->orWhere('telegram_first_name', 'like', "%{$search}%")
+                                ->orWhereHas('user', function ($userQuery) use ($search): void {
+                                    $userQuery->where('email', 'like', "%{$search}%")
+                                        ->orWhere('name', 'like', "%{$search}%");
+                                });
                         })->orWhere('guest_profile_id', 'like', "%{$search}%");
                     }),
+                TextColumn::make('channel')
+                    ->label('Канал')
+                    ->badge()
+                    ->state(fn (AssistantThread $record): string => $record->channel === 'telegram' ? 'Telegram' : 'Приложение')
+                    ->color(fn (AssistantThread $record): string => $record->channel === 'telegram' ? 'info' : 'gray'),
                 TextColumn::make('account_type')
                     ->label('Type')
                     ->badge()
@@ -72,11 +77,17 @@ class AssistantThreadsTable
             ])
             ->defaultSort('last_message_at', 'desc')
             ->filters([
-                \Filament\Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options([
                         'active' => 'Active',
                         'resolved' => 'Resolved',
                         'archived' => 'Archived',
+                    ]),
+                SelectFilter::make('channel')
+                    ->label('Канал')
+                    ->options([
+                        'telegram' => 'Telegram',
+                        'app' => 'Приложение',
                     ]),
             ])
             ->recordActions([

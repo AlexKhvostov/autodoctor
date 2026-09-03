@@ -23,6 +23,10 @@ class AssistantThread extends Model
 
     public const TITLE_SOURCE_USER = 'user';
 
+    public const CHANNEL_APP = 'app';
+
+    public const CHANNEL_TELEGRAM = 'telegram';
+
     protected $guarded = [];
 
     protected function utf8Attributes(): array

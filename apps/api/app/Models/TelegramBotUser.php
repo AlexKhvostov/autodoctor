@@ -19,6 +19,7 @@ class TelegramBotUser extends Model
             'is_allowlisted' => 'boolean',
             'allowlisted_at' => 'datetime',
             'removed_from_allowlist_at' => 'datetime',
+            'access_requested_at' => 'datetime',
         ];
     }
 

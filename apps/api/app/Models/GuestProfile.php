@@ -66,4 +66,25 @@ class GuestProfile extends Model
     {
         return $this->hasMany(AssistantThread::class);
     }
+
+    public function adminLabel(): string
+    {
+        if (filled($this->telegram_username)) {
+            return '@'.$this->telegram_username;
+        }
+        if ($this->telegram_id) {
+            return 'Telegram '.$this->telegram_id;
+        }
+        if (filled($this->telegram_first_name)) {
+            return (string) $this->telegram_first_name;
+        }
+        if (filled($this->user?->email)) {
+            return (string) $this->user->email;
+        }
+        if (filled($this->user?->name)) {
+            return (string) $this->user->name;
+        }
+
+        return 'Гость '.mb_substr((string) $this->id, 0, 8);
+    }
 }
