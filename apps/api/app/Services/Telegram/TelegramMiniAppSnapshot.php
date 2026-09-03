@@ -4,17 +4,24 @@ namespace App\Services\Telegram;
 
 use App\Models\GuestProfile;
 use App\Models\HistoryAnswer;
+use App\Models\MileageObservation;
+use App\Models\PlanItem;
 use App\Models\ServiceRecord;
 use App\Models\TelegramBotUser;
 use App\Models\Vehicle;
 use App\Models\WorkCatalogItem;
+use App\Services\AgentProfileService;
+use App\Services\GuestSkillProfileService;
 use App\Services\PlanCalculator;
 use Illuminate\Support\Collection;
+use Throwable;
 
 class TelegramMiniAppSnapshot
 {
     public function __construct(
         private readonly PlanCalculator $plans,
+        private readonly AgentProfileService $agentProfile,
+        private readonly GuestSkillProfileService $skills,
     ) {}
 
     /**
@@ -48,14 +55,16 @@ class TelegramMiniAppSnapshot
 
         if ($profile === null) {
             return $this->response(
-                'Расскажите боту про машину — здесь появится карточка.',
+                'Расскажите боту про машину — данные появятся здесь.',
                 $this->vehiclesForGuest(null, $telegramUserId),
+                null,
             );
         }
 
         return $this->response(
-            'Нажмите на автомобиль, чтобы раскрыть все поля. Пустое — допишите боту.',
+            'Выберите авто в шапке. Ниже — состояние, план и настройки AI.',
             $this->vehiclesForGuest($profile, $telegramUserId),
+            $profile,
         );
     }
 
@@ -67,6 +76,7 @@ class TelegramMiniAppSnapshot
         return $this->response(
             'Сейчас закрытый пилот. Напишите боту и нажмите «Запросить доступ».',
             [$this->placeholderCard()],
+            null,
         );
     }
 
@@ -74,12 +84,106 @@ class TelegramMiniAppSnapshot
      * @param  list<array<string, mixed>>  $vehicles
      * @return array<string, mixed>
      */
-    private function response(string $subtitle, array $vehicles): array
+    private function response(string $subtitle, array $vehicles, ?GuestProfile $profile): array
     {
+        $activeVehicleId = null;
+        foreach ($vehicles as $vehicle) {
+            if (($vehicle['status'] ?? '') === 'saved' && filled($vehicle['id'] ?? null)) {
+                $activeVehicleId = (string) $vehicle['id'];
+                break;
+            }
+        }
+        if ($activeVehicleId === null && $vehicles !== []) {
+            $first = $vehicles[0];
+            if (filled($first['id'] ?? null)) {
+                $activeVehicleId = (string) $first['id'];
+            } elseif (($first['status'] ?? '') === 'draft') {
+                $activeVehicleId = 'draft';
+            } else {
+                $activeVehicleId = 'placeholder';
+            }
+        }
+
         return [
             'title' => 'AutoDoctor',
             'subtitle' => $subtitle,
+            'active_vehicle_id' => $activeVehicleId,
+            'user' => $this->userHeader($profile),
+            'agent' => $this->agentTab($profile),
             'vehicles' => $vehicles,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function userHeader(?GuestProfile $profile): array
+    {
+        if ($profile === null) {
+            return ['initial' => 'AD', 'display_name' => null];
+        }
+
+        $name = $profile->telegram_first_name ?: $profile->adminLabel();
+        $initial = mb_strtoupper(mb_substr(trim($name, '@'), 0, 1));
+
+        return [
+            'initial' => $initial !== '' ? $initial : 'AD',
+            'display_name' => $name,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function agentTab(?GuestProfile $profile): array
+    {
+        if ($profile === null) {
+            return [
+                'tokens_balance' => null,
+                'tokens_label' => '—',
+                'status' => 'unknown',
+                'settings' => [],
+                'hint' => 'Напишите боту /start — здесь появятся токены и настройки собеседника.',
+            ];
+        }
+
+        $wallet = $this->agentProfile->wallet($profile);
+        $balance = (int) $wallet->balance_ml;
+        $prefs = $this->agentProfile->preferences($profile);
+        $skill = $this->skills->toArray($this->skills->forProfile($profile));
+
+        return [
+            'tokens_balance' => $balance,
+            'tokens_label' => number_format($balance, 0, '', ' '),
+            'status' => $balance <= 0 ? 'empty' : ($balance <= (int) config('agent.fuel.low_balance_ml', 400) ? 'low' : 'ok'),
+            'settings' => [
+                [
+                    'key' => 'knowledge',
+                    'label' => 'Понимание авто',
+                    'value' => $this->knowledgeLabel($skill['self_reported_band'] ?? $skill['band']),
+                ],
+                [
+                    'key' => 'hands_on',
+                    'label' => 'Готовность к проверкам',
+                    'value' => $this->handsOnLabel($skill['hands_on_level'] ?? null, $skill['hands_on']),
+                ],
+                [
+                    'key' => 'simplicity',
+                    'label' => 'Простота ответов',
+                    'value' => $this->scaleLabel((int) $prefs->simplicity),
+                ],
+                [
+                    'key' => 'initiative',
+                    'label' => 'Инициатива советов',
+                    'value' => $this->scaleLabel((int) $prefs->initiative),
+                ],
+                [
+                    'key' => 'instructions',
+                    'label' => 'Ваши пожелания',
+                    'value' => filled($prefs->custom_instructions) ? (string) $prefs->custom_instructions : null,
+                ],
+            ],
+            'hint' => 'Собеседник в чате учитывает эти настройки. Пока правки — через бота; скоро можно будет менять здесь.',
         ];
     }
 
@@ -128,6 +232,11 @@ class TelegramMiniAppSnapshot
             'summary' => null,
             'status' => 'placeholder',
             'sections' => $this->buildSections([], null),
+            'tabs' => [
+                'state' => $this->stateTab(null),
+                'roadmap' => $this->roadmapTab(null),
+                'analytics' => $this->analyticsTab(null),
+            ],
         ];
     }
 
@@ -165,6 +274,11 @@ class TelegramMiniAppSnapshot
             'summary' => $this->vehicleSummary($values),
             'status' => 'saved',
             'sections' => $this->buildSections($values, $vehicle),
+            'tabs' => [
+                'state' => $this->stateTab($vehicle),
+                'roadmap' => $this->roadmapTab($vehicle),
+                'analytics' => $this->analyticsTab($vehicle),
+            ],
         ];
     }
 
@@ -208,6 +322,11 @@ class TelegramMiniAppSnapshot
             'summary' => $this->vehicleSummary($values),
             'status' => 'draft',
             'sections' => $this->buildSections($values, null),
+            'tabs' => [
+                'state' => $this->stateTab(null),
+                'roadmap' => $this->roadmapTab(null),
+                'analytics' => $this->analyticsTab(null),
+            ],
         ];
     }
 
@@ -483,6 +602,225 @@ class TelegramMiniAppSnapshot
             'four_wd' => '4×4',
             'other' => 'другое',
             default => null,
+        };
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function stateTab(?Vehicle $vehicle): array
+    {
+        if ($vehicle === null) {
+            return array_map(fn (array $field): array => [
+                'key' => $field['key'],
+                'label' => $field['label'],
+                'detail' => $field['value'],
+                'filled' => $field['filled'],
+                'status' => $field['filled'] ? 'ok' : 'unknown',
+                'wear_percent' => null,
+            ], $this->maintenanceFields(null));
+        }
+
+        try {
+            $snapshot = $this->plans->calculate($vehicle->loadMissing('configuration'));
+            $snapshot->load(['items.rule']);
+        } catch (Throwable) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($snapshot->items->sortBy(fn (PlanItem $item) => $item->rule?->work_code ?? '') as $item) {
+            $rule = $item->rule;
+            if ($rule === null) {
+                continue;
+            }
+            $title = (string) ($rule->localized_content['title']['ru'] ?? $rule->work_code);
+            $history = is_array($item->explanation['history_state'] ?? null)
+                ? $item->explanation['history_state']
+                : [];
+            $detail = $this->formatMaintenanceFacts(
+                filled($history['performed_date'] ?? null)
+                    ? date('d.m.Y', strtotime((string) $history['performed_date']))
+                    : null,
+                is_numeric($history['performed_mileage_km'] ?? null)
+                    ? (int) $history['performed_mileage_km']
+                    : null,
+            );
+            $observation = is_array($item->explanation['latest_observation'] ?? null)
+                ? $item->explanation['latest_observation']
+                : null;
+            $wear = is_numeric($observation['wear_percent'] ?? null) ? (int) $observation['wear_percent'] : null;
+
+            $items[] = [
+                'key' => $rule->work_code,
+                'label' => $title,
+                'detail' => $detail,
+                'filled' => filled($detail),
+                'status' => $this->visualStatus($item),
+                'wear_percent' => $wear,
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function roadmapTab(?Vehicle $vehicle): array
+    {
+        if ($vehicle === null) {
+            return array_map(fn (array $field): array => [
+                'key' => $field['key'],
+                'label' => $field['label'],
+                'detail' => 'уточните в чате',
+                'tone' => 'unknown',
+            ], $this->maintenanceFields(null));
+        }
+
+        try {
+            $snapshot = $this->plans->calculate($vehicle->loadMissing('configuration'));
+            $snapshot->load(['items.rule']);
+        } catch (Throwable) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($snapshot->items as $item) {
+            $rule = $item->rule;
+            if ($rule === null) {
+                continue;
+            }
+            if (! in_array($item->status, ['overdue', 'soon', 'unknown'], true)
+                && ! ($item->explanation['requires_check_now'] ?? false)) {
+                continue;
+            }
+            $rows[] = [
+                'key' => $rule->work_code,
+                'label' => (string) ($rule->localized_content['title']['ru'] ?? $rule->work_code),
+                'detail' => $this->roadmapDetail($item, $vehicle),
+                'tone' => $item->status === 'overdue' || $item->urgency === 'immediate' ? 'overdue' : 'soon',
+            ];
+        }
+
+        usort($rows, fn (array $a, array $b): int => ($a['tone'] === 'overdue' ? 0 : 1) <=> ($b['tone'] === 'overdue' ? 0 : 1));
+
+        return $rows;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function analyticsTab(?Vehicle $vehicle): array
+    {
+        if ($vehicle === null) {
+            return [
+                'points' => [],
+                'hint' => 'Графики появятся после записи машины и пробега в чате с ботом.',
+            ];
+        }
+
+        $points = MileageObservation::query()
+            ->where('vehicle_id', $vehicle->id)
+            ->orderBy('observed_at')
+            ->limit(24)
+            ->get()
+            ->map(fn (MileageObservation $row): array => [
+                'date' => $row->observed_at?->format('d.m.Y'),
+                'mileage' => $row->value,
+                'unit' => $row->unit,
+            ])
+            ->all();
+
+        return [
+            'points' => $points,
+            'hint' => $points === []
+                ? 'Пока мало точек для графика. Сообщайте пробег боту — линия вырастет.'
+                : null,
+        ];
+    }
+
+    private function visualStatus(PlanItem $item): string
+    {
+        if ($item->status === 'overdue' || $item->urgency === 'immediate') {
+            return 'overdue';
+        }
+        if ($item->status === 'soon') {
+            return 'soon';
+        }
+        if ($item->explanation['requires_check_now'] ?? false) {
+            return 'unknown';
+        }
+
+        return 'ok';
+    }
+
+    private function roadmapDetail(PlanItem $item, Vehicle $vehicle): string
+    {
+        if ($item->explanation['requires_check_now'] ?? false) {
+            return 'уточните в чате';
+        }
+        if ($item->due_mileage_km !== null && $vehicle->current_mileage !== null) {
+            $left = $item->due_mileage_km - (int) round(
+                ($vehicle->mileage_unit ?? 'km') === 'mi'
+                    ? $vehicle->current_mileage * 1.609344
+                    : $vehicle->current_mileage,
+            );
+            if ($left > 0) {
+                return 'через '.number_format($left, 0, '', ' ').' км';
+            }
+
+            return 'пора по пробегу';
+        }
+        if ($item->due_date !== null) {
+            return 'до '.$item->due_date->format('d.m.Y');
+        }
+
+        return match ($item->status) {
+            'overdue' => 'просрочено',
+            'soon' => 'скоро',
+            default => 'уточните в чате',
+        };
+    }
+
+    private function knowledgeLabel(?string $band): string
+    {
+        return match ($band) {
+            'never_tools' => 'Не работал с инструментами',
+            'scared' => 'Боюсь лезть под капот',
+            'novice' => 'Новичок',
+            'basic' => 'Базовый уровень',
+            'curious' => 'Интересуюсь, учусь',
+            'confident' => 'Уверенный',
+            'advanced' => 'Продвинутый',
+            'pro' => 'Профи',
+            default => 'Не задано',
+        };
+    }
+
+    private function handsOnLabel(?string $level, ?bool $legacy): string
+    {
+        return match ($level) {
+            'never' => 'Не готов проверять сам',
+            'outside' => 'Только снаружи',
+            'sometimes' => 'Иногда сам',
+            'often' => 'Часто сам',
+            'always' => 'Всегда сам',
+            default => match ($legacy) {
+                true => 'Готов проверять',
+                false => 'Не готов лезть под машину',
+                default => 'Не задано',
+            },
+        };
+    }
+
+    private function scaleLabel(int $value): string
+    {
+        return match (true) {
+            $value <= 2 => 'минимум',
+            $value === 3 => 'средне',
+            $value >= 4 => 'максимум',
+            default => 'средне',
         };
     }
 }

@@ -31,7 +31,9 @@ class TelegramMiniAppTest extends TestCase
             ->assertOk()
             ->assertSee('AutoDoctor', false)
             ->assertSee('telegram-web-app.js', false)
-            ->assertSee('vehicle-head', false);
+            ->assertSee('garage-btn', false)
+            ->assertSee('nav-agent', false)
+            ->assertSee('panel-agent', false);
     }
 
     public function test_state_requires_telegram_init_data(): void
@@ -61,7 +63,10 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('vehicles.0.sections.0.fields.0.label', 'Марка')
             ->assertJsonPath('vehicles.0.sections.0.fields.0.filled', false)
             ->assertJsonPath('vehicles.0.sections.1.title', 'История обслуживания')
-            ->assertJsonPath('vehicles.0.sections.1.fields.0.filled', false);
+            ->assertJsonPath('vehicles.0.sections.1.fields.0.filled', false)
+            ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap', 'analytics']]]])
+            ->assertJsonStructure(['agent' => ['tokens_label', 'settings', 'hint']])
+            ->assertJsonPath('user.initial', 'A');
     }
 
     public function test_state_shows_draft_vehicle_card_from_bot(): void
@@ -92,7 +97,9 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('vehicles.0.status', 'draft')
             ->assertJsonPath('vehicles.0.sections.0.fields.0.value', 'Volkswagen')
             ->assertJsonPath('vehicles.0.sections.0.fields.12.filled', true)
-            ->assertJsonPath('vehicles.0.sections.0.fields.13.filled', false);
+            ->assertJsonPath('vehicles.0.sections.0.fields.13.filled', false)
+            ->assertJsonPath('vehicles.0.tabs.roadmap.0.tone', 'unknown')
+            ->assertJsonStructure(['agent' => ['tokens_label', 'settings', 'hint']]);
     }
 
     public function test_snapshot_lists_saved_vehicle_profile_and_maintenance_slots(): void
@@ -145,6 +152,10 @@ class TelegramMiniAppTest extends TestCase
         $this->assertFalse($card['sections'][0]['fields'][2]['filled']);
         $maintenance = collect($card['sections'][1]['fields'])->firstWhere('key', 'engine_oil');
         $this->assertSame('12.03.2026 · 140 000 км', $maintenance['value']);
+        $this->assertArrayHasKey('tabs', $card);
+        $this->assertNotEmpty($card['tabs']['state']);
+        $this->assertArrayHasKey('agent', $state);
+        $this->assertSame((string) $vehicle->id, $state['active_vehicle_id']);
     }
 
     /**
