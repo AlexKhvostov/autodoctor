@@ -61,6 +61,7 @@ class TelegramMiniAppSnapshot
                 $this->vehiclesForGuest(null, $telegramUserId),
                 null,
                 null,
+                $telegramUserId,
             );
         }
 
@@ -68,6 +69,7 @@ class TelegramMiniAppSnapshot
             $this->vehiclesForGuest($profile, $telegramUserId),
             $profile,
             $vehicle,
+            $telegramUserId,
         );
     }
 
@@ -80,6 +82,7 @@ class TelegramMiniAppSnapshot
             [$this->placeholderCard()],
             null,
             null,
+            null,
         );
     }
 
@@ -87,8 +90,12 @@ class TelegramMiniAppSnapshot
      * @param  list<array<string, mixed>>  $vehicles
      * @return array<string, mixed>
      */
-    private function response(array $vehicles, ?GuestProfile $profile, ?Vehicle $activeVehicle): array
-    {
+    private function response(
+        array $vehicles,
+        ?GuestProfile $profile,
+        ?Vehicle $activeVehicle,
+        ?int $telegramUserId = null,
+    ): array {
         $activeVehicleId = null;
         foreach ($vehicles as $vehicle) {
             if (($vehicle['status'] ?? '') === 'saved' && filled($vehicle['id'] ?? null)) {
@@ -107,9 +114,12 @@ class TelegramMiniAppSnapshot
             }
         }
 
+        $ownerId = (int) config('telegram.owner_chat_id', 0);
+
         return [
             'title' => 'AutoDoctor',
             'active_vehicle_id' => $activeVehicleId,
+            'is_owner' => $telegramUserId !== null && $ownerId > 0 && $telegramUserId === $ownerId,
             'user' => $this->userHeader($profile),
             'agent' => $this->agentTab($profile, $activeVehicle),
             'garage' => $this->garageMeta($vehicles),

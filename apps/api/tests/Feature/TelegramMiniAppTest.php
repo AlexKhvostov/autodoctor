@@ -36,6 +36,7 @@ class TelegramMiniAppTest extends TestCase
             ->assertSee('history-sheet', false)
             ->assertSee('profile-sheet', false)
             ->assertSee('panel-journal', false)
+            ->assertSee('panel-allowlist', false)
             ->assertSee('Журнал', false)
             ->assertSee('План', false)
             ->assertSee('state-divider', false)
@@ -77,7 +78,82 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('user.telegram_id', 70001)
             ->assertJsonPath('user.username', 'anna')
             ->assertJsonPath('user.initial', 'A')
+            ->assertJsonPath('is_owner', false)
             ->assertJsonMissingPath('subtitle');
+    }
+
+    public function test_owner_can_manage_allowlist_from_mini_app(): void
+    {
+        config([
+            'telegram.bot_token' => 'TESTTOKEN',
+            'telegram.allowlist_ids' => '287536885',
+            'telegram.owner_chat_id' => 287536885,
+        ]);
+        GuestProfile::query()->create([
+            'telegram_id' => 287536885,
+            'telegram_first_name' => 'Admin',
+        ]);
+        $owner = TelegramBotUser::query()->create([
+            'telegram_user_id' => 287536885,
+            'first_name' => 'Admin',
+            'message_count' => 3,
+            'last_message_at' => now(),
+        ]);
+        $owner->setAllowlisted(true);
+        TelegramBotUser::query()->create([
+            'telegram_user_id' => 90001,
+            'username' => 'pilot_user',
+            'first_name' => 'Pilot',
+            'message_count' => 2,
+            'last_message_at' => now()->subMinute(),
+            'is_allowlisted' => false,
+        ]);
+
+        $headers = ['X-Telegram-Init-Data' => $this->sign([
+            'auth_date' => (string) time(),
+            'user' => '{"id":287536885,"first_name":"Admin"}',
+        ])];
+
+        $this->withHeaders($headers)
+            ->getJson('/telegram/app/state')
+            ->assertOk()
+            ->assertJsonPath('is_owner', true);
+
+        $this->withHeaders($headers)
+            ->getJson('/telegram/app/admin/writers')
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonFragment(['telegram_user_id' => 90001, 'is_allowlisted' => false]);
+
+        $this->withHeaders($headers)
+            ->patchJson('/telegram/app/admin/writers/90001', ['is_allowlisted' => true])
+            ->assertOk()
+            ->assertJsonPath('is_allowlisted', true);
+
+        $this->assertTrue(
+            (bool) TelegramBotUser::query()->where('telegram_user_id', 90001)->value('is_allowlisted')
+        );
+
+        $this->withHeaders($headers)
+            ->patchJson('/telegram/app/admin/writers/287536885', ['is_allowlisted' => false])
+            ->assertStatus(422)
+            ->assertJsonPath('error', 'cannot_remove_owner');
+    }
+
+    public function test_non_owner_cannot_access_allowlist_admin(): void
+    {
+        config([
+            'telegram.bot_token' => 'TESTTOKEN',
+            'telegram.allowlist_ids' => '70001',
+            'telegram.owner_chat_id' => 287536885,
+        ]);
+        GuestProfile::query()->create(['telegram_id' => 70001]);
+
+        $this->withHeader('X-Telegram-Init-Data', $this->sign([
+            'auth_date' => (string) time(),
+            'user' => '{"id":70001,"first_name":"Anna"}',
+        ]))->getJson('/telegram/app/admin/writers')
+            ->assertForbidden();
     }
 
     public function test_state_shows_draft_vehicle_card_from_bot(): void

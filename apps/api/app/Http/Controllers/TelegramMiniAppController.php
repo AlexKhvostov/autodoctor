@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GuestProfile;
 use App\Models\GuestSkillProfile;
+use App\Models\TelegramBotUser;
 use App\Models\Vehicle;
 use App\Services\AgentProfileService;
 use App\Services\GuestSkillProfileService;
@@ -200,6 +201,124 @@ class TelegramMiniAppController extends Controller
             'vehicle_id' => $updated->id,
             'version' => $updated->version,
         ]);
+    }
+
+    public function listWriters(
+        Request $request,
+        TelegramInitDataValidator $validator,
+        TelegramAllowlist $allowlist,
+    ): JsonResponse {
+        $owner = $this->authorizedOwner($request, $validator, $allowlist);
+        if ($owner instanceof JsonResponse) {
+            return $owner;
+        }
+
+        $envIds = $allowlist->idsFromEnv();
+        $writers = TelegramBotUser::query()
+            ->whereNotNull('last_message_at')
+            ->orderByDesc('last_message_at')
+            ->limit(200)
+            ->get()
+            ->map(function (TelegramBotUser $user) use ($envIds, $owner): array {
+                $id = (int) $user->telegram_user_id;
+
+                return [
+                    'telegram_user_id' => $id,
+                    'display_name' => $user->displayName(),
+                    'username' => $user->username,
+                    'first_name' => $user->first_name,
+                    'message_count' => (int) $user->message_count,
+                    'last_message_at' => $user->last_message_at?->format('d.m.Y H:i'),
+                    'access_requested_at' => $user->access_requested_at?->format('d.m.Y H:i'),
+                    'is_allowlisted' => (bool) $user->is_allowlisted,
+                    'env_allowlisted' => in_array($id, $envIds, true),
+                    'is_owner' => $id === $owner,
+                    'note' => $user->note,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return response()->json([
+            'ok' => true,
+            'writers' => $writers,
+        ]);
+    }
+
+    public function updateWriterAllowlist(
+        Request $request,
+        TelegramInitDataValidator $validator,
+        TelegramAllowlist $allowlist,
+        int $telegramUserId,
+    ): JsonResponse {
+        $owner = $this->authorizedOwner($request, $validator, $allowlist);
+        if ($owner instanceof JsonResponse) {
+            return $owner;
+        }
+
+        $this->rejectUnknownFields($request, ['is_allowlisted']);
+        $validated = Validator::make($request->all(), [
+            'is_allowlisted' => ['required', 'boolean'],
+        ])->validate();
+
+        if ($telegramUserId === $owner && $validated['is_allowlisted'] === false) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'cannot_remove_owner',
+                'message' => 'Себя из белого списка убирать нельзя.',
+            ], 422);
+        }
+
+        $user = TelegramBotUser::query()->firstOrNew([
+            'telegram_user_id' => $telegramUserId,
+        ]);
+        if (! $user->exists) {
+            $user->message_count = 0;
+            $user->save();
+        }
+        $user->setAllowlisted((bool) $validated['is_allowlisted']);
+
+        return response()->json([
+            'ok' => true,
+            'telegram_user_id' => (int) $user->telegram_user_id,
+            'is_allowlisted' => (bool) $user->is_allowlisted,
+            'env_allowlisted' => in_array((int) $user->telegram_user_id, $allowlist->idsFromEnv(), true),
+        ]);
+    }
+
+    /**
+     * @return int|JsonResponse owner telegram user id
+     */
+    private function authorizedOwner(
+        Request $request,
+        TelegramInitDataValidator $validator,
+        TelegramAllowlist $allowlist,
+    ): int|JsonResponse {
+        $initData = (string) $request->header('X-Telegram-Init-Data', '');
+        $userId = $validator->userId($initData);
+        if ($userId === null) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'open_in_telegram',
+            ], 401);
+        }
+
+        if (! $allowlist->allows($userId)) {
+            return response()->json([
+                'ok' => true,
+                'allowed' => false,
+            ], 403);
+        }
+
+        $ownerId = (int) config('telegram.owner_chat_id', 0);
+        if ($ownerId <= 0 || $userId !== $ownerId) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'owner_only',
+            ], 403);
+        }
+
+        return $userId;
     }
 
     private function authorizedProfile(

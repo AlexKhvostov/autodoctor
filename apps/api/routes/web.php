@@ -17,3 +17,6 @@ Route::get('/telegram/app/state', [TelegramMiniAppController::class, 'state']);
 Route::patch('/telegram/app/agent/preferences', [TelegramMiniAppController::class, 'updateAgentPreferences']);
 Route::patch('/telegram/app/agent/skill', [TelegramMiniAppController::class, 'updateAgentSkill']);
 Route::patch('/telegram/app/vehicle', [TelegramMiniAppController::class, 'updateVehicle']);
+Route::get('/telegram/app/admin/writers', [TelegramMiniAppController::class, 'listWriters']);
+Route::patch('/telegram/app/admin/writers/{telegramUserId}', [TelegramMiniAppController::class, 'updateWriterAllowlist'])
+    ->whereNumber('telegramUserId');

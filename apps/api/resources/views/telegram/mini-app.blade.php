@@ -436,6 +436,59 @@
         .journal-title { font-size: 13px; font-weight: 700; line-height: 1.2; }
         .journal-detail { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
         .journal-meta { font-size: 10px; color: var(--muted); margin-top: 4px; }
+        .bottom-nav.admin-mode { grid-template-columns: repeat(6, 1fr); }
+        .nav-btn.admin-only { display: none; }
+        .bottom-nav.admin-mode .nav-btn.admin-only { display: block; }
+        .writer-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            box-shadow: var(--shadow);
+        }
+        .writer-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .writer-name { font-size: 13px; font-weight: 700; line-height: 1.2; }
+        .writer-meta { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+        .writer-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .writer-badge {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: rgba(107,122,144,0.12);
+            color: var(--muted);
+        }
+        .writer-badge.on {
+            background: rgba(34,181,115,0.15);
+            color: var(--ok);
+        }
+        .writer-badge.warn {
+            background: rgba(245,158,11,0.15);
+            color: #b45309;
+        }
+        .writer-toggle {
+            flex-shrink: 0;
+            border: 1px solid rgba(30, 202, 211, 0.35);
+            background: var(--primary-soft);
+            color: var(--primary-deep);
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .writer-toggle.off {
+            background: rgba(21,32,51,0.05);
+            border-color: var(--line);
+            color: var(--muted);
+        }
+        .writer-toggle:disabled { opacity: 0.55; cursor: default; }
         .form-card {
             background: var(--card);
             border: 1px solid var(--line);
@@ -737,10 +790,11 @@
             <section class="panel" id="panel-roadmap"></section>
             <section class="panel" id="panel-journal"></section>
             <section class="panel" id="panel-analytics"></section>
+            <section class="panel" id="panel-allowlist"></section>
             <section class="panel" id="panel-agent"></section>
         </main>
 
-        <nav class="bottom-nav">
+        <nav class="bottom-nav" id="bottom-nav">
             <button class="nav-btn active" type="button" data-tab="state">
                 <span class="nav-icon">◎</span>Состояние
             </button>
@@ -752,6 +806,9 @@
             </button>
             <button class="nav-btn" type="button" data-tab="analytics">
                 <span class="nav-icon">⌁</span>Аналитика
+            </button>
+            <button class="nav-btn admin-only" type="button" data-tab="allowlist" id="nav-allowlist">
+                <span class="nav-icon">☑</span>Список
             </button>
             <button class="nav-btn nav-btn-agent" type="button" data-tab="agent" id="nav-agent">
                 <span class="nav-icon">✦</span>
@@ -838,6 +895,7 @@
 
         let appState = {
             vehicles: [], agent: {}, garage: {}, help: {}, user: {},
+            isOwner: false, writers: [], writersLoaded: false, writersLoading: false,
             activeVehicleKey: null, tab: 'state',
             garageView: 'list', garageDetailKey: null,
             passportEditing: false, savingVehicle: false, vehicleToast: '',
@@ -992,6 +1050,93 @@
                     '</div></article>';
             }).join('') + '</div>';
             root.innerHTML = html;
+        }
+
+        function renderAllowlist() {
+            const root = document.getElementById('panel-allowlist');
+            if (!appState.isOwner) {
+                root.innerHTML = '<p class="hint">Раздел только для администратора.</p>';
+                return;
+            }
+            if (appState.writersLoading && !appState.writersLoaded) {
+                root.innerHTML = '<p class="hint">Загружаем список…</p>';
+                return;
+            }
+            const writers = appState.writers || [];
+            let html = '<p class="hint">Кто писал боту. Как в админке: добавляйте и убирайте из белого списка.</p>';
+            if (!writers.length) {
+                html += '<p class="hint">Пока никто не писал боту.</p>';
+                root.innerHTML = html;
+                return;
+            }
+            html += writers.map((writer) => {
+                const allowed = !!writer.is_allowlisted;
+                const badges = [];
+                if (allowed) badges.push('<span class="writer-badge on">в списке</span>');
+                if (writer.env_allowlisted) badges.push('<span class="writer-badge warn">env</span>');
+                if (writer.is_owner) badges.push('<span class="writer-badge">владелец</span>');
+                if (writer.access_requested_at) badges.push('<span class="writer-badge">заявка '+escapeHtml(writer.access_requested_at)+'</span>');
+                const meta = [
+                    'ID ' + writer.telegram_user_id,
+                    writer.username ? ('@' + writer.username) : null,
+                    writer.message_count != null ? (writer.message_count + ' сообщ.') : null,
+                    writer.last_message_at ? ('был ' + writer.last_message_at) : null,
+                ].filter(Boolean).join(' · ');
+                const disabled = writer.is_owner && allowed ? ' disabled' : '';
+                return '<div class="writer-card"><div class="writer-top"><div style="min-width:0;flex:1">' +
+                    '<div class="writer-name">' + escapeHtml(writer.display_name || ('ID ' + writer.telegram_user_id)) + '</div>' +
+                    '<div class="writer-meta">' + escapeHtml(meta) + '</div>' +
+                    (badges.length ? '<div class="writer-badges">' + badges.join('') + '</div>' : '') +
+                    '</div><button class="writer-toggle' + (allowed ? '' : ' off') + '" type="button" data-writer="' +
+                    escapeHtml(String(writer.telegram_user_id)) + '" data-allowed="' + (allowed ? '1' : '0') + '"' + disabled + '>' +
+                    (allowed ? 'Убрать' : 'Добавить') + '</button></div></div>';
+            }).join('');
+            root.innerHTML = html;
+            root.querySelectorAll('[data-writer]').forEach((btn) => {
+                btn.addEventListener('click', () => toggleWriter(btn.dataset.writer, btn.dataset.allowed !== '1'));
+            });
+        }
+
+        async function loadWriters(force) {
+            if (!appState.isOwner) return;
+            if (appState.writersLoading) return;
+            if (appState.writersLoaded && !force) {
+                renderAllowlist();
+                return;
+            }
+            appState.writersLoading = true;
+            renderAllowlist();
+            try {
+                const res = await fetch(apiBase + '/admin/writers', { headers: apiHeaders });
+                const data = await res.json();
+                if (!res.ok) throw new Error('writers failed');
+                appState.writers = data.writers || [];
+                appState.writersLoaded = true;
+            } catch (e) {
+                appState.writers = [];
+                appState.writersLoaded = false;
+            } finally {
+                appState.writersLoading = false;
+                renderAllowlist();
+            }
+        }
+
+        async function toggleWriter(telegramUserId, nextAllowed) {
+            try {
+                const res = await fetch(apiBase + '/admin/writers/' + encodeURIComponent(telegramUserId), {
+                    method: 'PATCH',
+                    headers: apiHeaders,
+                    body: JSON.stringify({ is_allowlisted: !!nextAllowed }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.message || 'Не удалось обновить список');
+                    return;
+                }
+                await loadWriters(true);
+            } catch (e) {
+                alert('Не удалось обновить список');
+            }
         }
 
         function renderAnalytics() {
@@ -1459,11 +1604,17 @@
         }
 
         function renderTab() {
+            if (appState.tab === 'allowlist' && !appState.isOwner) {
+                appState.tab = 'state';
+            }
             document.querySelectorAll('.panel').forEach((el) => el.classList.remove('active'));
-            document.getElementById('panel-' + appState.tab).classList.add('active');
+            const panel = document.getElementById('panel-' + appState.tab);
+            if (panel) panel.classList.add('active');
             document.querySelectorAll('.nav-btn').forEach((btn) => {
                 btn.classList.toggle('active', btn.dataset.tab === appState.tab);
             });
+            document.getElementById('bottom-nav').classList.toggle('admin-mode', !!appState.isOwner);
+            if (appState.tab === 'allowlist') loadWriters(false);
         }
 
         function renderAll() {
@@ -1473,6 +1624,7 @@
             renderRoadmap();
             renderJournal();
             renderAnalytics();
+            renderAllowlist();
             renderAgent();
             renderNavTokens();
             renderTab();
@@ -1546,6 +1698,12 @@
                     document.getElementById('user-avatar').textContent = data.user.initial;
                 }
                 appState.user = data.user || {};
+                appState.isOwner = !!data.is_owner;
+                if (!appState.isOwner) {
+                    appState.writers = [];
+                    appState.writersLoaded = false;
+                    if (appState.tab === 'allowlist') appState.tab = 'state';
+                }
                 appState.vehicles = data.vehicles || [];
                 appState.agent = data.agent || {};
                 appState.garage = data.garage || {};
