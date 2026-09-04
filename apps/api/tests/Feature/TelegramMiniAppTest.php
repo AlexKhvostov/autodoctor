@@ -11,6 +11,7 @@ use App\Models\WorkCatalogItem;
 use App\Services\Telegram\TelegramMiniAppSnapshot;
 use Database\Seeders\MaintenanceV1Seeder;
 use Database\Seeders\MaintenanceV2Seeder;
+use Database\Seeders\TokenTopupPackageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,6 +24,7 @@ class TelegramMiniAppTest extends TestCase
         parent::setUp();
         $this->seed(MaintenanceV1Seeder::class);
         $this->seed(MaintenanceV2Seeder::class);
+        $this->seed(TokenTopupPackageSeeder::class);
     }
 
     public function test_mini_app_page_is_served(): void
@@ -39,6 +41,12 @@ class TelegramMiniAppTest extends TestCase
             ->assertSee('panel-allowlist', false)
             ->assertSee('Журнал', false)
             ->assertSee('План', false)
+            ->assertSee('hint-btn', false)
+            ->assertSee('token-topup-btn', false)
+            ->assertSee('openJournalDetail', false)
+            ->assertSee('openRoadmapTip', false)
+            ->assertSee('openMileageSheet', false)
+            ->assertSee('openTokenTopup', false)
             ->assertSee('state-divider', false)
             ->assertSee('disableVerticalSwipes', false)
             ->assertSee('applyTelegramSafeAreas', false)
@@ -73,12 +81,14 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('vehicles.0.title', 'Автомобиль')
             ->assertJsonPath('vehicles.0.status', 'placeholder')
             ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['now', 'past', 'upcoming'], 'journal' => ['events'], 'analytics' => ['charts']]]]])
-            ->assertJsonStructure(['agent' => ['title', 'form', 'editable', 'memory_hint'], 'help' => ['sections'], 'garage'])
+            ->assertJsonStructure(['agent' => ['title', 'form', 'editable', 'memory_hint', 'topup' => ['button_label', 'options']], 'help' => ['sections'], 'garage'])
             ->assertJsonStructure(['user' => ['initial', 'display_name', 'username', 'telegram_id']])
             ->assertJsonPath('user.telegram_id', 70001)
             ->assertJsonPath('user.username', 'anna')
             ->assertJsonPath('user.initial', 'A')
             ->assertJsonPath('is_owner', false)
+            ->assertJsonPath('agent.topup.options.0.stars_price', 50)
+            ->assertJsonPath('agent.topup.options.0.price_label', '50 ⭐')
             ->assertJsonMissingPath('subtitle');
     }
 
@@ -276,6 +286,15 @@ class TelegramMiniAppTest extends TestCase
         $this->assertNotEmpty($card['tabs']['journal']['events']);
         $this->assertTrue(collect($card['tabs']['journal']['events'])->contains('type', 'vehicle_created'));
         $this->assertTrue(collect($card['tabs']['journal']['events'])->contains('type', 'service'));
+        $createdEvent = collect($card['tabs']['journal']['events'])->firstWhere('type', 'vehicle_created');
+        $this->assertNotEmpty($createdEvent['fields']);
+        $this->assertTrue(collect($createdEvent['fields'])->contains('label', 'Марка'));
+        $serviceEvent = collect($card['tabs']['journal']['events'])->firstWhere('type', 'service');
+        $this->assertNotEmpty($serviceEvent['fields']);
+        $this->assertTrue(collect($serviceEvent['fields'])->contains('label', 'Работа'));
+        $upcomingWithHint = collect($card['tabs']['roadmap']['upcoming'])->first(fn ($row) => isset($row['hint']['action']));
+        $this->assertNotNull($upcomingWithHint);
+        $this->assertArrayHasKey('why', $upcomingWithHint['hint']);
         $oilState = collect($card['tabs']['state'])->firstWhere('key', 'engine_oil');
         $this->assertSame('12.03.2026 · 140 000 км', $oilState['last_service']);
         $this->assertCount(1, $oilState['history']);

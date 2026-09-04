@@ -9,6 +9,7 @@ use App\Models\MileageObservation;
 use App\Models\PlanItem;
 use App\Models\ServiceRecord;
 use App\Models\TelegramBotUser;
+use App\Models\TokenTopupPackage;
 use App\Models\Vehicle;
 use App\Models\WorkCatalogItem;
 use App\Services\AgentProfileService;
@@ -242,6 +243,7 @@ class TelegramMiniAppSnapshot
             'notes' => ['user' => [], 'vehicle' => []],
             'form' => null,
             'editable' => false,
+            'topup' => $this->tokenTopupCatalog($vehicle),
         ];
 
         if ($profile === null) {
@@ -320,6 +322,196 @@ class TelegramMiniAppSnapshot
                     'placeholder' => 'Как обращаться, что не предлагать, особенности…',
                 ],
             ],
+        ];
+    }
+
+    /**
+     * Каталог способов пополнения: пакеты Stars и бонусы из админки (token_topup_packages).
+     *
+     * @return array<string, mixed>
+     */
+    private function tokenTopupCatalog(?Vehicle $vehicle = null): array
+    {
+        $mileage = $this->mileageBonusState($vehicle);
+        $packages = TokenTopupPackage::query()->enabled()->ordered()->get();
+        if ($packages->isEmpty()) {
+            $packages = collect($this->fallbackTopupPackages())->map(
+                fn (array $row): TokenTopupPackage => new TokenTopupPackage($row)
+            );
+        }
+
+        $options = [];
+        foreach ($packages as $package) {
+            if ($package->type === TokenTopupPackage::TYPE_MILEAGE) {
+                $options[] = [
+                    'key' => $package->key,
+                    'icon' => $package->icon ?: '🛣️',
+                    'title' => $package->title,
+                    'subtitle' => $mileage['subtitle'],
+                    'tokens_label' => $mileage['reward_label'],
+                    'price_label' => $package->formattedStarsLabel(),
+                    'badge' => $mileage['badge'],
+                    'enabled' => $mileage['can_open'],
+                    'action' => 'mileage',
+                ];
+
+                continue;
+            }
+
+            $options[] = [
+                'key' => $package->key,
+                'icon' => $package->icon ?: ($package->type === TokenTopupPackage::TYPE_STARS ? '⭐' : '⚡'),
+                'title' => $package->title,
+                'subtitle' => (string) ($package->subtitle ?? ''),
+                'tokens_label' => $package->formattedTokensLabel(),
+                'price_label' => $package->formattedStarsLabel(),
+                'badge' => $package->badge,
+                'enabled' => true,
+                'action' => 'soon',
+                'tokens_amount' => $package->tokens_amount,
+                'stars_price' => $package->stars_price,
+            ];
+        }
+
+        return [
+            'button_label' => 'Добавить токены',
+            'button_sub' => 'Stars или бонус за пробег',
+            'sheet_title' => 'Как получить токены',
+            'sheet_intro' => 'Покупка — через Telegram Stars. Бесплатно — за актуализацию пробега (не чаще раза в 24 часа). Цены пакетов задаются в админке.',
+            'soon_toast' => 'Этот способ скоро подключим',
+            'mileage' => $mileage,
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function fallbackTopupPackages(): array
+    {
+        return [
+            [
+                'key' => 'stars_pack_s',
+                'type' => TokenTopupPackage::TYPE_STARS,
+                'title' => 'Пакет Starter',
+                'subtitle' => 'Небольшой запас на короткие ответы в чате',
+                'icon' => '⭐',
+                'tokens_amount' => 5000,
+                'stars_price' => 50,
+                'badge' => 'скоро',
+            ],
+            [
+                'key' => 'stars_pack_m',
+                'type' => TokenTopupPackage::TYPE_STARS,
+                'title' => 'Пакет Drive',
+                'subtitle' => 'Оптимально на неделю активного диалога',
+                'icon' => '⭐',
+                'tokens_amount' => 20000,
+                'stars_price' => 150,
+                'badge' => 'скоро',
+            ],
+            [
+                'key' => 'stars_pack_l',
+                'type' => TokenTopupPackage::TYPE_STARS,
+                'title' => 'Пакет Garage',
+                'subtitle' => 'Запас на долгие разборы и несколько авто',
+                'icon' => '⭐',
+                'tokens_amount' => 60000,
+                'stars_price' => 350,
+                'badge' => 'скоро',
+            ],
+            [
+                'key' => 'mileage',
+                'type' => TokenTopupPackage::TYPE_MILEAGE,
+                'title' => 'Обновить пробег',
+                'subtitle' => null,
+                'icon' => '🛣️',
+                'tokens_amount' => (int) config('agent.topup.mileage_reward_ml', 500),
+                'stars_price' => 0,
+                'cooldown_hours' => (int) config('agent.topup.mileage_cooldown_hours', 24),
+            ],
+            [
+                'key' => 'invite',
+                'type' => TokenTopupPackage::TYPE_INVITE,
+                'title' => 'Пригласить друга',
+                'subtitle' => 'Вы и друг получаете бонус после первого диалога друга с ботом',
+                'icon' => '👥',
+                'tokens_amount' => null,
+                'stars_price' => 0,
+                'badge' => 'скоро',
+            ],
+        ];
+    }
+
+    /**
+     * Бонус за обновление пробега: не чаще 1 раза в N часов (из админки / config).
+     *
+     * @return array<string, mixed>
+     */
+    private function mileageBonusState(?Vehicle $vehicle): array
+    {
+        $mileagePackage = TokenTopupPackage::query()
+            ->where('type', TokenTopupPackage::TYPE_MILEAGE)
+            ->enabled()
+            ->ordered()
+            ->first();
+
+        $reward = (int) ($mileagePackage?->tokens_amount
+            ?? config('agent.topup.mileage_reward_ml', 500));
+        $cooldownHours = (int) ($mileagePackage?->cooldown_hours
+            ?? config('agent.topup.mileage_cooldown_hours', 24));
+        if ($cooldownHours < 1) {
+            $cooldownHours = 24;
+        }
+
+        $base = [
+            'reward_tokens' => $reward,
+            'reward_label' => '+'.number_format($reward, 0, '', ' '),
+            'cooldown_hours' => $cooldownHours,
+            'available' => false,
+            'can_open' => false,
+            'badge' => 'нет авто',
+            'subtitle' => 'Сначала добавьте автомобиль — потом можно обновлять пробег и получать бонус.',
+            'available_label' => null,
+            'cooldown_ends_at' => null,
+            'current_value' => null,
+            'unit' => 'km',
+        ];
+
+        if ($vehicle === null) {
+            return $base;
+        }
+
+        $vehicle->loadMissing('mileageObservations');
+
+        $lastUserUpdate = $vehicle->mileageObservations
+            ->filter(fn (MileageObservation $row): bool => ($row->source ?? '') !== 'service')
+            ->sortByDesc(fn (MileageObservation $row) => $row->observed_at?->timestamp ?? $row->created_at?->timestamp ?? 0)
+            ->first();
+
+        $lastAt = $lastUserUpdate?->observed_at ?? $lastUserUpdate?->created_at;
+        $cooldownEnds = $lastAt?->copy()->addHours($cooldownHours);
+        $available = $cooldownEnds === null || $cooldownEnds->isPast();
+        $hoursLeft = (! $available && $cooldownEnds !== null)
+            ? max(1, (int) ceil(now()->diffInMinutes($cooldownEnds) / 60))
+            : null;
+
+        return [
+            'reward_tokens' => $reward,
+            'reward_label' => '+'.number_format($reward, 0, '', ' '),
+            'cooldown_hours' => $cooldownHours,
+            'available' => $available,
+            'can_open' => true,
+            'badge' => $available ? '0 ⭐' : ('через '.$hoursLeft.' ч'),
+            'subtitle' => $available
+                ? 'Введите актуальный пробег. Небольшой бонус раз в '.$cooldownHours.' ч — без Stars.'
+                : 'Пробег можно обновить сейчас, а бонус токенов снова через '.$hoursLeft.' ч.',
+            'available_label' => $available
+                ? 'бонус доступен'
+                : ('бонус через '.$hoursLeft.' ч'),
+            'cooldown_ends_at' => $cooldownEnds?->toIso8601String(),
+            'current_value' => $vehicle->current_mileage,
+            'unit' => $vehicle->mileage_unit ?? 'km',
         ];
     }
 
@@ -416,26 +608,7 @@ class TelegramMiniAppSnapshot
     {
         $configuration = $vehicle->configuration;
         $vin = $vehicle->vin_ciphertext;
-        $values = [
-            'make' => $this->textValue($configuration?->make),
-            'model' => $this->textValue($configuration?->model),
-            'generation' => $this->textValue($configuration?->generation),
-            'year' => $vehicle->production_year !== null ? (string) $vehicle->production_year : null,
-            'first_use_date' => $vehicle->first_use_date?->format('d.m.Y'),
-            'fuel' => $this->fuelLabel($configuration?->fuel_type),
-            'engine_displacement' => is_numeric($configuration?->engine_displacement_cc)
-                ? (int) $configuration->engine_displacement_cc.' см³'
-                : null,
-            'engine_code' => $this->textValue($configuration?->engine_code),
-            'engine_power' => is_numeric($configuration?->engine_power_kw)
-                ? (string) $configuration->engine_power_kw.' кВт'
-                : null,
-            'transmission' => $this->transmissionLabel($configuration?->transmission_type, $configuration?->transmission_gears),
-            'drivetrain' => $this->drivetrainLabel($configuration?->drivetrain),
-            'market' => $this->textValue($configuration?->market),
-            'mileage' => $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit),
-            'vin' => is_string($vin) && $vin !== '' ? strtoupper($vin) : null,
-        ];
+        $values = $this->profileValuesFromVehicle($vehicle);
 
         return [
             'id' => $vehicle->id,
@@ -459,6 +632,36 @@ class TelegramMiniAppSnapshot
                 'journal' => $this->journalTab($vehicle),
                 'analytics' => $this->analyticsTab($vehicle),
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private function profileValuesFromVehicle(Vehicle $vehicle): array
+    {
+        $configuration = $vehicle->configuration;
+        $vin = $vehicle->vin_ciphertext;
+
+        return [
+            'make' => $this->textValue($configuration?->make),
+            'model' => $this->textValue($configuration?->model),
+            'generation' => $this->textValue($configuration?->generation),
+            'year' => $vehicle->production_year !== null ? (string) $vehicle->production_year : null,
+            'first_use_date' => $vehicle->first_use_date?->format('d.m.Y'),
+            'fuel' => $this->fuelLabel($configuration?->fuel_type),
+            'engine_displacement' => is_numeric($configuration?->engine_displacement_cc)
+                ? (int) $configuration->engine_displacement_cc.' см³'
+                : null,
+            'engine_code' => $this->textValue($configuration?->engine_code),
+            'engine_power' => is_numeric($configuration?->engine_power_kw)
+                ? (string) $configuration->engine_power_kw.' кВт'
+                : null,
+            'transmission' => $this->transmissionLabel($configuration?->transmission_type, $configuration?->transmission_gears),
+            'drivetrain' => $this->drivetrainLabel($configuration?->drivetrain),
+            'market' => $this->textValue($configuration?->market),
+            'mileage' => $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit),
+            'vin' => is_string($vin) && $vin !== '' ? strtoupper($vin) : null,
         ];
     }
 
@@ -874,6 +1077,12 @@ class TelegramMiniAppSnapshot
                 null,
                 null,
                 null,
+                [
+                    'why' => 'Когда появится машина, здесь будет понятное пояснение по каждой работе.',
+                    'basis' => null,
+                    'kind_label' => 'подсказка',
+                    'action' => 'Сначала запишите авто в боте.',
+                ],
             ), $this->maintenanceFields(null));
 
             return [
@@ -920,6 +1129,7 @@ class TelegramMiniAppSnapshot
                 $sortDays,
                 $item->due_date?->format('d.m.Y'),
                 $item->due_mileage_km,
+                $this->roadmapHintFromRule($rule),
             );
         }
 
@@ -933,6 +1143,12 @@ class TelegramMiniAppSnapshot
                 (int) ($tip['sort_days'] ?? 45),
                 null,
                 null,
+                [
+                    'why' => (string) $tip['detail'],
+                    'basis' => null,
+                    'kind_label' => 'сезонная рекомендация',
+                    'action' => 'Это совет по сезону: проверить или сделать заранее, пока не стало хуже.',
+                ],
             );
         }
 
@@ -1152,6 +1368,7 @@ class TelegramMiniAppSnapshot
         ?int $sortDays,
         ?string $dueDate,
         ?int $dueMileageKm,
+        ?array $hint = null,
     ): array {
         return [
             'key' => $key,
@@ -1166,6 +1383,50 @@ class TelegramMiniAppSnapshot
             'due_mileage_label' => $dueMileageKm !== null
                 ? number_format($dueMileageKm, 0, '', ' ').' км'
                 : null,
+            'hint' => $hint ?? [
+                'why' => $detail,
+                'basis' => null,
+                'kind_label' => null,
+                'action' => null,
+            ],
+        ];
+    }
+
+    /**
+     * @return array{why: string, basis: ?string, kind_label: string, action: string}
+     */
+    private function roadmapHintFromRule(MaintenanceRule $rule): array
+    {
+        $content = is_array($rule->localized_content) ? $rule->localized_content : [];
+        $basis = is_string($content['basis']['ru'] ?? null) ? (string) $content['basis']['ru'] : null;
+        $impact = is_string($content['history_impact']['ru'] ?? null)
+            ? (string) $content['history_impact']['ru']
+            : null;
+        $title = (string) ($content['title']['ru'] ?? $rule->work_code);
+        $isCheck = $rule->rule_kind === 'condition_based'
+            || str_contains(mb_strtolower($title), 'проверк')
+            || str_contains($rule->work_code, 'inspection');
+
+        $kindLabel = match (true) {
+            $isCheck => 'регламентная проверка',
+            $rule->rule_kind === 'interval_based' => 'плановая работа',
+            default => 'рекомендация',
+        };
+
+        $action = $isCheck
+            ? 'Это проверка: убедиться, что сейчас всё в порядке. Менять детали нужно только если осмотр покажет проблему.'
+            : 'Это плановая работа по сроку или пробегу. Делают заранее, чтобы не доводить до поломки.';
+
+        $whyParts = array_values(array_filter([$basis, $impact]));
+        $why = $whyParts !== []
+            ? implode(' ', $whyParts)
+            : ('Рекомендация AutoDoctor по узлу «'.$title.'».');
+
+        return [
+            'why' => $why,
+            'basis' => $basis,
+            'kind_label' => $kindLabel,
+            'action' => $action,
         ];
     }
 
@@ -1204,6 +1465,7 @@ class TelegramMiniAppSnapshot
 
         $events = [];
         $serviceDateKeys = [];
+        $profileFields = $this->journalFilledProfileFields($vehicle);
 
         $createdAt = $vehicle->created_at;
         $config = $vehicle->configuration;
@@ -1223,10 +1485,17 @@ class TelegramMiniAppSnapshot
             'mileage_label' => null,
             'sort_at' => ($createdAt?->format('Y-m-d H:i:s') ?? '1970-01-01 00:00:00').'|0',
             'tone' => 'soft',
+            'fields' => array_merge(
+                $this->journalFieldRows([
+                    ['Что произошло', 'В боте создана карточка автомобиля'],
+                    ['Когда', ($createdAt?->format('d.m.Y H:i') ?? null)],
+                ]),
+                $profileFields,
+            ),
         ];
 
-            if ((int) $vehicle->version > 1 && $vehicle->updated_at !== null
-                && ($createdAt === null || $vehicle->updated_at->format('Y-m-d H:i:s') !== $createdAt->format('Y-m-d H:i:s'))) {
+        if ((int) $vehicle->version > 1 && $vehicle->updated_at !== null
+            && ($createdAt === null || $vehicle->updated_at->format('Y-m-d H:i:s') !== $createdAt->format('Y-m-d H:i:s'))) {
             $events[] = [
                 'id' => 'vehicle-updated-'.$vehicle->id.'-'.$vehicle->version,
                 'type' => 'vehicle_updated',
@@ -1237,6 +1506,14 @@ class TelegramMiniAppSnapshot
                 'mileage_label' => $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit),
                 'sort_at' => $vehicle->updated_at->format('Y-m-d H:i:s').'|1',
                 'tone' => 'soft',
+                'fields' => array_merge(
+                    $this->journalFieldRows([
+                        ['Что произошло', 'Обновили паспорт или пробег'],
+                        ['Версия карточки', (string) $vehicle->version],
+                        ['Когда', $vehicle->updated_at->format('d.m.Y H:i')],
+                    ]),
+                    $profileFields,
+                ),
             ];
         }
 
@@ -1260,6 +1537,18 @@ class TelegramMiniAppSnapshot
                 ? number_format((int) $record->mileage_value, 0, '', ' ').' км'
                 : null;
             $note = trim((string) ($record->note ?? ''));
+            $source = match ((string) ($record->evidence_source ?? '')) {
+                'self', 'user', 'chat', 'telegram' => 'Из диалога с ботом',
+                'service' => 'Сервисная запись',
+                default => filled($record->evidence_source) ? (string) $record->evidence_source : 'Запись в журнале',
+            };
+            $workFields = [];
+            foreach ($titles as $index => $title) {
+                $workFields[] = [
+                    'label' => count($titles) === 1 ? 'Работа' : 'Работа '.($index + 1),
+                    'value' => $title,
+                ];
+            }
             $events[] = [
                 'id' => 'service-'.$record->id,
                 'type' => 'service',
@@ -1273,6 +1562,16 @@ class TelegramMiniAppSnapshot
                 'sort_at' => ($record->service_date?->format('Y-m-d') ?? '0000-00-00')
                     .' '.($record->created_at?->format('H:i:s') ?? '12:00:00').'|2',
                 'tone' => 'ok',
+                'fields' => array_merge(
+                    $this->journalFieldRows([
+                        ['Тип записи', 'Обслуживание'],
+                        ['Дата работ', $record->service_date?->format('d.m.Y')],
+                        ['Пробег', $mileageLabel],
+                        ['Источник', $source],
+                        ['Заметка', $note !== '' ? $note : null],
+                    ]),
+                    $workFields,
+                ),
             ];
         }
 
@@ -1288,6 +1587,9 @@ class TelegramMiniAppSnapshot
             if (isset($serviceDateKeys[$code.'|'.$sortDate])) {
                 continue;
             }
+            $mileageLabel = is_numeric($answer->performed_mileage_km)
+                ? number_format((int) $answer->performed_mileage_km, 0, '', ' ').' км'
+                : null;
             $events[] = [
                 'id' => 'history-'.$answer->id,
                 'type' => 'history',
@@ -1295,11 +1597,16 @@ class TelegramMiniAppSnapshot
                 'detail' => 'Из диалога с ботом',
                 'date' => $answer->performed_date->format('d.m.Y'),
                 'time' => $answer->updated_at?->format('H:i') ?? $answer->created_at?->format('H:i'),
-                'mileage_label' => is_numeric($answer->performed_mileage_km)
-                    ? number_format((int) $answer->performed_mileage_km, 0, '', ' ').' км'
-                    : null,
+                'mileage_label' => $mileageLabel,
                 'sort_at' => $sortDate.' '.($answer->created_at?->format('H:i:s') ?? '12:00:00').'|3',
                 'tone' => 'ok',
+                'fields' => $this->journalFieldRows([
+                    ['Тип записи', 'История из чата'],
+                    ['Работа', (string) ($answer->workCatalogItem?->localized_name['ru'] ?? $code)],
+                    ['Дата', $answer->performed_date->format('d.m.Y')],
+                    ['Пробег', $mileageLabel],
+                    ['Источник', 'Сообщили боту в диалоге'],
+                ]),
             ];
         }
 
@@ -1308,19 +1615,26 @@ class TelegramMiniAppSnapshot
                 continue;
             }
             $observedAt = $observation->observed_at ?? $observation->created_at;
+            $sourceLabel = match ((string) ($observation->source ?? '')) {
+                'user', 'chat', 'telegram' => 'Сообщили в чате',
+                default => 'Новое значение пробега',
+            };
             $events[] = [
                 'id' => 'mileage-'.$observation->id,
                 'type' => 'mileage',
                 'title' => 'Обновлён пробег',
-                'detail' => match ((string) ($observation->source ?? '')) {
-                    'user', 'chat', 'telegram' => 'Сообщили в чате',
-                    default => 'Новое значение пробега',
-                },
+                'detail' => $sourceLabel,
                 'date' => $observedAt?->format('d.m.Y'),
                 'time' => $observedAt?->format('H:i'),
                 'mileage_label' => $this->formatMileage($observation->value, $observation->unit ?? 'km'),
                 'sort_at' => ($observedAt?->format('Y-m-d H:i:s') ?? '1970-01-01 00:00:00').'|4',
                 'tone' => 'soft',
+                'fields' => $this->journalFieldRows([
+                    ['Тип записи', 'Обновление пробега'],
+                    ['Пробег', $this->formatMileage($observation->value, $observation->unit ?? 'km')],
+                    ['Когда', $observedAt?->format('d.m.Y H:i')],
+                    ['Источник', $sourceLabel],
+                ]),
             ];
         }
 
@@ -1338,6 +1652,47 @@ class TelegramMiniAppSnapshot
                 ? 'Пока записей нет — они появятся после диалога с ботом.'
                 : null,
         ];
+    }
+
+    /**
+     * @return list<array{label: string, value: string}>
+     */
+    private function journalFilledProfileFields(Vehicle $vehicle): array
+    {
+        $rows = [];
+        foreach ($this->formatProfileFields($this->profileValuesFromVehicle($vehicle)) as $field) {
+            if (! ($field['filled'] ?? false) || ! filled($field['value'] ?? null)) {
+                continue;
+            }
+            $rows[] = [
+                'label' => (string) $field['label'],
+                'value' => (string) $field['value'],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  list<array{0: string, 1: ?string}>  $pairs
+     * @return list<array{label: string, value: string}>
+     */
+    private function journalFieldRows(array $pairs): array
+    {
+        $rows = [];
+        foreach ($pairs as $pair) {
+            $label = (string) ($pair[0] ?? '');
+            $value = $pair[1] ?? null;
+            if ($label === '' || $value === null || $value === '') {
+                continue;
+            }
+            $rows[] = [
+                'label' => $label,
+                'value' => (string) $value,
+            ];
+        }
+
+        return $rows;
     }
 
     /**

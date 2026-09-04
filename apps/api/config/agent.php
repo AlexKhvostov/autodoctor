@@ -28,4 +28,12 @@ return [
         'cost_per_1k_completion_tokens' => (float) env('AGENT_COST_PER_1K_COMPLETION', 0.012),
         'cost_per_proxy_message' => (float) env('AGENT_COST_PER_PROXY_MESSAGE', 0.02),
     ],
+    /*
+    | Token top-up defaults (fallback if DB packages are empty).
+    | Live prices for Mini App come from token_topup_packages / Filament admin.
+    */
+    'topup' => [
+        'mileage_reward_ml' => (int) env('AGENT_TOPUP_MILEAGE_REWARD_ML', 500),
+        'mileage_cooldown_hours' => (int) env('AGENT_TOPUP_MILEAGE_COOLDOWN_HOURS', 24),
+    ],
 ];

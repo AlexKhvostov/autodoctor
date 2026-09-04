@@ -304,6 +304,29 @@
             margin-top: 2px;
             line-height: 1.35;
         }
+        .tl-now-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .mileage-quick-btn {
+            border: 1px solid rgba(30, 202, 211, 0.35);
+            background: rgba(30, 202, 211, 0.12);
+            color: var(--primary-deep);
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .mileage-quick-btn:active { opacity: 0.85; }
+        .mileage-form-hint {
+            font-size: 11px;
+            color: var(--muted);
+            margin: 0 0 10px;
+            line-height: 1.4;
+        }
         .tl-now::before {
             content: '';
             position: absolute;
@@ -377,7 +400,28 @@
             border-radius: 8px;
             padding: 5px 7px;
             box-shadow: var(--shadow);
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
         }
+        .tl-card-body { min-width: 0; flex: 1; }
+        .hint-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid var(--line);
+            background: var(--bg-soft);
+            color: var(--primary-deep);
+            font-size: 11px;
+            font-weight: 800;
+            font-style: italic;
+            cursor: pointer;
+            flex-shrink: 0;
+            line-height: 1;
+            padding: 0;
+            margin-top: 1px;
+        }
+        .hint-btn:active { opacity: 0.8; }
         .tl-label { font-size: 12px; font-weight: 700; line-height: 1.2; }
         .tl-meta { font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
         .tl-icons { display: flex; gap: 3px; flex-shrink: 0; padding-top: 2px; }
@@ -436,6 +480,102 @@
         .journal-title { font-size: 13px; font-weight: 700; line-height: 1.2; }
         .journal-detail { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
         .journal-meta { font-size: 10px; color: var(--muted); margin-top: 4px; }
+        .detail-lead {
+            font-size: 12px;
+            color: var(--ink);
+            line-height: 1.45;
+            margin: 0 0 10px;
+        }
+        .detail-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--primary-deep);
+            background: rgba(30, 202, 211, 0.12);
+            border-radius: 6px;
+            padding: 3px 7px;
+            margin-bottom: 8px;
+        }
+        .token-topup-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+            padding: 9px 11px;
+            border-radius: 12px;
+            border: 1px solid rgba(30, 202, 211, 0.35);
+            background: linear-gradient(135deg, rgba(30,202,211,0.18), rgba(59,130,246,0.12));
+            color: var(--ink);
+            cursor: pointer;
+            text-align: left;
+            box-shadow: var(--shadow);
+        }
+        .token-topup-btn:active { opacity: 0.9; }
+        .token-topup-title { font-size: 13px; font-weight: 800; line-height: 1.2; }
+        .token-topup-sub { font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 600; }
+        .token-topup-chev { color: var(--primary-deep); font-size: 16px; font-weight: 700; }
+        .topup-option {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            text-align: left;
+            cursor: pointer;
+            color: inherit;
+            box-shadow: var(--shadow);
+        }
+        .topup-option:disabled {
+            opacity: 0.72;
+            cursor: default;
+        }
+        .topup-option:not(:disabled):active { opacity: 0.9; }
+        .topup-ico {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            background: rgba(30, 202, 211, 0.12);
+        }
+        .topup-option-title { font-size: 13px; font-weight: 800; line-height: 1.2; }
+        .topup-option-sub { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+        .topup-option-meta {
+            margin-top: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center;
+        }
+        .topup-chip {
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 2px 7px;
+            background: rgba(30, 202, 211, 0.14);
+            color: var(--primary-deep);
+        }
+        .topup-chip.soon {
+            background: rgba(107, 122, 144, 0.14);
+            color: var(--muted);
+        }
+        .topup-toast {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 6px;
+            min-height: 14px;
+            font-weight: 600;
+        }
         .bottom-nav.admin-mode { grid-template-columns: repeat(6, 1fr); }
         .nav-btn.admin-only { display: none; }
         .bottom-nav.admin-mode .nav-btn.admin-only { display: block; }
@@ -899,7 +1039,7 @@
             activeVehicleKey: null, tab: 'state',
             garageView: 'list', garageDetailKey: null,
             passportEditing: false, savingVehicle: false, vehicleToast: '',
-            savingAgent: false, agentToast: '',
+            savingAgent: false, agentToast: '', topupToast: '',
         };
 
         const apiBase = @json(url('/telegram/app'));
@@ -981,9 +1121,18 @@
                 html += '</div>';
             }
             html += renderNowNode(now);
-            upcoming.forEach((item) => { html += renderTimelineNode(item); });
+            upcoming.forEach((item, index) => { html += renderTimelineNode(item, index); });
             html += '</div>';
             root.innerHTML = html;
+            root.querySelectorAll('[data-tip]').forEach((btn) => {
+                btn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const item = upcoming[Number(btn.dataset.tip)];
+                    if (item) openRoadmapTip(item);
+                });
+            });
+            const mileageBtn = root.querySelector('[data-open-mileage]');
+            if (mileageBtn) mileageBtn.addEventListener('click', openMileageSheet);
         }
 
         function renderNowNode(now) {
@@ -995,9 +1144,14 @@
                 ? ('посл. событие: ' + now.last_event_date +
                     (now.last_event_mileage_label ? (' · ' + now.last_event_mileage_label) : ''))
                 : '';
+            const vehicle = activeVehicle();
+            const canMileage = vehicle && vehicle.status === 'saved' && vehicle.id;
             return '<div class="tl-now"><div class="tl-now-label">Сейчас</div>' +
                 '<div class="tl-now-meta">' + escapeHtml(meta || 'сегодня') + '</div>' +
                 (sub ? '<div class="tl-now-sub">' + escapeHtml(sub) + '</div>' : '') +
+                (canMileage
+                    ? '<div class="tl-now-actions"><button class="mileage-quick-btn" type="button" data-open-mileage="1">Обновить пробег</button></div>'
+                    : '') +
                 '</div>';
         }
 
@@ -1005,11 +1159,11 @@
             const meta = [item.date, item.mileage_label].filter(Boolean).join(' · ');
             return '<div class="tl-node past done">' +
                 '<div class="tl-check" title="Выполнено">✓</div>' +
-                '<div class="tl-card"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
-                '<div class="tl-meta">' + escapeHtml(meta || '—') + '</div></div></div>';
+                '<div class="tl-card"><div class="tl-card-body"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
+                '<div class="tl-meta">' + escapeHtml(meta || '—') + '</div></div></div></div>';
         }
 
-        function renderTimelineNode(item) {
+        function renderTimelineNode(item, index) {
             const meta = [
                 item.days_label,
                 item.due_date ? ('~ ' + item.due_date) : null,
@@ -1018,8 +1172,37 @@
             const toneClass = item.tone === 'overdue' ? ' overdue' : '';
             return '<div class="tl-node' + toneClass + ' ' + (item.tier || 'recommended') + '">' +
                 '<div class="tl-icons">' + tierIcon(item.tier) + '</div>' +
-                '<div class="tl-card"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
-                '<div class="tl-meta">' + escapeHtml(meta || item.detail || '—') + '</div></div></div>';
+                '<div class="tl-card"><div class="tl-card-body"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
+                '<div class="tl-meta">' + escapeHtml(meta || item.detail || '—') + '</div></div>' +
+                '<button class="hint-btn" type="button" data-tip="' + index + '" title="Что это значит" aria-label="Подсказка">i</button>' +
+                '</div></div>';
+        }
+
+        function openRoadmapTip(item) {
+            const hint = item.hint || {};
+            let html = '';
+            if (hint.kind_label) {
+                html += '<div class="detail-badge">' + escapeHtml(hint.kind_label) + '</div>';
+            }
+            if (hint.action) {
+                html += '<p class="detail-lead">' + escapeHtml(hint.action) + '</p>';
+            }
+            if (hint.why) {
+                html += '<div class="passport-section"><div class="passport-title">Зачем</div>' +
+                    '<p class="garage-hint" style="margin:0">' + escapeHtml(hint.why) + '</p></div>';
+            }
+            const when = [
+                item.days_label,
+                item.due_date ? ('дата ~ ' + item.due_date) : null,
+                item.due_mileage_label ? ('пробег ~ ' + item.due_mileage_label) : null,
+            ].filter(Boolean).join(' · ');
+            if (when || item.detail) {
+                html += '<div class="passport-section" style="margin-top:10px"><div class="passport-title">В плане</div>';
+                if (when) html += '<div class="field-row"><span>Срок</span><span class="field-value">' + escapeHtml(when) + '</span></div>';
+                if (item.detail) html += '<div class="field-row"><span>Деталь</span><span class="field-value">' + escapeHtml(item.detail) + '</span></div>';
+                html += '</div>';
+            }
+            openDetailSheet(item.label || 'Подсказка', html || '<p class="hint">Пока нет пояснения.</p>');
         }
 
         function placeholderChart() {
@@ -1038,7 +1221,7 @@
                 return;
             }
             let html = journal.hint ? '<p class="hint">' + escapeHtml(journal.hint) + '</p>' : '';
-            html += '<div class="journal-list">' + events.map((event) => {
+            html += '<div class="journal-list">' + events.map((event, index) => {
                 const tone = event.tone === 'ok' ? 'tone-ok' : 'tone-soft';
                 const mark = event.tone === 'ok' ? '✓' : '•';
                 const meta = [event.date, event.time, event.mileage_label].filter(Boolean).join(' · ');
@@ -1047,9 +1230,44 @@
                     '<div class="journal-title">' + escapeHtml(event.title || 'Запись') + '</div>' +
                     (event.detail ? '<div class="journal-detail">' + escapeHtml(event.detail) + '</div>' : '') +
                     (meta ? '<div class="journal-meta">' + escapeHtml(meta) + '</div>' : '') +
-                    '</div></article>';
+                    '</div><button class="hint-btn" type="button" data-journal="' + index +
+                    '" title="Подробнее" aria-label="Подробнее">i</button></article>';
             }).join('') + '</div>';
             root.innerHTML = html;
+            root.querySelectorAll('[data-journal]').forEach((btn) => {
+                btn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const row = events[Number(btn.dataset.journal)];
+                    if (row) openJournalDetail(row);
+                });
+            });
+        }
+
+        function openJournalDetail(event) {
+            const fields = event.fields || [];
+            let html = '';
+            if (event.detail) {
+                html += '<p class="detail-lead">' + escapeHtml(event.detail) + '</p>';
+            }
+            if (fields.length) {
+                html += '<div class="passport-section"><div class="passport-title">Что записано</div>' +
+                    fields.map((field) =>
+                        '<div class="field-row"><span>' + escapeHtml(field.label || '') +
+                        '</span><span class="field-value">' + escapeHtml(field.value || '—') + '</span></div>'
+                    ).join('') + '</div>';
+            } else {
+                const fallback = [
+                    ['Дата', event.date],
+                    ['Время', event.time],
+                    ['Пробег', event.mileage_label],
+                ].filter((row) => row[1]);
+                html += '<div class="passport-section"><div class="passport-title">Что записано</div>' +
+                    fallback.map((row) =>
+                        '<div class="field-row"><span>' + escapeHtml(row[0]) +
+                        '</span><span class="field-value">' + escapeHtml(row[1]) + '</span></div>'
+                    ).join('') + '</div>';
+            }
+            openDetailSheet(event.title || 'Запись журнала', html);
         }
 
         function renderAllowlist() {
@@ -1190,6 +1408,7 @@
                 ? '<img class="agent-avatar" src="' + escapeHtml(agent.avatar_url) + '" alt="AI">'
                 : '<div class="agent-avatar"></div>';
             const form = agent.form;
+            const topup = agent.topup || {};
             let formHtml = '';
             if (form && agent.editable) {
                 formHtml =
@@ -1210,6 +1429,13 @@
                     '<div class="save-toast" id="agent-toast">' + escapeHtml(appState.agentToast) + '</div>';
             }
 
+            const topupBtn = topup.button_label
+                ? '<button class="token-topup-btn" id="token-topup-open" type="button">' +
+                  '<span><div class="token-topup-title">' + escapeHtml(topup.button_label) + '</div>' +
+                  (topup.button_sub ? '<div class="token-topup-sub">' + escapeHtml(topup.button_sub) + '</div>' : '') +
+                  '</span><span class="token-topup-chev">＋</span></button>'
+                : '';
+
             root.innerHTML =
                 '<div class="agent-card' + statusClass + '"><div class="agent-top">' + avatar +
                 '<div><div class="agent-title">' + escapeHtml(agent.title || 'AI-ассистент') + '</div>' +
@@ -1220,7 +1446,7 @@
                 escapeHtml(agent.approx_replies_label) + '</span>' : '') + '</div>' +
                 (agent.typical_spend_label ? '<div class="agent-token-meta">' +
                 escapeHtml(agent.typical_spend_label) + '</div>' : '') +
-                '</div></div>' +
+                '</div></div>' + topupBtn +
                 (agent.intro ? '<div class="agent-intro">' + escapeHtml(agent.intro) + '</div>' : '') +
                 (agent.memory_hint ? '<div class="agent-intro" style="border-top:0;padding-top:0;margin-top:4px">' +
                 escapeHtml(agent.memory_hint) + '</div>' : '') + '</div>' +
@@ -1239,6 +1465,116 @@
             });
             const saveBtn = document.getElementById('agent-save');
             if (saveBtn) saveBtn.addEventListener('click', saveAgentSettings);
+            const topupOpen = document.getElementById('token-topup-open');
+            if (topupOpen) topupOpen.addEventListener('click', openTokenTopup);
+        }
+
+        function openTokenTopup() {
+            const topup = (appState.agent && appState.agent.topup) || {};
+            const options = topup.options || [];
+            let html = topup.sheet_intro
+                ? '<p class="detail-lead">' + escapeHtml(topup.sheet_intro) + '</p>'
+                : '';
+            html += options.map((option) => {
+                const chips = [];
+                if (option.tokens_label) chips.push('<span class="topup-chip">' + escapeHtml(option.tokens_label) + '</span>');
+                if (option.price_label) chips.push('<span class="topup-chip">' + escapeHtml(option.price_label) + '</span>');
+                if (option.badge) chips.push('<span class="topup-chip soon">' + escapeHtml(option.badge) + '</span>');
+                const disabled = option.enabled ? '' : ' disabled';
+                return '<button class="topup-option" type="button" data-topup="' +
+                    escapeHtml(option.key || '') + '"' + disabled + '>' +
+                    '<div class="topup-ico">' + escapeHtml(option.icon || '⚡') + '</div>' +
+                    '<div style="min-width:0;flex:1"><div class="topup-option-title">' +
+                    escapeHtml(option.title || '') + '</div>' +
+                    (option.subtitle ? '<div class="topup-option-sub">' + escapeHtml(option.subtitle) + '</div>' : '') +
+                    (chips.length ? '<div class="topup-option-meta">' + chips.join('') + '</div>' : '') +
+                    '</div></button>';
+            }).join('');
+            html += '<div class="topup-toast" id="topup-toast">' + escapeHtml(appState.topupToast || '') + '</div>';
+            openDetailSheet(topup.sheet_title || 'Токены', html);
+            document.querySelectorAll('[data-topup]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const option = options.find((row) => row.key === btn.dataset.topup);
+                    if (!option) return;
+                    if (option.action === 'mileage') {
+                        openMileageSheet();
+                        return;
+                    }
+                    if (!option.enabled || option.action === 'soon') {
+                        appState.topupToast = topup.soon_toast || 'Этот способ скоро подключим';
+                        const toast = document.getElementById('topup-toast');
+                        if (toast) toast.textContent = appState.topupToast;
+                        return;
+                    }
+                });
+            });
+        }
+
+        function openMileageSheet() {
+            const vehicle = activeVehicle();
+            if (!vehicle || vehicle.status !== 'saved' || !vehicle.id) {
+                openDetailSheet('Пробег', '<p class="hint">Сначала выберите сохранённый автомобиль в гараже.</p>');
+                return;
+            }
+            const topup = (appState.agent && appState.agent.topup) || {};
+            const mileage = topup.mileage || {};
+            const current = vehicle.edit_profile?.mileage_value != null
+                ? String(vehicle.edit_profile.mileage_value)
+                : (mileage.current_value != null ? String(mileage.current_value) : '');
+            const unit = vehicle.edit_profile?.mileage_unit || mileage.unit || 'km';
+            const bonusLine = mileage.available
+                ? ('После сохранения — бонус ' + (mileage.reward_label || '') + ' токенов (начисление подключим следующим шагом). Следующий бонус не раньше чем через ' + (mileage.cooldown_hours || 24) + ' ч.')
+                : (mileage.available_label
+                    ? ('Пробег сохранится. ' + mileage.available_label + '.')
+                    : 'Пробег сохранится в карточке авто и журнале.');
+            const html =
+                '<p class="mileage-form-hint">Впишите одометр «как сейчас» — например вечером после поездок. Больше ничего делать не нужно.</p>' +
+                '<p class="mileage-form-hint">' + escapeHtml(bonusLine) + '</p>' +
+                '<div class="form-card"><label class="form-label" for="mileage-quick-input">Текущий пробег, ' +
+                escapeHtml(unit === 'mi' ? 'миль' : 'км') + '</label>' +
+                '<input class="form-select" id="mileage-quick-input" type="number" min="0" step="1" value="' +
+                escapeHtml(current) + '"></div>' +
+                '<button class="form-save" id="mileage-quick-save" type="button">Сохранить пробег</button>' +
+                '<div class="save-toast" id="mileage-quick-toast"></div>';
+            openDetailSheet('Обновить пробег', html);
+            const saveBtn = document.getElementById('mileage-quick-save');
+            if (saveBtn) saveBtn.addEventListener('click', saveMileageQuick);
+        }
+
+        async function saveMileageQuick() {
+            const vehicle = activeVehicle();
+            const input = document.getElementById('mileage-quick-input');
+            const toast = document.getElementById('mileage-quick-toast');
+            const saveBtn = document.getElementById('mileage-quick-save');
+            if (!vehicle || !vehicle.id || !input) return;
+            const value = Number(String(input.value || '').trim());
+            if (!Number.isFinite(value) || value < 0) {
+                if (toast) toast.textContent = 'Введите корректный пробег';
+                return;
+            }
+            if (saveBtn) saveBtn.disabled = true;
+            if (toast) toast.textContent = 'Сохраняем…';
+            try {
+                const res = await fetch(apiBase + '/vehicle', {
+                    method: 'PATCH',
+                    headers: apiHeaders,
+                    body: JSON.stringify({
+                        vehicle_id: vehicle.id,
+                        version: vehicle.version,
+                        mileage: {
+                            value: Math.round(value),
+                            unit: vehicle.edit_profile?.mileage_unit || 'km',
+                        },
+                    }),
+                });
+                if (!res.ok) throw new Error('save failed');
+                if (toast) toast.textContent = 'Пробег обновлён';
+                await loadState();
+                closeHelp();
+            } catch (e) {
+                if (toast) toast.textContent = 'Не удалось сохранить. Пробег не должен уменьшаться без причины.';
+                if (saveBtn) saveBtn.disabled = false;
+            }
         }
 
         async function saveAgentSettings() {
@@ -1282,6 +1618,13 @@
                 '<div class="passport-section"><div class="passport-title">' + escapeHtml(section.title) +
                 '</div><p class="garage-hint" style="margin-bottom:10px">' + escapeHtml(section.body) + '</p></div>'
             ).join('');
+        }
+
+        function openDetailSheet(title, html) {
+            document.getElementById('help-title').textContent = title || 'Подсказка';
+            document.getElementById('help-content').innerHTML = html || '';
+            document.getElementById('sheet-backdrop').classList.add('open');
+            document.getElementById('help-sheet').classList.add('open');
         }
 
         function openHelp() {
