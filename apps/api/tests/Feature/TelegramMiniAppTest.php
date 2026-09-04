@@ -34,6 +34,8 @@ class TelegramMiniAppTest extends TestCase
             ->assertSee('topbar-shell', false)
             ->assertSee('tl-wrap', false)
             ->assertSee('history-sheet', false)
+            ->assertSee('profile-sheet', false)
+            ->assertSee('state-divider', false)
             ->assertSee('disableVerticalSwipes', false)
             ->assertSee('applyTelegramSafeAreas', false)
             ->assertSee('--tg-content-safe-area-inset-top', false)
@@ -68,6 +70,9 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('vehicles.0.status', 'placeholder')
             ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['now', 'past', 'upcoming'], 'analytics' => ['charts']]]]])
             ->assertJsonStructure(['agent' => ['title', 'form', 'editable', 'memory_hint'], 'help' => ['sections'], 'garage'])
+            ->assertJsonStructure(['user' => ['initial', 'display_name', 'username', 'telegram_id']])
+            ->assertJsonPath('user.telegram_id', 70001)
+            ->assertJsonPath('user.username', 'anna')
             ->assertJsonPath('user.initial', 'A')
             ->assertJsonMissingPath('subtitle');
     }
@@ -172,6 +177,15 @@ class TelegramMiniAppTest extends TestCase
             'performed_mileage_km' => 140000,
             'version' => 1,
         ]);
+        $record = \App\Models\ServiceRecord::query()->create([
+            'vehicle_id' => $vehicle->id,
+            'service_date' => '2026-03-12',
+            'mileage_value' => 140000,
+            'mileage_unit' => 'km',
+            'evidence_source' => 'self',
+            'version' => 1,
+        ]);
+        $record->items()->create(['work_catalog_item_id' => $oil->id]);
 
         $state = app(TelegramMiniAppSnapshot::class)->forTelegramUser(70003, (string) $vehicle->id);
         $card = $state['vehicles'][0];
@@ -182,7 +196,11 @@ class TelegramMiniAppTest extends TestCase
         $this->assertArrayHasKey('upcoming', $card['tabs']['roadmap']);
         $oilState = collect($card['tabs']['state'])->firstWhere('key', 'engine_oil');
         $this->assertSame('12.03.2026 · 140 000 км', $oilState['last_service']);
-        $this->assertNotEmpty($oilState['history']);
+        $this->assertCount(1, $oilState['history']);
+        $this->assertSame('12.03.2026', $oilState['history'][0]['date']);
+        $oilPast = collect($card['tabs']['roadmap']['past'])->where('label', $oilState['label'])->values();
+        $this->assertCount(1, $oilPast);
+        $this->assertTrue($oilPast[0]['done']);
         $this->assertTrue($state['agent']['editable']);
         $this->assertArrayHasKey('form', $state['agent']);
         $this->assertTrue($card['editable']);

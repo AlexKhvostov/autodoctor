@@ -182,15 +182,28 @@ class TelegramMiniAppSnapshot
     private function userHeader(?GuestProfile $profile): array
     {
         if ($profile === null) {
-            return ['initial' => 'AD', 'display_name' => null];
+            return [
+                'initial' => 'AD',
+                'display_name' => null,
+                'first_name' => null,
+                'username' => null,
+                'telegram_id' => null,
+                'title' => 'Профиль',
+            ];
         }
 
-        $name = $profile->telegram_first_name ?: $profile->adminLabel();
+        $firstName = filled($profile->telegram_first_name) ? (string) $profile->telegram_first_name : null;
+        $username = filled($profile->telegram_username) ? (string) $profile->telegram_username : null;
+        $name = $firstName ?: ($username ? '@'.$username : $profile->adminLabel());
         $initial = mb_strtoupper(mb_substr(trim($name, '@'), 0, 1));
 
         return [
             'initial' => $initial !== '' ? $initial : 'AD',
             'display_name' => $name,
+            'first_name' => $firstName,
+            'username' => $username,
+            'telegram_id' => $profile->telegram_id !== null ? (int) $profile->telegram_id : null,
+            'title' => 'Профиль',
         ];
     }
 
@@ -992,18 +1005,18 @@ class TelegramMiniAppSnapshot
                 if ($code === null) {
                     continue;
                 }
-                $label = (string) ($item->workCatalogItem?->localized_name['ru'] ?? $code);
-                $dedupeKey = $code.'|'.$sortDate.'|'.$record->id;
+                $dedupeKey = $code.'|'.$sortDate;
                 if (isset($seen[$dedupeKey])) {
                     continue;
                 }
                 $seen[$dedupeKey] = true;
                 $events[] = [
                     'key' => $dedupeKey,
-                    'label' => $label,
+                    'label' => (string) ($item->workCatalogItem?->localized_name['ru'] ?? $code),
                     'date' => $date,
                     'mileage_label' => $mileageLabel,
                     'sort_date' => $sortDate,
+                    'done' => true,
                 ];
             }
         }
@@ -1017,7 +1030,7 @@ class TelegramMiniAppSnapshot
                 continue;
             }
             $sortDate = $answer->performed_date->format('Y-m-d');
-            $dedupeKey = $code.'|'.$sortDate.'|history';
+            $dedupeKey = $code.'|'.$sortDate;
             if (isset($seen[$dedupeKey])) {
                 continue;
             }
@@ -1030,6 +1043,7 @@ class TelegramMiniAppSnapshot
                     ? number_format((int) $answer->performed_mileage_km, 0, '', ' ').' км'
                     : null,
                 'sort_date' => $sortDate,
+                'done' => true,
             ];
         }
 
@@ -1040,6 +1054,7 @@ class TelegramMiniAppSnapshot
             'label' => $event['label'],
             'date' => $event['date'],
             'mileage_label' => $event['mileage_label'],
+            'done' => true,
         ], $events);
     }
 
@@ -1049,19 +1064,27 @@ class TelegramMiniAppSnapshot
     private function unitServiceHistory(Vehicle $vehicle, string $workCode): array
     {
         $entries = [];
+        $seen = [];
 
         foreach ($vehicle->serviceRecords as $record) {
             foreach ($record->items as $item) {
                 if ($item->workCatalogItem?->code !== $workCode) {
                     continue;
                 }
+                $sortDate = $record->service_date?->format('Y-m-d') ?? '0000-00-00';
+                $mileage = is_numeric($record->mileage_value) ? (int) $record->mileage_value : null;
+                $dedupeKey = $sortDate.'|'.($mileage ?? 'na');
+                if (isset($seen[$dedupeKey])) {
+                    continue;
+                }
+                $seen[$dedupeKey] = true;
                 $entries[] = [
                     'date' => $record->service_date?->format('d.m.Y'),
-                    'mileage_label' => is_numeric($record->mileage_value)
-                        ? number_format((int) $record->mileage_value, 0, '', ' ').' км'
+                    'mileage_label' => $mileage !== null
+                        ? number_format($mileage, 0, '', ' ').' км'
                         : null,
-                    'sort_date' => $record->service_date?->format('Y-m-d') ?? '0000-00-00',
-                    'source' => 'service',
+                    'sort_date' => $sortDate,
+                    'done' => true,
                 ];
             }
         }
@@ -1070,14 +1093,24 @@ class TelegramMiniAppSnapshot
             fn (HistoryAnswer $row): bool => $row->workCatalogItem?->code === $workCode,
         );
         if ($answer !== null && $answer->answer === 'done_known' && $answer->performed_date !== null) {
-            $entries[] = [
-                'date' => $answer->performed_date->format('d.m.Y'),
-                'mileage_label' => is_numeric($answer->performed_mileage_km)
-                    ? number_format((int) $answer->performed_mileage_km, 0, '', ' ').' км'
-                    : null,
-                'sort_date' => $answer->performed_date->format('Y-m-d'),
-                'source' => 'history',
-            ];
+            $sortDate = $answer->performed_date->format('Y-m-d');
+            $mileage = is_numeric($answer->performed_mileage_km) ? (int) $answer->performed_mileage_km : null;
+            $dedupeKey = $sortDate.'|'.($mileage ?? 'na');
+            // Same date already covered by a journal record — skip chat mirror.
+            $dateAlreadySeen = collect(array_keys($seen))->contains(
+                fn (string $key): bool => str_starts_with($key, $sortDate.'|'),
+            );
+            if (! $dateAlreadySeen && ! isset($seen[$dedupeKey])) {
+                $seen[$dedupeKey] = true;
+                $entries[] = [
+                    'date' => $answer->performed_date->format('d.m.Y'),
+                    'mileage_label' => $mileage !== null
+                        ? number_format($mileage, 0, '', ' ').' км'
+                        : null,
+                    'sort_date' => $sortDate,
+                    'done' => true,
+                ];
+            }
         }
 
         usort($entries, fn (array $a, array $b): int => ($b['sort_date'] ?? '') <=> ($a['sort_date'] ?? ''));
@@ -1085,7 +1118,7 @@ class TelegramMiniAppSnapshot
         return array_map(fn (array $entry): array => [
             'date' => $entry['date'],
             'mileage_label' => $entry['mileage_label'],
-            'source' => $entry['source'],
+            'done' => true,
         ], $entries);
     }
 

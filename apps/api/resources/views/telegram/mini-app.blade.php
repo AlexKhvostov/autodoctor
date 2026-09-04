@@ -145,7 +145,43 @@
             font-weight: 700;
             flex-shrink: 0;
             box-shadow: var(--shadow);
+            cursor: pointer;
+            padding: 0;
         }
+        .avatar:active { opacity: 0.85; }
+        .state-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0 8px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .state-divider::before,
+        .state-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+        .unit-card.untouched {
+            opacity: 0.72;
+            border-style: dashed;
+        }
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-top: 1px solid var(--line);
+            font-size: 13px;
+        }
+        .profile-row:first-of-type { border-top: 0; }
+        .profile-label { color: var(--muted); font-size: 11px; }
+        .profile-value { font-weight: 700; text-align: right; word-break: break-all; }
         .main {
             flex: 1;
             overflow: auto;
@@ -299,7 +335,36 @@
             background: var(--card);
             border: 2px solid var(--muted);
         }
-        .tl-node.past.done::before { border-color: var(--ok); background: rgba(34,181,115,0.15); }
+        .tl-node.past.done::before {
+            border-color: var(--ok);
+            background: var(--ok);
+            box-shadow: 0 0 0 2px rgba(34,181,115,0.18);
+        }
+        .tl-check {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(34,181,115,0.15);
+            color: var(--ok);
+            display: grid;
+            place-items: center;
+            font-size: 10px;
+            font-weight: 800;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .history-item {
+            padding: 8px 10px;
+            border: 1px solid rgba(34,181,115,0.22);
+            border-radius: 8px;
+            background: rgba(34,181,115,0.06);
+            margin-bottom: 6px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .history-item-date { font-size: 12px; font-weight: 700; }
+        .history-item-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
         .tl-node.overdue .tl-card { border-left-color: var(--bad); }
         .tl-node.required .tl-card { border-left: 2px solid var(--warn); }
         .tl-node.recommended .tl-card { border-left: 2px solid rgba(107,122,144,0.35); opacity: 0.92; }
@@ -605,15 +670,6 @@
             margin-bottom: 6px;
         }
         .passport-edit-grid { display: grid; gap: 8px; margin-bottom: 10px; }
-        .history-item {
-            padding: 8px 10px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: var(--bg-soft);
-            margin-bottom: 6px;
-        }
-        .history-item-date { font-size: 12px; font-weight: 700; }
-        .history-item-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
         .field-row {
             display: flex;
             justify-content: space-between;
@@ -639,7 +695,7 @@
                     <span class="garage-chev">▾</span>
                 </button>
                 <button class="info-btn" id="help-open" type="button" title="Подсказка">i</button>
-                <div class="avatar" id="user-avatar" title="Профиль">AD</div>
+                <button class="avatar" id="user-avatar" type="button" title="Профиль">AD</button>
             </header>
         </div>
 
@@ -691,6 +747,13 @@
         </div>
         <div id="history-content"></div>
     </div>
+    <div class="sheet" id="profile-sheet">
+        <div class="sheet-head">
+            <div class="sheet-title" id="profile-title">Профиль</div>
+            <button class="sheet-close" id="profile-close" type="button">×</button>
+        </div>
+        <div id="profile-content"></div>
+    </div>
 
     <script>
         const tg = window.Telegram && window.Telegram.WebApp;
@@ -737,7 +800,7 @@
         }
 
         let appState = {
-            vehicles: [], agent: {}, garage: {}, help: {},
+            vehicles: [], agent: {}, garage: {}, help: {}, user: {},
             activeVehicleKey: null, tab: 'state',
             garageView: 'list', garageDetailKey: null,
             passportEditing: false, savingVehicle: false, vehicleToast: '',
@@ -846,6 +909,7 @@
         function renderPastNode(item) {
             const meta = [item.date, item.mileage_label].filter(Boolean).join(' · ');
             return '<div class="tl-node past done">' +
+                '<div class="tl-check" title="Выполнено">✓</div>' +
                 '<div class="tl-card"><div class="tl-label">' + escapeHtml(item.label) + '</div>' +
                 '<div class="tl-meta">' + escapeHtml(meta || '—') + '</div></div></div>';
         }
@@ -1023,8 +1087,7 @@
 
         function closeHelp() {
             document.getElementById('help-sheet').classList.remove('open');
-            if (!document.getElementById('garage-sheet').classList.contains('open') &&
-                !document.getElementById('history-sheet').classList.contains('open')) {
+            if (!anySheetOpen()) {
                 document.getElementById('sheet-backdrop').classList.remove('open');
             }
         }
@@ -1217,6 +1280,35 @@
             return item.metric_label || 'нет данных';
         }
 
+        function isUnitTouched(item) {
+            return !!(item.filled
+                || item.last_service
+                || (item.history && item.history.length));
+        }
+
+        function renderUnitCard(item) {
+            const status = item.status || 'unknown';
+            const pct = metricPercent(item);
+            const color = statusColor(status);
+            const barWidth = pct == null ? 8 : Math.max(4, pct);
+            const pctLabel = pct == null ? '—' : (pct + '%');
+            const last = item.last_service ? escapeHtml(item.last_service) : '—';
+            const next = item.next_due ? escapeHtml(item.next_due) : '—';
+            const hasHistory = item.history && item.history.length;
+            const untouched = !isUnitTouched(item);
+            return '<article class="unit-card status-' + status + (untouched ? ' untouched' : '') + '"' +
+                (hasHistory ? ' data-unit="' + escapeHtml(item.key) + '"' : '') + '>' +
+                '<div class="unit-name">' + escapeHtml(item.label) + '</div>' +
+                '<div class="unit-bar-row">' +
+                '<div class="unit-bar"><span style="width:' + barWidth + '%;background:' + color + '"></span></div>' +
+                '<div class="unit-pct" style="color:' + color + '">' + pctLabel + '</div></div>' +
+                '<div class="unit-meta">' + escapeHtml(metricCaption(item)) + '</div>' +
+                '<div class="unit-fact">Было: ' + last + '</div>' +
+                '<div class="unit-fact"><strong>Далее:</strong> ' + next + '</div>' +
+                (hasHistory ? '<div class="unit-fact">История →</div>' : '') +
+                '</article>';
+        }
+
         function renderState() {
             const items = activeVehicle()?.tabs?.state || [];
             const root = document.getElementById('panel-state');
@@ -1224,30 +1316,57 @@
                 root.innerHTML = '<p class="hint">Нет данных по узлам. Расскажите боту про обслуживание.</p>';
                 return;
             }
-            root.innerHTML = '<div class="state-grid">' + items.map((item) => {
-                const status = item.status || 'unknown';
-                const pct = metricPercent(item);
-                const color = statusColor(status);
-                const barWidth = pct == null ? 8 : Math.max(4, pct);
-                const pctLabel = pct == null ? '—' : (pct + '%');
-                const last = item.last_service ? escapeHtml(item.last_service) : '—';
-                const next = item.next_due ? escapeHtml(item.next_due) : '—';
-                const hasHistory = item.history && item.history.length;
-                return '<article class="unit-card status-' + status + '"' +
-                    (hasHistory ? ' data-unit="' + escapeHtml(item.key) + '"' : '') + '>' +
-                    '<div class="unit-name">' + escapeHtml(item.label) + '</div>' +
-                    '<div class="unit-bar-row">' +
-                    '<div class="unit-bar"><span style="width:' + barWidth + '%;background:' + color + '"></span></div>' +
-                    '<div class="unit-pct" style="color:' + color + '">' + pctLabel + '</div></div>' +
-                    '<div class="unit-meta">' + escapeHtml(metricCaption(item)) + '</div>' +
-                    '<div class="unit-fact">Было: ' + last + '</div>' +
-                    '<div class="unit-fact"><strong>Далее:</strong> ' + next + '</div>' +
-                    (hasHistory ? '<div class="unit-fact">История →</div>' : '') +
-                    '</article>';
-            }).join('') + '</div>';
+            const touched = items.filter(isUnitTouched);
+            const untouched = items.filter((item) => !isUnitTouched(item));
+            let html = '';
+            if (touched.length) {
+                html += '<div class="section-title">С данными</div><div class="state-grid">' +
+                    touched.map(renderUnitCard).join('') + '</div>';
+            }
+            if (touched.length && untouched.length) {
+                html += '<div class="state-divider">ещё не заполняли</div>';
+            } else if (untouched.length && !touched.length) {
+                html += '<div class="section-title">Ещё не заполняли</div>';
+            }
+            if (untouched.length) {
+                html += '<div class="state-grid">' + untouched.map(renderUnitCard).join('') + '</div>';
+            }
+            root.innerHTML = html;
             root.querySelectorAll('[data-unit]').forEach((card) => {
                 card.addEventListener('click', () => openUnitHistory(card.dataset.unit));
             });
+        }
+
+        function anySheetOpen() {
+            return document.getElementById('garage-sheet').classList.contains('open')
+                || document.getElementById('help-sheet').classList.contains('open')
+                || document.getElementById('history-sheet').classList.contains('open')
+                || document.getElementById('profile-sheet').classList.contains('open');
+        }
+
+        function openProfile() {
+            const user = appState.user || {};
+            document.getElementById('profile-title').textContent = user.title || 'Профиль';
+            const rows = [
+                ['Имя', user.first_name || user.display_name || '—'],
+                ['Никнейм', user.username ? ('@' + user.username) : '—'],
+                ['Telegram ID', user.telegram_id != null ? String(user.telegram_id) : '—'],
+            ];
+            document.getElementById('profile-content').innerHTML =
+                '<p class="garage-hint" style="margin-bottom:8px">Данные аккаунта Telegram. Настройки темы появятся позже.</p>' +
+                rows.map((row) =>
+                    '<div class="profile-row"><div class="profile-label">' + escapeHtml(row[0]) +
+                    '</div><div class="profile-value">' + escapeHtml(row[1]) + '</div></div>'
+                ).join('');
+            document.getElementById('sheet-backdrop').classList.add('open');
+            document.getElementById('profile-sheet').classList.add('open');
+        }
+
+        function closeProfile() {
+            document.getElementById('profile-sheet').classList.remove('open');
+            if (!anySheetOpen()) {
+                document.getElementById('sheet-backdrop').classList.remove('open');
+            }
         }
 
         function openUnitHistory(workCode) {
@@ -1257,11 +1376,11 @@
             const history = item.history || [];
             document.getElementById('history-content').innerHTML = history.length
                 ? history.map((row) =>
-                    '<div class="history-item"><div class="history-item-date">' +
-                    escapeHtml(row.date || '—') + '</div>' +
+                    '<div class="history-item"><div class="tl-check">✓</div><div>' +
+                    '<div class="history-item-date">' + escapeHtml(row.date || '—') + '</div>' +
                     '<div class="history-item-meta">' +
-                    escapeHtml([row.mileage_label, row.source === 'history' ? 'из чата' : 'сервис'].filter(Boolean).join(' · ')) +
-                    '</div></div>'
+                    escapeHtml([row.mileage_label, 'выполнено'].filter(Boolean).join(' · ')) +
+                    '</div></div></div>'
                 ).join('')
                 : '<p class="hint">Пока нет записей по этому узлу.</p>';
             document.getElementById('sheet-backdrop').classList.add('open');
@@ -1270,8 +1389,7 @@
 
         function closeHistory() {
             document.getElementById('history-sheet').classList.remove('open');
-            if (!document.getElementById('garage-sheet').classList.contains('open') &&
-                !document.getElementById('help-sheet').classList.contains('open')) {
+            if (!anySheetOpen()) {
                 document.getElementById('sheet-backdrop').classList.remove('open');
             }
         }
@@ -1313,8 +1431,7 @@
             appState.passportEditing = false;
             appState.vehicleToast = '';
             document.getElementById('garage-sheet').classList.remove('open');
-            if (!document.getElementById('help-sheet').classList.contains('open') &&
-                !document.getElementById('history-sheet').classList.contains('open')) {
+            if (!anySheetOpen()) {
                 document.getElementById('sheet-backdrop').classList.remove('open');
             }
         }
@@ -1324,6 +1441,8 @@
         document.getElementById('help-open').addEventListener('click', openHelp);
         document.getElementById('help-close').addEventListener('click', closeHelp);
         document.getElementById('history-close').addEventListener('click', closeHistory);
+        document.getElementById('user-avatar').addEventListener('click', openProfile);
+        document.getElementById('profile-close').addEventListener('click', closeProfile);
         document.getElementById('garage-back').addEventListener('click', () => {
             appState.garageView = 'list';
             appState.garageDetailKey = null;
@@ -1335,6 +1454,7 @@
             closeGarage();
             closeHelp();
             closeHistory();
+            closeProfile();
         });
         document.querySelectorAll('.nav-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -1364,6 +1484,7 @@
                 if (data.user && data.user.initial) {
                     document.getElementById('user-avatar').textContent = data.user.initial;
                 }
+                appState.user = data.user || {};
                 appState.vehicles = data.vehicles || [];
                 appState.agent = data.agent || {};
                 appState.garage = data.garage || {};
