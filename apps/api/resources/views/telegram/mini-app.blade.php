@@ -327,59 +327,147 @@
         .mileage-form-hint {
             font-size: 11px;
             color: var(--muted);
-            margin: 0 0 10px;
+            margin: 0 0 8px;
             line-height: 1.4;
+        }
+        .odo-panel {
+            margin: 4px 0 12px;
+            padding: 12px 10px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(30, 202, 211, 0.28);
+            background:
+                linear-gradient(180deg, rgba(30,202,211,0.10), rgba(255,255,255,0.55)),
+                var(--card);
+            box-shadow: var(--shadow);
+        }
+        .odo-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .odo-input {
+            flex: 1;
+            min-width: 0;
+            height: 44px;
+            border: 1px solid rgba(30, 202, 211, 0.4);
+            border-radius: 12px;
+            background: #fff;
+            color: var(--ink);
+            font-size: 22px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.04em;
+            text-align: center;
+            padding: 0 12px;
+            outline: none;
+            box-shadow: inset 0 1px 2px rgba(21, 32, 51, 0.06);
+        }
+        .odo-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 202, 211, 0.18);
+        }
+        .odo-unit {
+            flex-shrink: 0;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-deep);
         }
         .odo-wrap {
             display: flex;
             justify-content: center;
-            gap: 4px;
-            padding: 8px 4px 4px;
-            margin-bottom: 10px;
+            gap: 5px;
+            padding: 2px 0 0;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: pan-y;
         }
         .odo-col {
-            width: 36px;
+            width: 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
+            gap: 4px;
         }
         .odo-btn {
             width: 100%;
-            height: 28px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: var(--bg-soft);
+            height: 22px;
+            border: 0;
+            border-radius: 7px;
+            background: rgba(30, 202, 211, 0.12);
             color: var(--primary-deep);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             cursor: pointer;
             padding: 0;
             line-height: 1;
         }
-        .odo-btn:active { opacity: 0.8; background: rgba(30, 202, 211, 0.16); }
-        .odo-digit {
+        .odo-btn:active { opacity: 0.8; background: rgba(30, 202, 211, 0.22); }
+        .odo-reel {
+            position: relative;
             width: 100%;
-            height: 42px;
-            border-radius: 10px;
-            border: 1px solid rgba(30, 202, 211, 0.35);
-            background: var(--card);
-            box-shadow: var(--shadow);
+            height: 108px;
+            border-radius: 12px;
+            border: 1px solid rgba(21, 32, 51, 0.12);
+            background:
+                linear-gradient(#1b2433, #1b2433) center/100% 36px no-repeat,
+                linear-gradient(180deg, #2a3448, #151c2a 45%, #151c2a 55%, #2a3448);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 8px 14px rgba(0,0,0,0.35);
+            overflow: hidden;
+        }
+        .odo-reel::before,
+        .odo-reel::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 36px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .odo-reel::before {
+            top: 0;
+            background: linear-gradient(180deg, rgba(15,20,30,0.72), rgba(15,20,30,0));
+        }
+        .odo-reel::after {
+            bottom: 0;
+            background: linear-gradient(0deg, rgba(15,20,30,0.72), rgba(15,20,30,0));
+        }
+        .odo-reel-window {
+            height: 108px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            overscroll-behavior: contain;
+        }
+        .odo-reel-window::-webkit-scrollbar { display: none; }
+        .odo-reel-strip {
+            padding: 36px 0;
+        }
+        .odo-reel-item {
+            height: 36px;
             display: grid;
             place-items: center;
+            scroll-snap-align: center;
             font-size: 22px;
             font-weight: 800;
             font-variant-numeric: tabular-nums;
-            color: var(--ink);
+            color: rgba(255,255,255,0.38);
+            line-height: 1;
         }
-        .odo-value-label {
+        .odo-reel-item.is-active {
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(30, 202, 211, 0.45);
+            font-size: 26px;
+        }
+        .odo-caption {
+            margin-top: 8px;
             text-align: center;
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--primary-deep);
+            font-size: 10px;
+            color: var(--muted);
+            font-weight: 600;
         }
         .tl-now::before {
             content: '';
@@ -1579,30 +1667,43 @@
                 : (mileage.current_value != null ? Number(mileage.current_value) : 0);
             const current = Number.isFinite(currentRaw) && currentRaw >= 0 ? Math.round(currentRaw) : 0;
             const unit = vehicle.edit_profile?.mileage_unit || mileage.unit || 'km';
+            const unitLabel = unit === 'mi' ? 'миль' : 'км';
             const bonusLine = mileage.available
                 ? ('Бонус ' + (mileage.reward_label || '') + ' токенов после сохранения (начисление — следующим шагом). Далее не раньше чем через ' + (mileage.cooldown_hours || 24) + ' ч.')
                 : (mileage.available_label
                     ? ('Пробег сохранится. ' + mileage.available_label + '.')
                     : 'Пробег сохранится в карточке и журнале.');
             const digits = mileageDigitsFromValue(current);
+            const reelItems = [0,1,2,3,4,5,6,7,8,9].map((d) =>
+                '<div class="odo-reel-item" data-d="' + d + '">' + d + '</div>'
+            ).join('');
             const html =
-                '<p class="mileage-form-hint">Крутите цифры одометра — без клавиатуры телефона, экран не прыгает.</p>' +
+                '<p class="mileage-form-hint">Прокрутите барабаны как на старом счётчике. Или нажмите на число сверху — откроется обычная клавиатура.</p>' +
                 '<p class="mileage-form-hint">' + escapeHtml(bonusLine) + '</p>' +
-                '<div class="odo-value-label" id="odo-value-label">' +
-                escapeHtml(formatOdoValue(digits) + (unit === 'mi' ? ' миль' : ' км')) + '</div>' +
+                '<div class="odo-panel">' +
+                '<div class="odo-input-row">' +
+                '<input class="odo-input" id="mileage-quick-input" type="text" inputmode="numeric" pattern="[0-9]*" ' +
+                'autocomplete="off" enterkeyhint="done" value="' + escapeHtml(String(current)) + '" ' +
+                'aria-label="Пробег">' +
+                '<div class="odo-unit">' + escapeHtml(unitLabel) + '</div></div>' +
                 '<div class="odo-wrap" id="mileage-odo" data-unit="' + escapeHtml(unit) + '">' +
                 digits.map((digit, index) =>
                     '<div class="odo-col" data-i="' + index + '">' +
                     '<button type="button" class="odo-btn" data-odo-dir="up" aria-label="Больше">▴</button>' +
-                    '<div class="odo-digit" data-odo-digit="' + index + '">' + digit + '</div>' +
+                    '<div class="odo-reel"><div class="odo-reel-window" data-odo-reel="' + index + '" data-digit="' + digit + '">' +
+                    '<div class="odo-reel-strip">' + reelItems + '</div></div></div>' +
                     '<button type="button" class="odo-btn" data-odo-dir="down" aria-label="Меньше">▾</button>' +
                     '</div>'
                 ).join('') +
                 '</div>' +
+                '<div class="odo-caption">Свайп вверх/вниз по цифре</div>' +
+                '</div>' +
                 '<button class="form-save" id="mileage-quick-save" type="button">Сохранить пробег</button>' +
                 '<div class="save-toast" id="mileage-quick-toast"></div>';
             openDetailSheet('Обновить пробег', html);
-            bindOdometerControls();
+            requestAnimationFrame(() => {
+                bindOdometerControls(digits);
+            });
             const saveBtn = document.getElementById('mileage-quick-save');
             if (saveBtn) saveBtn.addEventListener('click', saveMileageQuick);
         }
@@ -1616,54 +1717,116 @@
         function formatOdoValue(digits) {
             const raw = (digits || []).join('');
             const n = Number(raw || '0');
-            return Number.isFinite(n) ? n.toLocaleString('ru-RU') : '0';
+            return Number.isFinite(n) ? String(n) : '0';
         }
 
         function readOdometerDigits() {
-            return Array.from(document.querySelectorAll('[data-odo-digit]')).map((el) => {
-                const n = Number(el.textContent || '0');
+            return Array.from(document.querySelectorAll('[data-odo-reel]')).map((el) => {
+                const n = Number(el.dataset.digit || '0');
                 return Number.isFinite(n) ? Math.max(0, Math.min(9, n)) : 0;
             });
         }
 
-        function refreshOdometerLabel() {
-            const label = document.getElementById('odo-value-label');
-            const root = document.getElementById('mileage-odo');
-            if (!label || !root) return;
-            const unit = root.dataset.unit === 'mi' ? ' миль' : ' км';
-            label.textContent = formatOdoValue(readOdometerDigits()) + unit;
+        function syncInputFromReels() {
+            const input = document.getElementById('mileage-quick-input');
+            if (!input) return;
+            input.value = formatOdoValue(readOdometerDigits());
         }
 
-        function bindOdometerControls() {
+        function setReelDigit(reel, digit, animate) {
+            const value = Math.max(0, Math.min(9, Number(digit) || 0));
+            const itemH = 36;
+            reel.dataset.digit = String(value);
+            reel.scrollTo({ top: value * itemH, behavior: animate ? 'smooth' : 'auto' });
+            reel.querySelectorAll('.odo-reel-item').forEach((item) => {
+                item.classList.toggle('is-active', Number(item.dataset.d) === value);
+            });
+        }
+
+        function digitFromReelScroll(reel) {
+            const itemH = 36;
+            const raw = Math.round(reel.scrollTop / itemH);
+            return Math.max(0, Math.min(9, raw));
+        }
+
+        function applyDigitsToReels(digits, animate) {
+            const reels = Array.from(document.querySelectorAll('[data-odo-reel]'));
+            reels.forEach((reel, index) => {
+                const digit = digits[index] != null ? digits[index] : 0;
+                setReelDigit(reel, digit, !!animate);
+            });
+        }
+
+        function bindOdometerControls(initialDigits) {
             const root = document.getElementById('mileage-odo');
+            const input = document.getElementById('mileage-quick-input');
             if (!root) return;
+
+            applyDigitsToReels(initialDigits || readOdometerDigits(), false);
+            syncInputFromReels();
+
+            root.querySelectorAll('[data-odo-reel]').forEach((reel) => {
+                let frame = null;
+                const onScroll = () => {
+                    if (frame) cancelAnimationFrame(frame);
+                    frame = requestAnimationFrame(() => {
+                        const digit = digitFromReelScroll(reel);
+                        reel.dataset.digit = String(digit);
+                        reel.querySelectorAll('.odo-reel-item').forEach((item) => {
+                            item.classList.toggle('is-active', Number(item.dataset.d) === digit);
+                        });
+                        syncInputFromReels();
+                    });
+                };
+                reel.addEventListener('scroll', onScroll, { passive: true });
+                reel.addEventListener('scrollend', () => {
+                    setReelDigit(reel, digitFromReelScroll(reel), true);
+                    syncInputFromReels();
+                });
+            });
+
             root.querySelectorAll('[data-odo-dir]').forEach((btn) => {
                 btn.addEventListener('click', (event) => {
                     event.preventDefault();
                     const col = btn.closest('.odo-col');
-                    const digitEl = col && col.querySelector('[data-odo-digit]');
-                    if (!digitEl) return;
-                    let value = Number(digitEl.textContent || '0');
+                    const reel = col && col.querySelector('[data-odo-reel]');
+                    if (!reel) return;
+                    let value = Number(reel.dataset.digit || '0');
                     if (!Number.isFinite(value)) value = 0;
                     if (btn.dataset.odoDir === 'up') value = (value + 1) % 10;
                     else value = (value + 9) % 10;
-                    digitEl.textContent = String(value);
-                    refreshOdometerLabel();
+                    setReelDigit(reel, value, true);
+                    syncInputFromReels();
                 });
             });
+
+            if (input) {
+                input.addEventListener('input', () => {
+                    const cleaned = String(input.value || '').replace(/\D+/g, '').slice(0, 7);
+                    if (input.value !== cleaned) input.value = cleaned;
+                    const width = document.querySelectorAll('[data-odo-reel]').length || 6;
+                    const digits = String(cleaned || '0').padStart(width, '0').slice(-width).split('').map(Number);
+                    applyDigitsToReels(digits, false);
+                });
+                input.addEventListener('blur', () => {
+                    const width = document.querySelectorAll('[data-odo-reel]').length || 6;
+                    const n = Math.max(0, Math.min(9999999, Number(input.value || '0') || 0));
+                    input.value = String(n);
+                    const digits = String(n).padStart(width, '0').slice(-width).split('').map(Number);
+                    applyDigitsToReels(digits, true);
+                });
+            }
         }
 
         async function saveMileageQuick() {
             const vehicle = activeVehicle();
             const toast = document.getElementById('mileage-quick-toast');
             const saveBtn = document.getElementById('mileage-quick-save');
+            const input = document.getElementById('mileage-quick-input');
             if (!vehicle || !vehicle.id) return;
-            const digits = readOdometerDigits();
-            if (!digits.length) {
-                if (toast) toast.textContent = 'Не удалось прочитать одометр';
-                return;
-            }
-            const value = Number(digits.join(''));
+            const fromInput = Number(String(input?.value || '').replace(/\D+/g, ''));
+            const fromReels = Number(readOdometerDigits().join(''));
+            const value = Number.isFinite(fromInput) ? fromInput : fromReels;
             if (!Number.isFinite(value) || value < 0) {
                 if (toast) toast.textContent = 'Введите корректный пробег';
                 return;

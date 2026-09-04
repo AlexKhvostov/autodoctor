@@ -46,6 +46,8 @@ class TelegramMiniAppTest extends TestCase
             ->assertSee('openMileageSheet', false)
             ->assertSee('mileage-side-btn', false)
             ->assertSee('mileage-odo', false)
+            ->assertSee('odo-reel', false)
+            ->assertSee('mileage-quick-input', false)
             ->assertSee('openTokenTopup', false)
             ->assertSee('state-divider', false)
             ->assertSee('disableVerticalSwipes', false)
