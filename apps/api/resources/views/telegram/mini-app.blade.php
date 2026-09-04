@@ -403,6 +403,39 @@
         .chart-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
         .chart-svg { width: 100%; height: 72px; display: block; }
         .chart-caption { font-size: 9px; color: var(--muted); margin-top: 4px; }
+        .journal-list { display: flex; flex-direction: column; gap: 6px; }
+        .journal-item {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            padding: 8px 10px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        .journal-item.tone-ok { border-left: 3px solid var(--ok); }
+        .journal-item.tone-soft { border-left: 3px solid rgba(107,122,144,0.35); }
+        .journal-mark {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 11px;
+            font-weight: 800;
+            flex-shrink: 0;
+            margin-top: 1px;
+            background: rgba(34,181,115,0.12);
+            color: var(--ok);
+        }
+        .journal-item.tone-soft .journal-mark {
+            background: rgba(107,122,144,0.12);
+            color: var(--muted);
+        }
+        .journal-title { font-size: 13px; font-weight: 700; line-height: 1.2; }
+        .journal-detail { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+        .journal-meta { font-size: 10px; color: var(--muted); margin-top: 4px; }
         .form-card {
             background: var(--card);
             border: 1px solid var(--line);
@@ -534,9 +567,9 @@
         }
         .bottom-nav {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
-            padding: 6px 8px calc(6px + var(--tg-safe-bottom));
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            padding: 6px 6px calc(6px + var(--tg-safe-bottom));
             background: rgba(255,255,255,0.92);
             border-top: 1px solid var(--line);
             backdrop-filter: blur(8px);
@@ -546,8 +579,8 @@
             background: transparent;
             color: var(--muted);
             border-radius: 10px;
-            padding: 5px 3px;
-            font-size: 9px;
+            padding: 5px 2px;
+            font-size: 8px;
             font-weight: 600;
             cursor: pointer;
         }
@@ -702,6 +735,7 @@
         <main class="main">
             <section class="panel active" id="panel-state"></section>
             <section class="panel" id="panel-roadmap"></section>
+            <section class="panel" id="panel-journal"></section>
             <section class="panel" id="panel-analytics"></section>
             <section class="panel" id="panel-agent"></section>
         </main>
@@ -711,7 +745,10 @@
                 <span class="nav-icon">◎</span>Состояние
             </button>
             <button class="nav-btn" type="button" data-tab="roadmap">
-                <span class="nav-icon">→</span>Roadmap
+                <span class="nav-icon">→</span>План
+            </button>
+            <button class="nav-btn" type="button" data-tab="journal">
+                <span class="nav-icon">≡</span>Журнал
             </button>
             <button class="nav-btn" type="button" data-tab="analytics">
                 <span class="nav-icon">⌁</span>Аналитика
@@ -934,6 +971,29 @@
                 '<line x1="0" y1="68" x2="300" y2="68" stroke="rgba(21,32,51,0.08)" stroke-width="1"/></svg>';
         }
 
+        function renderJournal() {
+            const journal = activeVehicle()?.tabs?.journal || { events: [], hint: null };
+            const root = document.getElementById('panel-journal');
+            const events = journal.events || [];
+            if (!events.length) {
+                root.innerHTML = '<p class="hint">' + escapeHtml(journal.hint || 'Пока записей нет.') + '</p>';
+                return;
+            }
+            let html = journal.hint ? '<p class="hint">' + escapeHtml(journal.hint) + '</p>' : '';
+            html += '<div class="journal-list">' + events.map((event) => {
+                const tone = event.tone === 'ok' ? 'tone-ok' : 'tone-soft';
+                const mark = event.tone === 'ok' ? '✓' : '•';
+                const meta = [event.date, event.time, event.mileage_label].filter(Boolean).join(' · ');
+                return '<article class="journal-item ' + tone + '">' +
+                    '<div class="journal-mark">' + mark + '</div><div style="min-width:0;flex:1">' +
+                    '<div class="journal-title">' + escapeHtml(event.title || 'Запись') + '</div>' +
+                    (event.detail ? '<div class="journal-detail">' + escapeHtml(event.detail) + '</div>' : '') +
+                    (meta ? '<div class="journal-meta">' + escapeHtml(meta) + '</div>' : '') +
+                    '</div></article>';
+            }).join('') + '</div>';
+            root.innerHTML = html;
+        }
+
         function renderAnalytics() {
             const analytics = activeVehicle()?.tabs?.analytics || { charts: [], points: [] };
             const root = document.getElementById('panel-analytics');
@@ -1107,7 +1167,7 @@
 
             back.style.display = 'none';
             title.textContent = 'Гараж';
-            let html = '<p class="garage-hint">Выберите авто для AI, состояния и roadmap.</p>';
+            let html = '<p class="garage-hint">Выберите авто для AI, состояния, плана и журнала.</p>';
 
             (appState.vehicles || []).forEach((vehicle, index) => {
                 const key = vehicleKey(vehicle, index);
@@ -1411,6 +1471,7 @@
             renderGarageSheet();
             renderState();
             renderRoadmap();
+            renderJournal();
             renderAnalytics();
             renderAgent();
             renderNavTokens();

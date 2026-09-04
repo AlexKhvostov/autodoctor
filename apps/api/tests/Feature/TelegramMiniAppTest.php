@@ -35,6 +35,9 @@ class TelegramMiniAppTest extends TestCase
             ->assertSee('tl-wrap', false)
             ->assertSee('history-sheet', false)
             ->assertSee('profile-sheet', false)
+            ->assertSee('panel-journal', false)
+            ->assertSee('Журнал', false)
+            ->assertSee('План', false)
             ->assertSee('state-divider', false)
             ->assertSee('disableVerticalSwipes', false)
             ->assertSee('applyTelegramSafeAreas', false)
@@ -68,7 +71,7 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('title', 'AutoDoctor')
             ->assertJsonPath('vehicles.0.title', 'Автомобиль')
             ->assertJsonPath('vehicles.0.status', 'placeholder')
-            ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['now', 'past', 'upcoming'], 'analytics' => ['charts']]]]])
+            ->assertJsonStructure(['vehicles' => [['tabs' => ['state', 'roadmap' => ['now', 'past', 'upcoming'], 'journal' => ['events'], 'analytics' => ['charts']]]]])
             ->assertJsonStructure(['agent' => ['title', 'form', 'editable', 'memory_hint'], 'help' => ['sections'], 'garage'])
             ->assertJsonStructure(['user' => ['initial', 'display_name', 'username', 'telegram_id']])
             ->assertJsonPath('user.telegram_id', 70001)
@@ -194,6 +197,9 @@ class TelegramMiniAppTest extends TestCase
         $this->assertSame('saved', $card['status']);
         $this->assertArrayHasKey('now', $card['tabs']['roadmap']);
         $this->assertArrayHasKey('upcoming', $card['tabs']['roadmap']);
+        $this->assertNotEmpty($card['tabs']['journal']['events']);
+        $this->assertTrue(collect($card['tabs']['journal']['events'])->contains('type', 'vehicle_created'));
+        $this->assertTrue(collect($card['tabs']['journal']['events'])->contains('type', 'service'));
         $oilState = collect($card['tabs']['state'])->firstWhere('key', 'engine_oil');
         $this->assertSame('12.03.2026 · 140 000 км', $oilState['last_service']);
         $this->assertCount(1, $oilState['history']);

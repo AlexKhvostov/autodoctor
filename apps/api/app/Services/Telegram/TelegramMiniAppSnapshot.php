@@ -137,15 +137,19 @@ class TelegramMiniAppSnapshot
             'sections' => [
                 [
                     'title' => 'Шапка и гараж',
-                    'body' => 'Нажмите на блок с машиной — откроется гараж. Там выбираете автомобиль для AI, состояния, roadmap и аналитики.',
+                    'body' => 'Нажмите на блок с машиной — откроется гараж. Там выбираете автомобиль для AI, состояния, плана работ, журнала и аналитики.',
                 ],
                 [
                     'title' => 'Состояние',
                     'body' => 'Карточки узлов показывают износ, прошлое обслуживание и ближайшую замену по данным из чата с ботом.',
                 ],
                 [
-                    'title' => 'Roadmap',
+                    'title' => 'План работ',
                     'body' => 'Выше «Сейчас» — выполненные работы, ниже — предстоящие по порядку. 🛡 — регламент, ✦ — рекомендация.',
+                ],
+                [
+                    'title' => 'Журнал',
+                    'body' => 'Лента всех записей: когда завели машину, какие работы внесли, обновления пробега. Новые события сверху.',
                 ],
                 [
                     'title' => 'AI-ассистент',
@@ -353,6 +357,7 @@ class TelegramMiniAppSnapshot
                     'configuration',
                     'historyAnswers.workCatalogItem',
                     'serviceRecords.items.workCatalogItem',
+                    'mileageObservations',
                 ])
                 ->orderByDesc('created_at')
                 ->get();
@@ -388,6 +393,7 @@ class TelegramMiniAppSnapshot
             'tabs' => [
                 'state' => $this->stateTab(null),
                 'roadmap' => $this->roadmapTab(null),
+                'journal' => $this->journalTab(null),
                 'analytics' => $this->analyticsTab(null),
             ],
         ];
@@ -440,6 +446,7 @@ class TelegramMiniAppSnapshot
             'tabs' => [
                 'state' => $this->stateTab($vehicle),
                 'roadmap' => $this->roadmapTab($vehicle),
+                'journal' => $this->journalTab($vehicle),
                 'analytics' => $this->analyticsTab($vehicle),
             ],
         ];
@@ -488,6 +495,7 @@ class TelegramMiniAppSnapshot
             'tabs' => [
                 'state' => $this->stateTab(null),
                 'roadmap' => $this->roadmapTab(null),
+                'journal' => $this->journalTab(null),
                 'analytics' => $this->analyticsTab(null),
             ],
         ];
@@ -1170,6 +1178,156 @@ class TelegramMiniAppSnapshot
         $word = ($mod10 >= 2 && $mod10 <= 4 && ! ($mod100 >= 12 && $mod100 <= 14)) ? 'дня' : 'дней';
 
         return 'через '.$sortDays.' '.$word;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function journalTab(?Vehicle $vehicle): array
+    {
+        if ($vehicle === null) {
+            return [
+                'events' => [],
+                'hint' => 'Когда появится машина и записи работ — они соберутся здесь в ленту.',
+            ];
+        }
+
+        $events = [];
+        $serviceDateKeys = [];
+
+        $createdAt = $vehicle->created_at;
+        $config = $vehicle->configuration;
+        $createdDetail = implode(' · ', array_filter([
+            $this->textValue($config?->make),
+            $this->textValue($config?->model),
+            $vehicle->production_year !== null ? (string) $vehicle->production_year : null,
+            $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit),
+        ]));
+        $events[] = [
+            'id' => 'vehicle-created-'.$vehicle->id,
+            'type' => 'vehicle_created',
+            'title' => 'Создана карточка авто',
+            'detail' => $createdDetail !== '' ? $createdDetail : 'Данные из диалога с ботом',
+            'date' => $createdAt?->format('d.m.Y') ?? now()->format('d.m.Y'),
+            'time' => $createdAt?->format('H:i'),
+            'mileage_label' => null,
+            'sort_at' => ($createdAt?->format('Y-m-d H:i:s') ?? '1970-01-01 00:00:00').'|0',
+            'tone' => 'soft',
+        ];
+
+            if ((int) $vehicle->version > 1 && $vehicle->updated_at !== null
+                && ($createdAt === null || $vehicle->updated_at->format('Y-m-d H:i:s') !== $createdAt->format('Y-m-d H:i:s'))) {
+            $events[] = [
+                'id' => 'vehicle-updated-'.$vehicle->id.'-'.$vehicle->version,
+                'type' => 'vehicle_updated',
+                'title' => 'Обновлены данные авто',
+                'detail' => 'Правка паспорта или пробега',
+                'date' => $vehicle->updated_at->format('d.m.Y'),
+                'time' => $vehicle->updated_at->format('H:i'),
+                'mileage_label' => $this->formatMileage($vehicle->current_mileage, $vehicle->mileage_unit),
+                'sort_at' => $vehicle->updated_at->format('Y-m-d H:i:s').'|1',
+                'tone' => 'soft',
+            ];
+        }
+
+        foreach ($vehicle->serviceRecords as $record) {
+            $titles = $record->items
+                ->map(fn ($item): string => (string) ($item->workCatalogItem?->localized_name['ru'] ?? $item->workCatalogItem?->code ?? ''))
+                ->filter()
+                ->values()
+                ->all();
+            if ($titles === []) {
+                continue;
+            }
+            $sortDate = $record->service_date?->format('Y-m-d') ?? '0000-00-00';
+            foreach ($record->items as $item) {
+                $code = $item->workCatalogItem?->code;
+                if ($code !== null) {
+                    $serviceDateKeys[$code.'|'.$sortDate] = true;
+                }
+            }
+            $mileageLabel = is_numeric($record->mileage_value)
+                ? number_format((int) $record->mileage_value, 0, '', ' ').' км'
+                : null;
+            $note = trim((string) ($record->note ?? ''));
+            $events[] = [
+                'id' => 'service-'.$record->id,
+                'type' => 'service',
+                'title' => count($titles) === 1 ? $titles[0] : 'Обслуживание',
+                'detail' => count($titles) > 1
+                    ? implode(', ', $titles).($note !== '' ? ' · '.$note : '')
+                    : ($note !== '' ? $note : 'Запись в журнале работ'),
+                'date' => $record->service_date?->format('d.m.Y') ?? $record->created_at?->format('d.m.Y'),
+                'time' => $record->created_at?->format('H:i'),
+                'mileage_label' => $mileageLabel,
+                'sort_at' => ($record->service_date?->format('Y-m-d') ?? '0000-00-00')
+                    .' '.($record->created_at?->format('H:i:s') ?? '12:00:00').'|2',
+                'tone' => 'ok',
+            ];
+        }
+
+        foreach ($vehicle->historyAnswers as $answer) {
+            if ($answer->answer !== 'done_known' || $answer->performed_date === null) {
+                continue;
+            }
+            $code = $answer->workCatalogItem?->code;
+            if ($code === null) {
+                continue;
+            }
+            $sortDate = $answer->performed_date->format('Y-m-d');
+            if (isset($serviceDateKeys[$code.'|'.$sortDate])) {
+                continue;
+            }
+            $events[] = [
+                'id' => 'history-'.$answer->id,
+                'type' => 'history',
+                'title' => (string) ($answer->workCatalogItem?->localized_name['ru'] ?? $code),
+                'detail' => 'Из диалога с ботом',
+                'date' => $answer->performed_date->format('d.m.Y'),
+                'time' => $answer->updated_at?->format('H:i') ?? $answer->created_at?->format('H:i'),
+                'mileage_label' => is_numeric($answer->performed_mileage_km)
+                    ? number_format((int) $answer->performed_mileage_km, 0, '', ' ').' км'
+                    : null,
+                'sort_at' => $sortDate.' '.($answer->created_at?->format('H:i:s') ?? '12:00:00').'|3',
+                'tone' => 'ok',
+            ];
+        }
+
+        foreach ($vehicle->mileageObservations as $observation) {
+            if (($observation->source ?? '') === 'service') {
+                continue;
+            }
+            $observedAt = $observation->observed_at ?? $observation->created_at;
+            $events[] = [
+                'id' => 'mileage-'.$observation->id,
+                'type' => 'mileage',
+                'title' => 'Обновлён пробег',
+                'detail' => match ((string) ($observation->source ?? '')) {
+                    'user', 'chat', 'telegram' => 'Сообщили в чате',
+                    default => 'Новое значение пробега',
+                },
+                'date' => $observedAt?->format('d.m.Y'),
+                'time' => $observedAt?->format('H:i'),
+                'mileage_label' => $this->formatMileage($observation->value, $observation->unit ?? 'km'),
+                'sort_at' => ($observedAt?->format('Y-m-d H:i:s') ?? '1970-01-01 00:00:00').'|4',
+                'tone' => 'soft',
+            ];
+        }
+
+        usort($events, fn (array $a, array $b): int => ($b['sort_at'] ?? '') <=> ($a['sort_at'] ?? ''));
+
+        $events = array_map(static function (array $event): array {
+            unset($event['sort_at']);
+
+            return $event;
+        }, $events);
+
+        return [
+            'events' => $events,
+            'hint' => $events === []
+                ? 'Пока записей нет — они появятся после диалога с ботом.'
+                : null,
+        ];
     }
 
     /**
