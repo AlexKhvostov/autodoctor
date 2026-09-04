@@ -11,7 +11,6 @@ use App\Models\WorkCatalogItem;
 use App\Services\Telegram\TelegramMiniAppSnapshot;
 use Database\Seeders\MaintenanceV1Seeder;
 use Database\Seeders\MaintenanceV2Seeder;
-use Database\Seeders\TokenTopupPackageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,7 +23,6 @@ class TelegramMiniAppTest extends TestCase
         parent::setUp();
         $this->seed(MaintenanceV1Seeder::class);
         $this->seed(MaintenanceV2Seeder::class);
-        $this->seed(TokenTopupPackageSeeder::class);
     }
 
     public function test_mini_app_page_is_served(): void
@@ -89,6 +87,7 @@ class TelegramMiniAppTest extends TestCase
             ->assertJsonPath('is_owner', false)
             ->assertJsonPath('agent.topup.options.0.stars_price', 50)
             ->assertJsonPath('agent.topup.options.0.price_label', '50 ⭐')
+            ->assertJsonPath('agent.topup.source', 'defaults')
             ->assertJsonMissingPath('subtitle');
     }
 

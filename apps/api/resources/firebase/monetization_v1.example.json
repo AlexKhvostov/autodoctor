@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "button_label": "Добавить токены",
+  "button_sub": "Stars или бонус за пробег",
+  "sheet_title": "Как получить токены",
+  "sheet_intro": "Покупка — через Telegram Stars. Бесплатно — за актуализацию пробега (не чаще раза в сутки).",
+  "soon_toast": "Этот способ скоро подключим",
+  "packs": [
+    {
+      "key": "stars_pack_s",
+      "type": "stars",
+      "icon": "⭐",
+      "title": "Пакет Starter",
+      "subtitle": "Небольшой запас на короткие ответы в чате",
+      "tokens_amount": 5000,
+      "stars_price": 50,
+      "badge": "скоро",
+      "enabled": true,
+      "sort_order": 10
+    },
+    {
+      "key": "stars_pack_m",
+      "type": "stars",
+      "icon": "⭐",
+      "title": "Пакет Drive",
+      "subtitle": "Оптимально на неделю активного диалога",
+      "tokens_amount": 20000,
+      "stars_price": 150,
+      "badge": "скоро",
+      "enabled": true,
+      "sort_order": 20
+    },
+    {
+      "key": "stars_pack_l",
+      "type": "stars",
+      "icon": "⭐",
+      "title": "Пакет Garage",
+      "subtitle": "Запас на долгие разборы и несколько авто",
+      "tokens_amount": 60000,
+      "stars_price": 350,
+      "badge": "скоро",
+      "enabled": true,
+      "sort_order": 30
+    },
+    {
+      "key": "mileage",
+      "type": "mileage",
+      "icon": "🛣️",
+      "title": "Обновить пробег",
+      "subtitle": "Небольшой бонус за актуальный одометр, не чаще раза в сутки",
+      "tokens_amount": 500,
+      "stars_price": 0,
+      "cooldown_hours": 24,
+      "badge": null,
+      "enabled": true,
+      "sort_order": 40
+    },
+    {
+      "key": "invite",
+      "type": "invite",
+      "icon": "👥",
+      "title": "Пригласить друга",
+      "subtitle": "Вы и друг получаете бонус после первого диалога друга с ботом",
+      "tokens_amount": null,
+      "stars_price": 0,
+      "badge": "скоро",
+      "enabled": true,
+      "sort_order": 50
+    }
+  ]
+}

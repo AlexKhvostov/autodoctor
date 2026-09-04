@@ -9,11 +9,11 @@ use App\Models\MileageObservation;
 use App\Models\PlanItem;
 use App\Models\ServiceRecord;
 use App\Models\TelegramBotUser;
-use App\Models\TokenTopupPackage;
 use App\Models\Vehicle;
 use App\Models\WorkCatalogItem;
 use App\Services\AgentProfileService;
 use App\Services\GuestSkillProfileService;
+use App\Services\Monetization\MonetizationCatalogService;
 use App\Services\PlanCalculator;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -24,6 +24,7 @@ class TelegramMiniAppSnapshot
         private readonly PlanCalculator $plans,
         private readonly AgentProfileService $agentProfile,
         private readonly GuestSkillProfileService $skills,
+        private readonly MonetizationCatalogService $monetization,
     ) {}
 
     /**
@@ -243,7 +244,7 @@ class TelegramMiniAppSnapshot
             'notes' => ['user' => [], 'vehicle' => []],
             'form' => null,
             'editable' => false,
-            'topup' => $this->tokenTopupCatalog($vehicle),
+            'topup' => $this->monetization->topupCatalog($vehicle),
         ];
 
         if ($profile === null) {
@@ -322,196 +323,6 @@ class TelegramMiniAppSnapshot
                     'placeholder' => 'Как обращаться, что не предлагать, особенности…',
                 ],
             ],
-        ];
-    }
-
-    /**
-     * Каталог способов пополнения: пакеты Stars и бонусы из админки (token_topup_packages).
-     *
-     * @return array<string, mixed>
-     */
-    private function tokenTopupCatalog(?Vehicle $vehicle = null): array
-    {
-        $mileage = $this->mileageBonusState($vehicle);
-        $packages = TokenTopupPackage::query()->enabled()->ordered()->get();
-        if ($packages->isEmpty()) {
-            $packages = collect($this->fallbackTopupPackages())->map(
-                fn (array $row): TokenTopupPackage => new TokenTopupPackage($row)
-            );
-        }
-
-        $options = [];
-        foreach ($packages as $package) {
-            if ($package->type === TokenTopupPackage::TYPE_MILEAGE) {
-                $options[] = [
-                    'key' => $package->key,
-                    'icon' => $package->icon ?: '🛣️',
-                    'title' => $package->title,
-                    'subtitle' => $mileage['subtitle'],
-                    'tokens_label' => $mileage['reward_label'],
-                    'price_label' => $package->formattedStarsLabel(),
-                    'badge' => $mileage['badge'],
-                    'enabled' => $mileage['can_open'],
-                    'action' => 'mileage',
-                ];
-
-                continue;
-            }
-
-            $options[] = [
-                'key' => $package->key,
-                'icon' => $package->icon ?: ($package->type === TokenTopupPackage::TYPE_STARS ? '⭐' : '⚡'),
-                'title' => $package->title,
-                'subtitle' => (string) ($package->subtitle ?? ''),
-                'tokens_label' => $package->formattedTokensLabel(),
-                'price_label' => $package->formattedStarsLabel(),
-                'badge' => $package->badge,
-                'enabled' => true,
-                'action' => 'soon',
-                'tokens_amount' => $package->tokens_amount,
-                'stars_price' => $package->stars_price,
-            ];
-        }
-
-        return [
-            'button_label' => 'Добавить токены',
-            'button_sub' => 'Stars или бонус за пробег',
-            'sheet_title' => 'Как получить токены',
-            'sheet_intro' => 'Покупка — через Telegram Stars. Бесплатно — за актуализацию пробега (не чаще раза в 24 часа). Цены пакетов задаются в админке.',
-            'soon_toast' => 'Этот способ скоро подключим',
-            'mileage' => $mileage,
-            'options' => $options,
-        ];
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function fallbackTopupPackages(): array
-    {
-        return [
-            [
-                'key' => 'stars_pack_s',
-                'type' => TokenTopupPackage::TYPE_STARS,
-                'title' => 'Пакет Starter',
-                'subtitle' => 'Небольшой запас на короткие ответы в чате',
-                'icon' => '⭐',
-                'tokens_amount' => 5000,
-                'stars_price' => 50,
-                'badge' => 'скоро',
-            ],
-            [
-                'key' => 'stars_pack_m',
-                'type' => TokenTopupPackage::TYPE_STARS,
-                'title' => 'Пакет Drive',
-                'subtitle' => 'Оптимально на неделю активного диалога',
-                'icon' => '⭐',
-                'tokens_amount' => 20000,
-                'stars_price' => 150,
-                'badge' => 'скоро',
-            ],
-            [
-                'key' => 'stars_pack_l',
-                'type' => TokenTopupPackage::TYPE_STARS,
-                'title' => 'Пакет Garage',
-                'subtitle' => 'Запас на долгие разборы и несколько авто',
-                'icon' => '⭐',
-                'tokens_amount' => 60000,
-                'stars_price' => 350,
-                'badge' => 'скоро',
-            ],
-            [
-                'key' => 'mileage',
-                'type' => TokenTopupPackage::TYPE_MILEAGE,
-                'title' => 'Обновить пробег',
-                'subtitle' => null,
-                'icon' => '🛣️',
-                'tokens_amount' => (int) config('agent.topup.mileage_reward_ml', 500),
-                'stars_price' => 0,
-                'cooldown_hours' => (int) config('agent.topup.mileage_cooldown_hours', 24),
-            ],
-            [
-                'key' => 'invite',
-                'type' => TokenTopupPackage::TYPE_INVITE,
-                'title' => 'Пригласить друга',
-                'subtitle' => 'Вы и друг получаете бонус после первого диалога друга с ботом',
-                'icon' => '👥',
-                'tokens_amount' => null,
-                'stars_price' => 0,
-                'badge' => 'скоро',
-            ],
-        ];
-    }
-
-    /**
-     * Бонус за обновление пробега: не чаще 1 раза в N часов (из админки / config).
-     *
-     * @return array<string, mixed>
-     */
-    private function mileageBonusState(?Vehicle $vehicle): array
-    {
-        $mileagePackage = TokenTopupPackage::query()
-            ->where('type', TokenTopupPackage::TYPE_MILEAGE)
-            ->enabled()
-            ->ordered()
-            ->first();
-
-        $reward = (int) ($mileagePackage?->tokens_amount
-            ?? config('agent.topup.mileage_reward_ml', 500));
-        $cooldownHours = (int) ($mileagePackage?->cooldown_hours
-            ?? config('agent.topup.mileage_cooldown_hours', 24));
-        if ($cooldownHours < 1) {
-            $cooldownHours = 24;
-        }
-
-        $base = [
-            'reward_tokens' => $reward,
-            'reward_label' => '+'.number_format($reward, 0, '', ' '),
-            'cooldown_hours' => $cooldownHours,
-            'available' => false,
-            'can_open' => false,
-            'badge' => 'нет авто',
-            'subtitle' => 'Сначала добавьте автомобиль — потом можно обновлять пробег и получать бонус.',
-            'available_label' => null,
-            'cooldown_ends_at' => null,
-            'current_value' => null,
-            'unit' => 'km',
-        ];
-
-        if ($vehicle === null) {
-            return $base;
-        }
-
-        $vehicle->loadMissing('mileageObservations');
-
-        $lastUserUpdate = $vehicle->mileageObservations
-            ->filter(fn (MileageObservation $row): bool => ($row->source ?? '') !== 'service')
-            ->sortByDesc(fn (MileageObservation $row) => $row->observed_at?->timestamp ?? $row->created_at?->timestamp ?? 0)
-            ->first();
-
-        $lastAt = $lastUserUpdate?->observed_at ?? $lastUserUpdate?->created_at;
-        $cooldownEnds = $lastAt?->copy()->addHours($cooldownHours);
-        $available = $cooldownEnds === null || $cooldownEnds->isPast();
-        $hoursLeft = (! $available && $cooldownEnds !== null)
-            ? max(1, (int) ceil(now()->diffInMinutes($cooldownEnds) / 60))
-            : null;
-
-        return [
-            'reward_tokens' => $reward,
-            'reward_label' => '+'.number_format($reward, 0, '', ' '),
-            'cooldown_hours' => $cooldownHours,
-            'available' => $available,
-            'can_open' => true,
-            'badge' => $available ? '0 ⭐' : ('через '.$hoursLeft.' ч'),
-            'subtitle' => $available
-                ? 'Введите актуальный пробег. Небольшой бонус раз в '.$cooldownHours.' ч — без Stars.'
-                : 'Пробег можно обновить сейчас, а бонус токенов снова через '.$hoursLeft.' ч.',
-            'available_label' => $available
-                ? 'бонус доступен'
-                : ('бонус через '.$hoursLeft.' ч'),
-            'cooldown_ends_at' => $cooldownEnds?->toIso8601String(),
-            'current_value' => $vehicle->current_mileage,
-            'unit' => $vehicle->mileage_unit ?? 'km',
         ];
     }
 

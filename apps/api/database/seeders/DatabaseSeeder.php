@@ -18,7 +18,6 @@ class DatabaseSeeder extends Seeder
         $this->call(MaintenanceV1Seeder::class);
         $this->call(MaintenanceV2Seeder::class);
         $this->call(AiConfigSeeder::class);
-        $this->call(TokenTopupPackageSeeder::class);
 
         // User::factory(10)->create();
 
