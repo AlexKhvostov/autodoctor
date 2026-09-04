@@ -284,7 +284,11 @@
             border-radius: 10px;
             background: var(--primary-soft);
             border: 1px solid rgba(30, 202, 211, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        .tl-now-main { min-width: 0; flex: 1; }
         .tl-now-label {
             font-size: 9px;
             text-transform: uppercase;
@@ -304,28 +308,78 @@
             margin-top: 2px;
             line-height: 1.35;
         }
-        .tl-now-actions {
-            margin-top: 8px;
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .mileage-quick-btn {
-            border: 1px solid rgba(30, 202, 211, 0.35);
-            background: rgba(30, 202, 211, 0.12);
+        .mileage-side-btn {
+            flex-shrink: 0;
+            width: 58px;
+            border: 1px solid rgba(30, 202, 211, 0.4);
+            background: rgba(255, 255, 255, 0.72);
             color: var(--primary-deep);
-            border-radius: 999px;
-            padding: 5px 10px;
-            font-size: 11px;
-            font-weight: 700;
+            border-radius: 10px;
+            padding: 6px 4px;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.15;
             cursor: pointer;
+            text-align: center;
+            box-shadow: var(--shadow);
         }
-        .mileage-quick-btn:active { opacity: 0.85; }
+        .mileage-side-btn:active { opacity: 0.85; }
         .mileage-form-hint {
             font-size: 11px;
             color: var(--muted);
             margin: 0 0 10px;
             line-height: 1.4;
+        }
+        .odo-wrap {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px 4px 4px;
+            margin-bottom: 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .odo-col {
+            width: 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .odo-btn {
+            width: 100%;
+            height: 28px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--bg-soft);
+            color: var(--primary-deep);
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .odo-btn:active { opacity: 0.8; background: rgba(30, 202, 211, 0.16); }
+        .odo-digit {
+            width: 100%;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid rgba(30, 202, 211, 0.35);
+            background: var(--card);
+            box-shadow: var(--shadow);
+            display: grid;
+            place-items: center;
+            font-size: 22px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--ink);
+        }
+        .odo-value-label {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--primary-deep);
         }
         .tl-now::before {
             content: '';
@@ -1146,11 +1200,13 @@
                 : '';
             const vehicle = activeVehicle();
             const canMileage = vehicle && vehicle.status === 'saved' && vehicle.id;
-            return '<div class="tl-now"><div class="tl-now-label">Сейчас</div>' +
+            return '<div class="tl-now"><div class="tl-now-main">' +
+                '<div class="tl-now-label">Сейчас</div>' +
                 '<div class="tl-now-meta">' + escapeHtml(meta || 'сегодня') + '</div>' +
                 (sub ? '<div class="tl-now-sub">' + escapeHtml(sub) + '</div>' : '') +
+                '</div>' +
                 (canMileage
-                    ? '<div class="tl-now-actions"><button class="mileage-quick-btn" type="button" data-open-mileage="1">Обновить пробег</button></div>'
+                    ? '<button class="mileage-side-btn" type="button" data-open-mileage="1" title="Обновить пробег">Пробег<br>↻</button>'
                     : '') +
                 '</div>';
         }
@@ -1518,36 +1574,96 @@
             }
             const topup = (appState.agent && appState.agent.topup) || {};
             const mileage = topup.mileage || {};
-            const current = vehicle.edit_profile?.mileage_value != null
-                ? String(vehicle.edit_profile.mileage_value)
-                : (mileage.current_value != null ? String(mileage.current_value) : '');
+            const currentRaw = vehicle.edit_profile?.mileage_value != null
+                ? Number(vehicle.edit_profile.mileage_value)
+                : (mileage.current_value != null ? Number(mileage.current_value) : 0);
+            const current = Number.isFinite(currentRaw) && currentRaw >= 0 ? Math.round(currentRaw) : 0;
             const unit = vehicle.edit_profile?.mileage_unit || mileage.unit || 'km';
             const bonusLine = mileage.available
-                ? ('После сохранения — бонус ' + (mileage.reward_label || '') + ' токенов (начисление подключим следующим шагом). Следующий бонус не раньше чем через ' + (mileage.cooldown_hours || 24) + ' ч.')
+                ? ('Бонус ' + (mileage.reward_label || '') + ' токенов после сохранения (начисление — следующим шагом). Далее не раньше чем через ' + (mileage.cooldown_hours || 24) + ' ч.')
                 : (mileage.available_label
                     ? ('Пробег сохранится. ' + mileage.available_label + '.')
-                    : 'Пробег сохранится в карточке авто и журнале.');
+                    : 'Пробег сохранится в карточке и журнале.');
+            const digits = mileageDigitsFromValue(current);
             const html =
-                '<p class="mileage-form-hint">Впишите одометр «как сейчас» — например вечером после поездок. Больше ничего делать не нужно.</p>' +
+                '<p class="mileage-form-hint">Крутите цифры одометра — без клавиатуры телефона, экран не прыгает.</p>' +
                 '<p class="mileage-form-hint">' + escapeHtml(bonusLine) + '</p>' +
-                '<div class="form-card"><label class="form-label" for="mileage-quick-input">Текущий пробег, ' +
-                escapeHtml(unit === 'mi' ? 'миль' : 'км') + '</label>' +
-                '<input class="form-select" id="mileage-quick-input" type="number" min="0" step="1" value="' +
-                escapeHtml(current) + '"></div>' +
+                '<div class="odo-value-label" id="odo-value-label">' +
+                escapeHtml(formatOdoValue(digits) + (unit === 'mi' ? ' миль' : ' км')) + '</div>' +
+                '<div class="odo-wrap" id="mileage-odo" data-unit="' + escapeHtml(unit) + '">' +
+                digits.map((digit, index) =>
+                    '<div class="odo-col" data-i="' + index + '">' +
+                    '<button type="button" class="odo-btn" data-odo-dir="up" aria-label="Больше">▴</button>' +
+                    '<div class="odo-digit" data-odo-digit="' + index + '">' + digit + '</div>' +
+                    '<button type="button" class="odo-btn" data-odo-dir="down" aria-label="Меньше">▾</button>' +
+                    '</div>'
+                ).join('') +
+                '</div>' +
                 '<button class="form-save" id="mileage-quick-save" type="button">Сохранить пробег</button>' +
                 '<div class="save-toast" id="mileage-quick-toast"></div>';
             openDetailSheet('Обновить пробег', html);
+            bindOdometerControls();
             const saveBtn = document.getElementById('mileage-quick-save');
             if (saveBtn) saveBtn.addEventListener('click', saveMileageQuick);
         }
 
+        function mileageDigitsFromValue(value) {
+            const safe = Math.max(0, Math.min(9999999, Math.round(Number(value) || 0)));
+            const width = safe >= 1000000 ? 7 : 6;
+            return String(safe).padStart(width, '0').split('').map((ch) => Number(ch));
+        }
+
+        function formatOdoValue(digits) {
+            const raw = (digits || []).join('');
+            const n = Number(raw || '0');
+            return Number.isFinite(n) ? n.toLocaleString('ru-RU') : '0';
+        }
+
+        function readOdometerDigits() {
+            return Array.from(document.querySelectorAll('[data-odo-digit]')).map((el) => {
+                const n = Number(el.textContent || '0');
+                return Number.isFinite(n) ? Math.max(0, Math.min(9, n)) : 0;
+            });
+        }
+
+        function refreshOdometerLabel() {
+            const label = document.getElementById('odo-value-label');
+            const root = document.getElementById('mileage-odo');
+            if (!label || !root) return;
+            const unit = root.dataset.unit === 'mi' ? ' миль' : ' км';
+            label.textContent = formatOdoValue(readOdometerDigits()) + unit;
+        }
+
+        function bindOdometerControls() {
+            const root = document.getElementById('mileage-odo');
+            if (!root) return;
+            root.querySelectorAll('[data-odo-dir]').forEach((btn) => {
+                btn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const col = btn.closest('.odo-col');
+                    const digitEl = col && col.querySelector('[data-odo-digit]');
+                    if (!digitEl) return;
+                    let value = Number(digitEl.textContent || '0');
+                    if (!Number.isFinite(value)) value = 0;
+                    if (btn.dataset.odoDir === 'up') value = (value + 1) % 10;
+                    else value = (value + 9) % 10;
+                    digitEl.textContent = String(value);
+                    refreshOdometerLabel();
+                });
+            });
+        }
+
         async function saveMileageQuick() {
             const vehicle = activeVehicle();
-            const input = document.getElementById('mileage-quick-input');
             const toast = document.getElementById('mileage-quick-toast');
             const saveBtn = document.getElementById('mileage-quick-save');
-            if (!vehicle || !vehicle.id || !input) return;
-            const value = Number(String(input.value || '').trim());
+            if (!vehicle || !vehicle.id) return;
+            const digits = readOdometerDigits();
+            if (!digits.length) {
+                if (toast) toast.textContent = 'Не удалось прочитать одометр';
+                return;
+            }
+            const value = Number(digits.join(''));
             if (!Number.isFinite(value) || value < 0) {
                 if (toast) toast.textContent = 'Введите корректный пробег';
                 return;
